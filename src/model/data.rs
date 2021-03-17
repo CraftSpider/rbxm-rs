@@ -6,20 +6,23 @@ use std::rc::{Rc, Weak};
 pub struct Instance {
     pub children: Vec<Rc<RefCell<Instance>>>,
     pub parent: Weak<RefCell<Instance>>,
-    pub kind: String,
-    pub properties: HashMap<String, Property>,
+    pub kind: InstanceKind,
 }
 
 impl Instance {
-    pub fn new(kind: String, parent: Option<&Rc<RefCell<Instance>>>) -> Instance {
+    pub fn new(kind: InstanceKind, parent: Option<&Rc<RefCell<Instance>>>) -> Instance {
         Instance {
             children: vec![],
             parent: parent.map(|rc| Rc::downgrade(rc)).unwrap_or_default(),
             kind,
-            // TODO: Default properties, merge them into Kind and make it exhaustive?
-            //       Idea: InstanceKind with known properties, etc, then an InstanceKind::Other
-            //       which just has a name and HashMap, for unknown kinds
-            properties: HashMap::new(),
+        }
+    }
+
+    pub(crate) fn uninit() -> Instance {
+        Instance {
+            children: Vec::default(),
+            parent: Weak::default(),
+            kind: InstanceKind::Other(String::default(), HashMap::default()),
         }
     }
 }
@@ -28,77 +31,99 @@ impl Instance {
 #[derive(Debug, Clone)]
 pub enum InstanceKind {
     Part(Part),
-    Other(HashMap<String, Property>),
+    Other(String, HashMap<String, Property>),
+}
+
+impl InstanceKind {
+    pub fn class_name(&self) -> String {
+        match self {
+            InstanceKind::Part(..) => String::from("Part"),
+            InstanceKind::Other(name, ..) => name.clone(),
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        match self {
+            InstanceKind::Part(part) => &part.base.name,
+            InstanceKind::Other(_, props) => {
+                if let Property::TextString(name) = props.get("Name").unwrap() {
+                    name
+                } else {
+                    panic!()
+                }
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
 pub struct Base {
-    name: String,
-    tags: String,
-    source_asset_id: i64,
-    attributes_serialize: String,
+    pub name: String,
+    pub tags: String,
+    pub source_asset_id: i64,
+    pub attributes_serialize: String,
 }
 
 #[derive(Debug, Clone)]
 pub struct BasePart {
-    anchored: bool,
-    locked: bool,
-    massless: bool,
-    can_touch: bool,
-    can_collide: bool,
-    cast_shadow: bool,
+    pub anchored: bool,
+    pub locked: bool,
+    pub massless: bool,
+    pub can_touch: bool,
+    pub can_collide: bool,
+    pub cast_shadow: bool,
 
-    cframe: CFrame,
-    velocity: Vector3,
-    rot_velocity: Vector3,
+    pub size: Vector3,
+    pub cframe: CFrame,
+    pub velocity: Vector3,
+    pub rot_velocity: Vector3,
 
-    size: Vector3,
-    material: i32,
-    transparency: f32,
-    reflectance: f32,
+    pub material: i32,
+    pub transparency: f32,
+    pub reflectance: f32,
 
-    collision_group_id: i32,
-    custom_physical_properties: bool,
-    root_priority: i32,
+    pub collision_group_id: i32,
+    pub custom_physical_properties: bool,
+    pub root_priority: i32,
 
-    top_surface: i32,
-    top_surface_input: i32,
-    top_param_a: f32,
-    top_param_b: f32,
+    pub top_surface: i32,
+    pub top_surface_input: i32,
+    pub top_param_a: f32,
+    pub top_param_b: f32,
 
-    bottom_surface: i32,
-    bottom_surface_input: i32,
-    bottom_param_a: f32,
-    bottom_param_b: f32,
+    pub bottom_surface: i32,
+    pub bottom_surface_input: i32,
+    pub bottom_param_a: f32,
+    pub bottom_param_b: f32,
 
-    front_surface: i32,
-    front_surface_input: i32,
-    front_param_a: f32,
-    front_param_b: f32,
+    pub front_surface: i32,
+    pub front_surface_input: i32,
+    pub front_param_a: f32,
+    pub front_param_b: f32,
 
-    back_surface: i32,
-    back_surface_input: i32,
-    back_param_a: f32,
-    back_param_b: f32,
+    pub back_surface: i32,
+    pub back_surface_input: i32,
+    pub back_param_a: f32,
+    pub back_param_b: f32,
 
-    left_surface: i32,
-    left_surface_input: i32,
-    left_param_a: f32,
-    left_param_b: f32,
+    pub left_surface: i32,
+    pub left_surface_input: i32,
+    pub left_param_a: f32,
+    pub left_param_b: f32,
 
-    right_surface: i32,
-    right_surface_input: i32,
-    right_param_a: f32,
-    right_param_b: f32,
+    pub right_surface: i32,
+    pub right_surface_input: i32,
+    pub right_param_a: f32,
+    pub right_param_b: f32,
 }
 
 #[derive(Debug, Clone)]
 pub struct Part {
-    base: Base,
-    base_part: BasePart,
-    form_factor_raw: i32,
-    color3_uint8: Color3Uint8, // Suspect this is part of BasePart
-    shape: i32,
+    pub base: Base,
+    pub base_part: BasePart,
+    pub form_factor_raw: i32,
+    pub color3_uint8: Color3Uint8, // Suspect this is part of BasePart
+    pub shape: i32,
 }
 
 #[non_exhaustive]

@@ -2,7 +2,7 @@ use crate::model::{
     Axis, Color3, Color3Uint8, ColorSequence, Face, Instance, NumberRange, NumberSequence,
     Property, RbxModel, Vector2, Vector3, Vector3Int16,
 };
-use crate::serde::internal::{Block, RawProperty};
+use crate::serde::internal::{break_kind, Block, RawProperty};
 use crate::serde::Result;
 
 use std::cell::RefCell;
@@ -503,7 +503,7 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
 
     for (index, inst) in insts.iter().enumerate() {
         let next_index = inst_blocks.len();
-        let class_name = inst.borrow().kind.clone();
+        let class_name = inst.borrow().kind.class_name();
 
         let inst_block = inst_blocks
             .entry(class_name.clone())
@@ -526,7 +526,7 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
             unreachable!()
         };
 
-        for (prop_name, prop_value) in &inst.borrow().properties {
+        for (prop_name, prop_value) in break_kind(&inst.borrow().kind) {
             let prop_block = prop_blocks
                 .entry((class_index, prop_name.clone()))
                 .or_insert(Block::Property {

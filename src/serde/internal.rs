@@ -121,10 +121,100 @@ impl RawProperty {
     }
 }
 
-// TODO: Use this as a ser/de intermediate, to allow Instance to be nicer for the user
-pub struct RawInstance {
-    pub children: Vec<i32>,
-    pub parent: i32,
-    pub kind: String,
-    pub properties: HashMap<String, Property>,
+macro_rules! chomp_prop {
+    ($map:ident, $name:literal, $prop:ident) => {
+        if let Some(Property::$prop(val)) = $map.remove($name) {
+            val
+        } else {
+            todo!()
+        };
+    };
+}
+
+fn chomp_base(properties: &mut HashMap<String, Property>) -> Base {
+    Base {
+        name: chomp_prop!(properties, "Name", TextString),
+        tags: chomp_prop!(properties, "Tags", TextString),
+        attributes_serialize: chomp_prop!(properties, "AttributesSerialize", TextString),
+        source_asset_id: chomp_prop!(properties, "SourceAssetId", Int64),
+    }
+}
+
+fn chomp_base_part(properties: &mut HashMap<String, Property>) -> BasePart {
+    BasePart {
+        anchored: chomp_prop!(properties, "Anchored", Bool),
+        locked: chomp_prop!(properties, "Locked", Bool),
+        massless: chomp_prop!(properties, "Massless", Bool),
+        can_touch: chomp_prop!(properties, "CanTouch", Bool),
+        can_collide: chomp_prop!(properties, "CanCollide", Bool),
+        cast_shadow: chomp_prop!(properties, "CastShadow", Bool),
+
+        size: chomp_prop!(properties, "size", Vector3),
+        cframe: chomp_prop!(properties, "CFrame", CFrame),
+        velocity: chomp_prop!(properties, "Velocity", Vector3),
+        rot_velocity: chomp_prop!(properties, "RotVelocity", Vector3),
+
+        material: chomp_prop!(properties, "Material", Enum),
+        transparency: chomp_prop!(properties, "Transparency", Float),
+        reflectance: chomp_prop!(properties, "Reflectance", Float),
+
+        collision_group_id: chomp_prop!(properties, "CollisionGroupId", Int32),
+        custom_physical_properties: chomp_prop!(
+            properties,
+            "CustomPhysicalProperties",
+            CustomPhysicalProperties
+        ),
+        root_priority: chomp_prop!(properties, "RootPriority", Int32),
+
+        top_surface: chomp_prop!(properties, "TopSurface", Enum),
+        top_surface_input: chomp_prop!(properties, "TopSurfaceInput", Enum),
+        top_param_a: chomp_prop!(properties, "TopParamA", Float),
+        top_param_b: chomp_prop!(properties, "TopParamB", Float),
+
+        bottom_surface: chomp_prop!(properties, "BottomSurface", Enum),
+        bottom_surface_input: chomp_prop!(properties, "BottomSurfaceInput", Enum),
+        bottom_param_a: chomp_prop!(properties, "BottomParamA", Float),
+        bottom_param_b: chomp_prop!(properties, "BottomParamB", Float),
+
+        front_surface: chomp_prop!(properties, "FrontSurface", Enum),
+        front_surface_input: chomp_prop!(properties, "FrontSurfaceInput", Enum),
+        front_param_a: chomp_prop!(properties, "FrontParamA", Float),
+        front_param_b: chomp_prop!(properties, "FrontParamB", Float),
+
+        back_surface: chomp_prop!(properties, "BackSurface", Enum),
+        back_surface_input: chomp_prop!(properties, "BackSurfaceInput", Enum),
+        back_param_a: chomp_prop!(properties, "BackParamA", Float),
+        back_param_b: chomp_prop!(properties, "BackParamB", Float),
+
+        left_surface: chomp_prop!(properties, "LeftSurface", Enum),
+        left_surface_input: chomp_prop!(properties, "LeftSurfaceInput", Enum),
+        left_param_a: chomp_prop!(properties, "LeftParamA", Float),
+        left_param_b: chomp_prop!(properties, "LeftParamB", Float),
+
+        right_surface: chomp_prop!(properties, "RightSurface", Enum),
+        right_surface_input: chomp_prop!(properties, "RightSurfaceInput", Enum),
+        right_param_a: chomp_prop!(properties, "RightParamA", Float),
+        right_param_b: chomp_prop!(properties, "RightParamB", Float),
+    }
+}
+
+fn chomp_part(properties: &mut HashMap<String, Property>) -> Part {
+    Part {
+        base: chomp_base(properties),
+        base_part: chomp_base_part(properties),
+        form_factor_raw: chomp_prop!(properties, "formFactorRaw", Enum),
+        color3_uint8: chomp_prop!(properties, "Color3uint8", Color3Uint8),
+        shape: chomp_prop!(properties, "shape", Enum),
+    }
+}
+
+pub fn make_kind(kind: &str, mut properties: HashMap<String, Property>) -> InstanceKind {
+    match kind {
+        "Part" => InstanceKind::Part(chomp_part(&mut properties)),
+        _ => InstanceKind::Other(kind.to_owned(), properties),
+    }
+}
+
+pub fn break_kind(_kind: &InstanceKind) -> HashMap<String, Property> {
+    todo!()
 }

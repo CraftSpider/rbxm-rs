@@ -1,4 +1,5 @@
 #![deny(clippy::all)]
+#![feature(new_uninit)]
 
 pub mod model;
 pub mod serde;

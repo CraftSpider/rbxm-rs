@@ -1,5 +1,5 @@
 use crate::model::*;
-use crate::serde::internal::{Block, RawProperty};
+use crate::serde::internal::{make_kind, Block, RawProperty};
 use crate::serde::{Error, Result};
 
 use std::cell::RefCell;
@@ -429,7 +429,12 @@ fn make_model(num_classes: usize, num_instances: usize, blocks: Vec<Block>) -> R
     let mut shared = Vec::new();
     let mut classes = HashMap::new();
     let mut instances = HashMap::new();
+    let mut raw_properties: HashMap<_, HashMap<_, _>> = HashMap::new();
+    let mut parent_info = HashMap::new();
+    let mut child_info: HashMap<_, Vec<_>> = HashMap::new();
 
+    // Extract data from binary blocks. This is a sad in terms of number of maps, but the cleanest
+    // way I could think of.
     for b in blocks {
         match b {
             Block::Meta(data) => meta.extend(data),
@@ -443,12 +448,10 @@ fn make_model(num_classes: usize, num_instances: usize, blocks: Vec<Block>) -> R
                 for i in &instance_ids {
                     instances.insert(
                         *i,
-                        Rc::new(RefCell::new(Instance {
-                            parent: Weak::new(),
-                            children: Vec::new(),
-                            kind: class_name.clone(),
-                            properties: HashMap::new(),
-                        })),
+                        (
+                            class_name.clone(),
+                            Rc::new(RefCell::new(Instance::uninit())),
+                        ),
                     );
                 }
 
@@ -464,32 +467,9 @@ fn make_model(num_classes: usize, num_instances: usize, blocks: Vec<Block>) -> R
                     .ok_or(Error::UnknownClass(class_index))?;
 
                 for (id, prop) in ids.iter().zip(properties) {
-                    let prop = match prop {
-                        RawProperty::RawString(blob) => String::from_utf8(blob.clone())
-                            .map(Property::TextString)
-                            .unwrap_or_else(|err| Property::BinaryString(err.into_bytes())),
-                        RawProperty::SharedString(shared_id) => {
-                            let blob = &shared[shared_id as usize];
-                            String::from_utf8(blob.clone())
-                                .map(Property::TextString)
-                                .unwrap_or_else(|err| Property::BinaryString(err.into_bytes()))
-                        }
-                        RawProperty::InstanceRef(ref_id) => {
-                            let weak = Rc::downgrade(
-                                instances
-                                    .get(&ref_id)
-                                    .ok_or(Error::UnknownInstance(ref_id))?,
-                            );
-                            Property::InstanceRef(weak)
-                        }
-                        prop => prop.into_real(), // TODO: Convert to 'real' property
-                    };
-
-                    instances
-                        .get(id)
-                        .ok_or(Error::UnknownInstance(*id))?
-                        .borrow_mut()
-                        .properties
+                    raw_properties
+                        .entry(*id)
+                        .or_default()
                         .insert(property_name.clone(), prop);
                 }
             }
@@ -501,22 +481,8 @@ fn make_model(num_classes: usize, num_instances: usize, blocks: Vec<Block>) -> R
                     .into_iter()
                     .zip(parent_referents.into_iter())
                 {
-                    if parent_id == -1 {
-                        continue;
-                    }
-
-                    let parent = instances
-                        .get(&parent_id)
-                        .ok_or(Error::UnknownInstance(parent_id))?
-                        .clone();
-
-                    let child = instances
-                        .get(&child_id)
-                        .ok_or(Error::UnknownInstance(child_id))?
-                        .clone();
-
-                    child.borrow_mut().parent = Rc::downgrade(&parent);
-                    parent.borrow_mut().children.push(child);
+                    parent_info.insert(child_id, parent_id);
+                    child_info.entry(parent_id).or_default().push(child_id);
                 }
             }
             Block::End => continue,
@@ -526,10 +492,87 @@ fn make_model(num_classes: usize, num_instances: usize, blocks: Vec<Block>) -> R
     assert_eq!(classes.len(), num_classes);
     assert_eq!(instances.len(), num_instances);
 
+    // Do reference resolution, and populate information
+    let instances = instances
+        .iter()
+        .map(|(id, (class_name, inst))| {
+            let parent_id = parent_info.remove(id).ok_or(Error::UnknownInstance(*id))?;
+
+            let parent = if parent_id != -1 {
+                Rc::downgrade(
+                    &instances
+                        .get(&parent_id)
+                        .ok_or(Error::UnknownInstance(parent_id))?
+                        .1,
+                )
+            } else {
+                Weak::default()
+            };
+
+            let children = child_info
+                .remove(id)
+                .unwrap_or_default()
+                .into_iter()
+                .map(|child_id| {
+                    Ok(Rc::clone(
+                        &instances
+                            .get(&child_id)
+                            .ok_or(Error::UnknownInstance(child_id))?
+                            .1,
+                    ))
+                })
+                .collect::<Result<Vec<_>>>()?;
+
+            println!("Getting Props");
+            let raw_props = raw_properties
+                .remove(id)
+                .ok_or(Error::UnknownInstance(*id))?;
+
+            let props = raw_props
+                .into_iter()
+                .map(|(name, value)| {
+                    let prop = match value {
+                        RawProperty::RawString(blob) => String::from_utf8(blob)
+                            .map(Property::TextString)
+                            .unwrap_or_else(|err| Property::BinaryString(err.into_bytes())),
+                        RawProperty::SharedString(shared_id) => {
+                            let blob = &shared[shared_id as usize];
+                            String::from_utf8(blob.clone())
+                                .map(Property::TextString)
+                                .unwrap_or_else(|err| Property::BinaryString(err.into_bytes()))
+                        }
+                        RawProperty::InstanceRef(ref_id) => {
+                            let weak = Rc::downgrade(
+                                &instances
+                                    .get(&ref_id)
+                                    .ok_or(Error::UnknownInstance(ref_id))?
+                                    .1,
+                            );
+                            Property::InstanceRef(weak)
+                        }
+                        prop => prop.into_real(),
+                    };
+
+                    Ok((name, prop))
+                })
+                .collect::<Result<_>>()?;
+
+            {
+                let mut mut_inst = inst.borrow_mut();
+                mut_inst.parent = parent;
+                mut_inst.children = children;
+                mut_inst.kind = make_kind(class_name, props);
+            }
+
+            Ok(inst)
+        })
+        .collect::<Result<Vec<_>>>()?;
+
+    // Figure out our root instances
     let roots = instances
         .into_iter()
-        .filter(|(_, inst)| inst.borrow().parent.ptr_eq(&Weak::default()))
-        .map(|(_, inst)| inst)
+        .filter(|inst| inst.borrow().parent.ptr_eq(&Weak::default()))
+        .map(|inst| Rc::clone(inst))
         .collect::<Vec<_>>();
 
     Ok(RbxModel { meta, roots })

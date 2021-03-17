@@ -1,4 +1,4 @@
-use crate::model::{Error, Instance, Property, Result};
+use crate::model::{Error, Instance, Result};
 
 use std::cell::{Ref, RefCell};
 use std::collections::HashMap;
@@ -51,15 +51,7 @@ impl RbxModel {
                 let results = self
                     .roots
                     .iter()
-                    .filter(|inst| {
-                        if let Some(Property::TextString(str)) =
-                            inst.borrow().properties.get("Name")
-                        {
-                            str == name
-                        } else {
-                            false
-                        }
-                    })
+                    .filter(|inst| inst.borrow().kind.name() == *name)
                     .collect::<Vec<_>>();
                 if results.len() > 1 {
                     return Err(Error::AmbiguousPath);
@@ -78,15 +70,7 @@ impl RbxModel {
                     PathSegment::Name(name) => {
                         let results = children
                             .iter()
-                            .filter(|inst| {
-                                if let Some(Property::TextString(str)) =
-                                    inst.borrow().properties.get("Name")
-                                {
-                                    str == name
-                                } else {
-                                    false
-                                }
-                            })
+                            .filter(|inst| inst.borrow().kind.name() == *name)
                             .collect::<Vec<_>>();
                         if results.len() > 1 {
                             return Err(Error::AmbiguousPath);
