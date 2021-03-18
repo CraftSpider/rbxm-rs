@@ -1,6 +1,6 @@
 pub mod de;
 pub mod error;
-mod internal;
+pub(crate) mod internal;
 pub mod ser;
 
 pub use de::{from_file, from_reader};

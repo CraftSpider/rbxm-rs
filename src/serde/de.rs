@@ -523,7 +523,6 @@ fn make_model(num_classes: usize, num_instances: usize, blocks: Vec<Block>) -> R
                 })
                 .collect::<Result<Vec<_>>>()?;
 
-            println!("Getting Props");
             let raw_props = raw_properties
                 .remove(id)
                 .ok_or(Error::UnknownInstance(*id))?;
@@ -561,7 +560,7 @@ fn make_model(num_classes: usize, num_instances: usize, blocks: Vec<Block>) -> R
                 let mut mut_inst = inst.borrow_mut();
                 mut_inst.parent = parent;
                 mut_inst.children = children;
-                mut_inst.kind = make_kind(class_name, props);
+                mut_inst.kind = make_kind(class_name, props)?;
             }
 
             Ok(inst)
@@ -936,6 +935,6 @@ mod tests {
 
     #[test]
     fn test_instances() {
-        dbg!(from_file("./examples/InstanceTest.rbxm").unwrap());
+        from_file("./examples/InstanceTest.rbxm").unwrap();
     }
 }

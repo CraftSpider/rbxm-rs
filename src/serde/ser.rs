@@ -534,7 +534,6 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
                     property_name: prop_name.clone(),
                     properties: vec![],
                 });
-
             if let Block::Property { properties, .. } = prop_block {
                 let raw = match prop_value {
                     // TODO: BinaryString/RawString sometimes should be converted to a shared string

@@ -1,9 +1,12 @@
 [package]
-name = "rbxm"
+name = "rbxm-proc"
 version = "0.1.0"
 authors = ["Rune Tynan <runetynan@gmail.com>"]
 edition = "2018"
 
+[lib]
+proc-macro = true
+
 [dependencies]
-rbxm-proc = { version = "0.1.0", path = "./rbxm-proc" }
-lz4 = "1.23"
+syn = "1.0"
+quote = "1.0"
