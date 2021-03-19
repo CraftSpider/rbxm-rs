@@ -1,4 +1,3 @@
-
 use rbxm_proc::EnumConvert;
 
 #[derive(Debug, Clone, EnumConvert)]

@@ -255,6 +255,7 @@ pub fn try_from(item: TokenStream) -> TokenStream {
             }
         }
 
+        #[allow(clippy::from_over_into)]
         impl std::convert::Into<i32> for #item_name {
             fn into(self) -> i32 {
                 self as i32

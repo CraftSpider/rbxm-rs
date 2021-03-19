@@ -35,9 +35,14 @@ impl fmt::Display for Error {
             Error::UnknownProperty(id) => format!("Unknown property type `{}`", id),
             Error::UnknownVariant(id) => format!("Unknown enum variant with ID `{}`", id),
 
-            Error::WrongPropertyType(prop_name) => format!("Property {} was the wrong type", prop_name),
+            Error::WrongPropertyType(prop_name) => {
+                format!("Property {} was the wrong type", prop_name)
+            }
             Error::MissingProperty(prop_name) => format!("Property {} was missing", prop_name),
-            Error::UnconsumedProperties(class_name, prop_names) => format!("Instance type {} had unexpected properties with names {:?}", class_name, prop_names),
+            Error::UnconsumedProperties(class_name, prop_names) => format!(
+                "Instance type {} had unexpected properties with names {:?}",
+                class_name, prop_names
+            ),
 
             Error::IoError(err) => format!("Error in IO: {}", err),
             Error::InvalidString => "String contained invalid UTF data".to_string(),

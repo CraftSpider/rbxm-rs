@@ -1,12 +1,12 @@
-use crate::model::enums::*;
 use crate::model::data::*;
+use crate::model::enums::*;
 use crate::model::Property;
 use crate::serde::internal::{FromProperty, ToProperty};
 use rbxm_proc::{FromProperty, ToProperty};
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
-use std::cell::RefCell;
 
 // TODO: Implement AsRef for all inheritance chains
 
@@ -135,7 +135,7 @@ pub enum InstanceKind {
     HopperBin(HopperBin),
     Humanoid(Humanoid),
     HumanoidController(HumanoidController),
-    HumanoidDescription(HumanoidDescription),
+    HumanoidDescription(Box<HumanoidDescription>),
     ImageButton(ImageButton),
     ImageHandleAdornment(ImageHandleAdornment),
     ImageLabel(ImageLabel),
@@ -398,7 +398,9 @@ impl InstanceKind {
             InstanceKind::ReflectionMetadataFunctions(..) => "ReflectionMetadataFunctions",
             InstanceKind::ReflectionMetadataMember(..) => "ReflectionMetadataMember",
             InstanceKind::ReflectionMetadataProperties(..) => "ReflectionMetadataProperties",
-            InstanceKind::ReflectionMetadataYieldFunctions(..) => "ReflectionMetadataYieldFunctions",
+            InstanceKind::ReflectionMetadataYieldFunctions(..) => {
+                "ReflectionMetadataYieldFunctions"
+            }
             InstanceKind::RemoteEvent(..) => "RemoteEvent",
             InstanceKind::RemoteFunction(..) => "RemoteFunction",
             InstanceKind::RenderingTest(..) => "RenderingTest",
@@ -514,7 +516,9 @@ impl InstanceKind {
             InstanceKind::BodyThrust(data) => &data.base.name,
             InstanceKind::BodyVelocity(data) => &data.base.name,
             InstanceKind::BoolValue(data) => &data.base.name,
-            InstanceKind::BoxHandleAdornment(data) => &data.handle_adornment.pv_adornment.gui_base.base.name,
+            InstanceKind::BoxHandleAdornment(data) => {
+                &data.handle_adornment.pv_adornment.gui_base.base.name
+            }
             InstanceKind::BrickColorValue(data) => &data.base.name,
             InstanceKind::Camera(data) => &data.base.name,
             InstanceKind::CFrameValue(data) => &data.base.name,
@@ -525,14 +529,20 @@ impl InstanceKind {
             InstanceKind::Color3Value(data) => &data.base.name,
             InstanceKind::ColorCorrectionEffect(data) => &data.post_effect.base.name,
             InstanceKind::CompressorSoundEffect(data) => &data.sound_effect.base.name,
-            InstanceKind::ConeHandleAdornment(data) => &data.handle_adornment.pv_adornment.gui_base.base.name,
+            InstanceKind::ConeHandleAdornment(data) => {
+                &data.handle_adornment.pv_adornment.gui_base.base.name
+            }
             InstanceKind::Configuration(data) => &data.base.name,
             InstanceKind::CornerWedgePart(data) => &data.base_part.base.name,
             InstanceKind::CustomEvent(data) => &data.base.name,
             InstanceKind::CustomEventReceiver(data) => &data.base.name,
-            InstanceKind::CylinderHandleAdornment(data) => &data.handle_adornment.pv_adornment.gui_base.base.name,
+            InstanceKind::CylinderHandleAdornment(data) => {
+                &data.handle_adornment.pv_adornment.gui_base.base.name
+            }
             InstanceKind::CylinderMesh(data) => &data.bevel_mesh.data_model_mesh.base.name,
-            InstanceKind::CylindricalConstraint(data) => &data.sliding_ball_constraint.constraint.base.name,
+            InstanceKind::CylindricalConstraint(data) => {
+                &data.sliding_ball_constraint.constraint.base.name
+            }
             InstanceKind::Decal(data) => &data.face_instance.base.name,
             InstanceKind::DepthOfFieldEffect(data) => &data.post_effect.base.name,
             InstanceKind::Dialog(data) => &data.base.name,
@@ -564,7 +574,9 @@ impl InstanceKind {
             InstanceKind::HumanoidController(data) => &data.base.name,
             InstanceKind::HumanoidDescription(data) => &data.base.name,
             InstanceKind::ImageButton(data) => &data.gui_button.gui_object.gui_base.base.name,
-            InstanceKind::ImageHandleAdornment(data) => &data.handle_adornment.pv_adornment.gui_base.base.name,
+            InstanceKind::ImageHandleAdornment(data) => {
+                &data.handle_adornment.pv_adornment.gui_base.base.name
+            }
             InstanceKind::ImageLabel(data) => &data.gui_object.gui_base.base.name,
             InstanceKind::IntConstrainedValue(data) => &data.base.name,
             InstanceKind::IntValue(data) => &data.base.name,
@@ -572,7 +584,9 @@ impl InstanceKind {
             InstanceKind::KeyframeMarker(data) => &data.base.name,
             InstanceKind::KeyframeSequence(data) => &data.base.name,
             InstanceKind::LineForce(data) => &data.constraint.base.name,
-            InstanceKind::LineHandleAdornment(data) => &data.handle_adornment.pv_adornment.gui_base.base.name,
+            InstanceKind::LineHandleAdornment(data) => {
+                &data.handle_adornment.pv_adornment.gui_base.base.name
+            }
             InstanceKind::LocalizationTable(data) => &data.base.name,
             InstanceKind::LocalScript(data) => &data.script.base_script.source_container.base.name,
             InstanceKind::ManualGlue(data) => &data.joint_instance.base.name,
@@ -584,7 +598,9 @@ impl InstanceKind {
             InstanceKind::Motor(data) => &data.joint_instance.base.name,
             InstanceKind::Motor6D(data) => &data.motor.joint_instance.base.name,
             InstanceKind::MotorFeature(data) => &data.feature.base.name,
-            InstanceKind::NegateOperation(data) => &data.part_operation.triangle_mesh_part.base_part.base.name,
+            InstanceKind::NegateOperation(data) => {
+                &data.part_operation.triangle_mesh_part.base_part.base.name
+            }
             InstanceKind::NoCollisionConstraint(data) => &data.base.name,
             InstanceKind::NumberPose(data) => &data.pose_base.base.name,
             InstanceKind::NumberValue(data) => &data.base.name,
@@ -597,7 +613,9 @@ impl InstanceKind {
             InstanceKind::PitchShiftSoundEffect(data) => &data.sound_effect.base.name,
             InstanceKind::PointLight(data) => &data.light.base.name,
             InstanceKind::Pose(data) => &data.pose_base.base.name,
-            InstanceKind::PrismaticConstraint(data) => &data.sliding_ball_constraint.constraint.base.name,
+            InstanceKind::PrismaticConstraint(data) => {
+                &data.sliding_ball_constraint.constraint.base.name
+            }
             InstanceKind::ProximityPrompt(data) => &data.base.name,
             InstanceKind::RayValue(data) => &data.base.name,
             InstanceKind::ReflectionMetadata(data) => &data.base.name,
@@ -643,7 +661,9 @@ impl InstanceKind {
             InstanceKind::Sparkles(data) => &data.base.name,
             InstanceKind::SpawnLocation(data) => &data.part.base_part.base.name,
             InstanceKind::SpecialMesh(data) => &data.file_mesh.data_model_mesh.base.name,
-            InstanceKind::SphereHandleAdornment(data) => &data.handle_adornment.pv_adornment.gui_base.base.name,
+            InstanceKind::SphereHandleAdornment(data) => {
+                &data.handle_adornment.pv_adornment.gui_base.base.name
+            }
             InstanceKind::SpotLight(data) => &data.light.base.name,
             InstanceKind::SpringConstraint(data) => &data.constraint.base.name,
             InstanceKind::StandalonePluginScripts(data) => &data.base.name,
@@ -680,7 +700,9 @@ impl InstanceKind {
             InstanceKind::UIStroke(data) => &data.base.name,
             InstanceKind::UITableLayout(data) => &data.ui_grid_style_layout.base.name,
             InstanceKind::UITextSizeConstraint(data) => &data.base.name,
-            InstanceKind::UnionOperation(data) => &data.part_operation.triangle_mesh_part.base_part.base.name,
+            InstanceKind::UnionOperation(data) => {
+                &data.part_operation.triangle_mesh_part.base_part.base.name
+            }
             InstanceKind::UniversalConstraint(data) => &data.constraint.base.name,
             InstanceKind::Vector3Value(data) => &data.base.name,
             InstanceKind::VectorForce(data) => &data.constraint.base.name,
@@ -2275,7 +2297,6 @@ pub struct ReflectionMetadataItem {
     pub ui_minimum: f64,
     #[propname = "UINumTicks"]
     pub ui_num_ticks: f64,
-
 }
 
 #[derive(Debug, Clone, FromProperty, ToProperty)]
