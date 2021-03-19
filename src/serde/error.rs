@@ -13,6 +13,7 @@ pub enum Error {
     UnknownInstance(i32),
     UnknownCFrame(u8),
     UnknownProperty(u8),
+    UnknownVariant(i32),
 
     IoError(IoError),
     InvalidString,
@@ -28,6 +29,7 @@ impl fmt::Display for Error {
             Error::UnknownInstance(id) => format!("Reference to unknown instance with ID `{}`", id),
             Error::UnknownCFrame(id) => format!("Unknown CFrame type `{}`", id),
             Error::UnknownProperty(id) => format!("Unknown property type `{}`", id),
+            Error::UnknownVariant(id) => format!("Unknown enum variant with ID `{}`", id),
             Error::IoError(err) => format!("Error in IO: {}", err),
             Error::InvalidString => "String contained invalid UTF data".to_string(),
             Error::InvalidLz4 => "LZ4 block couldn't be deserialized".to_string(),

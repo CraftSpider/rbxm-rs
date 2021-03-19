@@ -1,7 +1,8 @@
+use crate::model::enums::*;
 use crate::model::data::*;
 use crate::model::Property;
-use crate::serde::internal::FromProperty;
-use rbxm_proc::FromProperty;
+use crate::serde::internal::{FromProperty, ToProperty};
+use rbxm_proc::{FromProperty, ToProperty};
 
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
@@ -25,6 +26,8 @@ macro_rules! chomp_prop {
         };
     };
 }
+
+type InstanceRef = Weak<RefCell<Instance>>;
 
 #[derive(Debug, Clone)]
 pub struct Instance {
@@ -699,7 +702,7 @@ impl InstanceKind {
     }
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Base {
     pub name: String,
     pub tags: String,
@@ -707,26 +710,26 @@ pub struct Base {
     pub attributes_serialize: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Accessory {
     #[delegate]
     pub accoutrement: Accoutrement,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Accoutrement {
     #[delegate]
     pub base: Base,
     pub attachment_point: CFrame,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Actor {
     #[delegate]
     pub model: Model,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct AlignOrientation {
     #[delegate]
     pub constraint: Constraint,
@@ -735,15 +738,15 @@ pub struct AlignOrientation {
     pub reaction_torque_enabled: bool,
     pub rigidity_enabled: bool,
 
-    #[propty = "Enum"]
-    pub align_type: i32,
+    #[isenum]
+    pub align_type: AlignType,
 
     pub max_angular_velocity: f32,
     pub max_torque: f32,
     pub responsiveness: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct AlignPosition {
     #[delegate]
     pub constraint: Constraint,
@@ -757,38 +760,38 @@ pub struct AlignPosition {
     pub responsiveness: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct AngularVelocity {
     #[delegate]
     pub constraint: Constraint,
     pub reaction_torque_enabled: bool,
-    #[propty = "Enum"]
-    pub relative_to: i32,
+    #[isenum]
+    pub relative_to: ActuatorRelativeTo,
     pub max_torque: f32,
     pub angular_velocity: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Animation {
     #[delegate]
     pub base: Base,
     pub animation_id: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct AnimationController {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ArcHandles {
     #[delegate]
     pub part_adornment: PartAdornment,
     pub axes: Axis,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Atmosphere {
     #[delegate]
     pub base: Base,
@@ -800,20 +803,20 @@ pub struct Atmosphere {
     pub offset: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Backpack {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct BackpackItem {
     #[delegate]
     pub base: Base,
     pub texture_id: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct BallSocketConstraint {
     #[delegate]
     pub constraint: Constraint,
@@ -830,7 +833,7 @@ pub struct BallSocketConstraint {
     pub twist_lower_angle: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct BasePart {
     #[delegate]
     pub base: Base,
@@ -848,8 +851,8 @@ pub struct BasePart {
     pub velocity: Vector3,
     pub rot_velocity: Vector3,
 
-    #[propty = "Enum"]
-    pub material: i32,
+    #[isenum]
+    pub material: Material,
     pub color3uint8: Color3Uint8,
     pub transparency: f32,
     pub reflectance: f32,
@@ -859,50 +862,50 @@ pub struct BasePart {
     pub custom_physical_properties: bool,
     pub root_priority: i32,
 
-    #[propty = "Enum"]
-    pub top_surface: i32,
-    #[propty = "Enum"]
-    pub top_surface_input: i32,
+    #[isenum]
+    pub top_surface: SurfaceType,
+    #[isenum]
+    pub top_surface_input: InputType,
     pub top_param_a: f32,
     pub top_param_b: f32,
 
-    #[propty = "Enum"]
-    pub bottom_surface: i32,
-    #[propty = "Enum"]
-    pub bottom_surface_input: i32,
+    #[isenum]
+    pub bottom_surface: SurfaceType,
+    #[isenum]
+    pub bottom_surface_input: InputType,
     pub bottom_param_a: f32,
     pub bottom_param_b: f32,
 
-    #[propty = "Enum"]
-    pub front_surface: i32,
-    #[propty = "Enum"]
-    pub front_surface_input: i32,
+    #[isenum]
+    pub front_surface: SurfaceType,
+    #[isenum]
+    pub front_surface_input: InputType,
     pub front_param_a: f32,
     pub front_param_b: f32,
 
-    #[propty = "Enum"]
-    pub back_surface: i32,
-    #[propty = "Enum"]
-    pub back_surface_input: i32,
+    #[isenum]
+    pub back_surface: SurfaceType,
+    #[isenum]
+    pub back_surface_input: InputType,
     pub back_param_a: f32,
     pub back_param_b: f32,
 
-    #[propty = "Enum"]
-    pub left_surface: i32,
-    #[propty = "Enum"]
-    pub left_surface_input: i32,
+    #[isenum]
+    pub left_surface: SurfaceType,
+    #[isenum]
+    pub left_surface_input: InputType,
     pub left_param_a: f32,
     pub left_param_b: f32,
 
-    #[propty = "Enum"]
-    pub right_surface: i32,
-    #[propty = "Enum"]
-    pub right_surface_input: i32,
+    #[isenum]
+    pub right_surface: SurfaceType,
+    #[isenum]
+    pub right_surface_input: InputType,
     pub right_param_a: f32,
     pub right_param_b: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct BaseScript {
     #[delegate]
     pub source_container: LuaSourceContainer,
@@ -910,7 +913,7 @@ pub struct BaseScript {
     pub linked_source: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Beam {
     #[delegate]
     pub base: Base,
@@ -932,14 +935,14 @@ pub struct Beam {
     pub texture: String,
     pub texture_length: f32,
     pub texture_speed: f32,
-    #[propty = "Enum"]
-    pub texture_mode: i32,
+    #[isenum]
+    pub texture_mode: TextureMode,
 
-    pub attachment_0: Weak<RefCell<Instance>>,
-    pub attachment_1: Weak<RefCell<Instance>>,
+    pub attachment_0: InstanceRef,
+    pub attachment_1: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct BevelMesh {
     #[delegate]
     pub data_model_mesh: DataModelMesh,
@@ -949,7 +952,7 @@ pub struct BevelMesh {
     pub bevel_roundness: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct BillboardGui {
     #[delegate]
     pub layer_collector: LayerCollector,
@@ -970,36 +973,36 @@ pub struct BillboardGui {
     pub extents_offset: Vector3,
     pub extents_offset_world_space: Vector3,
 
-    pub adornee: Weak<RefCell<Instance>>,
-    pub player_to_hide_from: Weak<RefCell<Instance>>,
+    pub adornee: InstanceRef,
+    pub player_to_hide_from: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct BinaryStringValue {
     #[delegate]
     pub base: Base,
     pub value: Vec<u8>,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct BindableEvent {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct BindableFunction {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct BlockMesh {
     #[delegate]
     pub bevel_mesh: BevelMesh,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct BloomEffect {
     #[delegate]
     pub post_effect: PostEffect,
@@ -1008,14 +1011,14 @@ pub struct BloomEffect {
     pub threshold: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct BlurEffect {
     #[delegate]
     pub post_effect: PostEffect,
     pub size: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct BodyAngularVelocity {
     #[delegate]
     pub base: Base,
@@ -1024,7 +1027,7 @@ pub struct BodyAngularVelocity {
     pub max_torque: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct BodyColors {
     #[delegate]
     pub base: Base,
@@ -1036,14 +1039,14 @@ pub struct BodyColors {
     pub right_leg_color3: Color3,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct BodyForce {
     #[delegate]
     pub base: Base,
     pub force: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct BodyGyro {
     #[delegate]
     pub base: Base,
@@ -1053,7 +1056,7 @@ pub struct BodyGyro {
     pub max_torque: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct BodyPosition {
     #[delegate]
     pub base: Base,
@@ -1063,7 +1066,7 @@ pub struct BodyPosition {
     pub max_force: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct BodyThrust {
     #[delegate]
     pub base: Base,
@@ -1071,7 +1074,7 @@ pub struct BodyThrust {
     pub location: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct BodyVelocity {
     #[delegate]
     pub base: Base,
@@ -1080,62 +1083,62 @@ pub struct BodyVelocity {
     pub max_force: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct BoolValue {
     #[delegate]
     pub base: Base,
     pub value: bool,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct BoxHandleAdornment {
     #[delegate]
     pub handle_adornment: HandleAdornment,
     pub size: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct BrickColorValue {
     #[delegate]
     pub base: Base,
     pub value: BrickColor,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Camera {
     #[delegate]
     pub base: Base,
     pub head_locked: bool,
     pub c_frame: CFrame,
-    pub camera_subject: Weak<RefCell<Instance>>,
-    #[propty = "Enum"]
-    pub camera_type: i32,
+    pub camera_subject: InstanceRef,
+    #[isenum]
+    pub camera_type: CameraType,
     pub field_of_view: f32,
-    #[propty = "Enum"]
-    pub field_of_view_mode: i32,
+    #[isenum]
+    pub field_of_view_mode: FieldOfViewMode,
     pub focus: CFrame,
     pub head_scale: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct CFrameValue {
     #[delegate]
     pub base: Base,
     pub value: CFrame,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct CharacterMesh {
     #[delegate]
     pub base: Base,
-    #[propty = "Enum"]
-    pub body_part: i32,
+    #[isenum]
+    pub body_part: BodyPart,
     pub base_texture_id: i64,
     pub overlay_texture_id: i64,
     pub mesh_id: i64,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ChorusSoundEffect {
     #[delegate]
     pub sound_effect: SoundEffect,
@@ -1144,7 +1147,7 @@ pub struct ChorusSoundEffect {
     pub rate: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ClickDetector {
     #[delegate]
     pub base: Base,
@@ -1152,14 +1155,14 @@ pub struct ClickDetector {
     pub max_activation_distance: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Clothing {
     #[delegate]
     pub base: Base,
     pub color3: Color3,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Clouds {
     #[delegate]
     pub base: Base,
@@ -1167,14 +1170,14 @@ pub struct Clouds {
     pub density: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Color3Value {
     #[delegate]
     pub base: Base,
     pub value: Color3,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ColorCorrectionEffect {
     #[delegate]
     pub post_effect: PostEffect,
@@ -1184,7 +1187,7 @@ pub struct ColorCorrectionEffect {
     pub tint_color: Color3,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct CompressorSoundEffect {
     #[delegate]
     pub sound_effect: SoundEffect,
@@ -1193,10 +1196,10 @@ pub struct CompressorSoundEffect {
     pub ratio: f32,
     pub release: f32,
     pub threshold: f32,
-    pub side_chain: Weak<RefCell<Instance>>,
+    pub side_chain: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ConeHandleAdornment {
     #[delegate]
     pub handle_adornment: HandleAdornment,
@@ -1204,44 +1207,44 @@ pub struct ConeHandleAdornment {
     pub radius: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Configuration {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct CornerWedgePart {
     #[delegate]
     pub base_part: BasePart,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Constraint {
     #[delegate]
     pub base: Base,
     pub enabled: bool,
     pub visible: bool,
     pub color: BrickColor,
-    pub attachment_0: Weak<RefCell<Instance>>,
-    pub attachment_1: Weak<RefCell<Instance>>,
+    pub attachment_0: InstanceRef,
+    pub attachment_1: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct CustomEvent {
     #[delegate]
     pub base: Base,
     pub persisted_current_value: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct CustomEventReceiver {
     #[delegate]
     pub base: Base,
-    pub source: Weak<RefCell<Instance>>,
+    pub source: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct CylinderHandleAdornment {
     #[delegate]
     pub handle_adornment: HandleAdornment,
@@ -1251,20 +1254,20 @@ pub struct CylinderHandleAdornment {
     pub radius: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct CylinderMesh {
     #[delegate]
     pub bevel_mesh: BevelMesh,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct CylindricalConstraint {
     #[delegate]
     pub sliding_ball_constraint: SlidingBallConstraint,
     pub angular_limits_enabled: bool,
     pub rotation_axis_visible: bool,
-    #[propty = "Enum"]
-    pub angular_actuator_type: i32,
+    #[isenum]
+    pub angular_actuator_type: ActuatorType,
     pub angular_restitution: f32,
     pub angular_speed: f32,
     pub angular_velocity: f32,
@@ -1277,7 +1280,7 @@ pub struct CylindricalConstraint {
     pub servo_max_torque: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct DataModelMesh {
     #[delegate]
     pub base: Base,
@@ -1285,14 +1288,14 @@ pub struct DataModelMesh {
     pub scale: Vector3,
     pub vertex_color: Vector3,
     #[propname = "LODX"]
-    #[propty = "Enum"]
-    pub lodx: i32,
+    #[isenum]
+    pub lodx: LevelOfDetailSetting,
     #[propname = "LODY"]
-    #[propty = "Enum"]
-    pub lody: i32,
+    #[isenum]
+    pub lody: LevelOfDetailSetting,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Decal {
     #[delegate]
     pub face_instance: FaceInstance,
@@ -1301,7 +1304,7 @@ pub struct Decal {
     pub transparency: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct DepthOfFieldEffect {
     #[delegate]
     pub post_effect: PostEffect,
@@ -1311,25 +1314,25 @@ pub struct DepthOfFieldEffect {
     pub near_intensity: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Dialog {
     #[delegate]
     pub base: Base,
     pub goodbye_choice_active: bool,
-    #[propty = "Enum"]
-    pub behavior_type: i32,
+    #[isenum]
+    pub behavior_type: DialogBehaviorType,
     pub conversation_distance: f32,
     pub goodbye_dialog: String,
     pub initial_prompt: String,
-    #[propty = "Enum"]
-    pub purpose: i32,
-    #[propty = "Enum"]
-    pub tone: i32,
+    #[isenum]
+    pub purpose: DialogPurpose,
+    #[isenum]
+    pub tone: DialogTone,
     pub trigger_distance: f32,
     pub trigger_offset: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct DialogChoice {
     #[delegate]
     pub base: Base,
@@ -1339,14 +1342,14 @@ pub struct DialogChoice {
     pub user_dialog: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct DistortionSoundEffect {
     #[delegate]
     pub sound_effect: SoundEffect,
     pub level: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct DoubleConstrainedValue {
     #[delegate]
     pub base: Base,
@@ -1356,14 +1359,14 @@ pub struct DoubleConstrainedValue {
     pub value: f64,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct DynamicRotate {
     #[delegate]
     pub joint_instance: JointInstance,
     pub base_angle: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct EchoSoundEffect {
     #[delegate]
     pub sound_effect: SoundEffect,
@@ -1373,7 +1376,7 @@ pub struct EchoSoundEffect {
     pub wet_level: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct EqualizerSoundEffect {
     #[delegate]
     pub sound_effect: SoundEffect,
@@ -1382,7 +1385,7 @@ pub struct EqualizerSoundEffect {
     pub high_gain: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Explosion {
     #[delegate]
     pub base: Base,
@@ -1390,34 +1393,35 @@ pub struct Explosion {
     pub blast_pressure: f32,
     pub blast_radius: f32,
     pub destroy_joint_radius_percent: f32,
-    #[propty = "Enum"]
-    pub explosion_type: i32,
+    #[isenum]
+    pub explosion_type: ExplosionType,
     pub position: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct FaceInstance {
     #[delegate]
     pub base: Base,
-    #[propty = "Enum"]
-    pub face: i32,
+    #[isenum]
+    pub face: NormalId,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Feature {
     #[delegate]
     pub base: Base,
-    #[propty = "Enum"]
-    pub face_id: i32,
-    #[propty = "Enum"]
-    pub in_out: i32,
-    #[propty = "Enum"]
-    pub left_right: i32,
-    #[propty = "Enum"]
-    pub top_bottom: i32,
+    #[propname = "FaceId"]
+    #[isenum]
+    pub face: NormalId,
+    #[isenum]
+    pub in_out: InOut,
+    #[isenum]
+    pub left_right: LeftRight,
+    #[isenum]
+    pub top_bottom: TopBottom,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct FileMesh {
     #[delegate]
     pub data_model_mesh: DataModelMesh,
@@ -1425,7 +1429,7 @@ pub struct FileMesh {
     pub texture_id: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Fire {
     #[delegate]
     pub base: Base,
@@ -1438,21 +1442,21 @@ pub struct Fire {
     pub size: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Flag {
     #[delegate]
     pub tool: Tool,
     pub team_color: BrickColor,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct FlagStand {
     #[delegate]
     pub part: Part,
     pub team_color: BrickColor,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct FlangeSoundEffect {
     #[delegate]
     pub sound_effect: SoundEffect,
@@ -1461,7 +1465,7 @@ pub struct FlangeSoundEffect {
     pub rate: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct FloorWire {
     #[delegate]
     pub gui_base: GuiBase3D,
@@ -1471,32 +1475,32 @@ pub struct FloorWire {
     pub texture_size: Vector2,
     pub velocity: f32,
     pub wire_radius: f32,
-    pub from: Weak<RefCell<Instance>>,
-    pub to: Weak<RefCell<Instance>>,
+    pub from: InstanceRef,
+    pub to: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Folder {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ForceField {
     #[delegate]
     pub base: Base,
     pub visible: bool,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Frame {
     #[delegate]
     pub gui_object: GuiObject,
-    #[propty = "Enum"]
-    pub style: i32,
+    #[isenum]
+    pub style: FrameStyle,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct FunctionalTest {
     #[delegate]
     pub base: Base,
@@ -1504,7 +1508,7 @@ pub struct FunctionalTest {
     pub description: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Glue {
     #[delegate]
     pub joint_instance: JointInstance,
@@ -1514,15 +1518,15 @@ pub struct Glue {
     pub f3: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct GuiBase2D {
     #[delegate]
     pub base: Base,
     pub auto_localize: bool,
-    pub root_localization_table: Weak<RefCell<Instance>>,
+    pub root_localization_table: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct GuiBase3D {
     #[delegate]
     pub base: Base,
@@ -1531,22 +1535,24 @@ pub struct GuiBase3D {
     pub transparency: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct GuiButton {
     #[delegate]
     pub gui_object: GuiObject,
     pub auto_button_color: bool,
     pub modal: bool,
     pub selected: bool,
+    #[isenum]
+    pub style: ButtonStyle,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct GuiMain {
     #[delegate]
     pub screen_gui: ScreenGui,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct GuiObject {
     #[delegate]
     pub gui_base: GuiBase2D,
@@ -1556,10 +1562,8 @@ pub struct GuiObject {
     pub selectable: bool,
     pub visible: bool,
 
-    // #[propty = "Enum"]
-    // pub style: i32,
-    #[propty = "Enum"]
-    pub border_mode: i32,
+    #[isenum]
+    pub border_mode: BorderMode,
     pub border_size_pixel: i32,
     pub border_color3: Color3,
     pub background_transparency: f32,
@@ -1567,50 +1571,50 @@ pub struct GuiObject {
 
     pub anchor_point: Vector2,
     pub position: UDim2,
-    #[propty = "Enum"]
-    pub automatic_size: i32,
-    #[propty = "Enum"]
-    pub size_constraint: i32,
+    #[isenum]
+    pub automatic_size: AutomaticSize,
+    #[isenum]
+    pub size_constraint: SizeConstraint,
     pub size: UDim2,
     pub layout_order: i32,
     pub z_index: i32,
     pub rotation: f32,
 
-    pub selection_image_object: Weak<RefCell<Instance>>,
-    pub next_selection_left: Weak<RefCell<Instance>>,
-    pub next_selection_right: Weak<RefCell<Instance>>,
-    pub next_selection_up: Weak<RefCell<Instance>>,
-    pub next_selection_down: Weak<RefCell<Instance>>,
+    pub selection_image_object: InstanceRef,
+    pub next_selection_left: InstanceRef,
+    pub next_selection_right: InstanceRef,
+    pub next_selection_up: InstanceRef,
+    pub next_selection_down: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct HandleAdornment {
     #[delegate]
     pub pv_adornment: PVAdornment,
     pub always_on_top: bool,
-    #[propty = "Enum"]
-    pub adorn_culling_mode: i32,
+    #[isenum]
+    pub adorn_culling_mode: AdornCullingMode,
     pub z_index: i32,
     pub size_relative_offset: Vector3,
     pub c_frame: CFrame,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Handles {
     #[delegate]
     pub part_adornment: PartAdornment,
     pub faces: Face,
-    #[propty = "Enum"]
-    pub style: i32,
+    #[isenum]
+    pub style: HandlesStyle,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Hat {
     #[delegate]
     pub accoutrement: Accoutrement,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct HingeConstraint {
     #[delegate]
     pub constraint: Constraint,
@@ -1625,32 +1629,32 @@ pub struct HingeConstraint {
     pub radius: f32,
     pub restitution: f32,
     pub servo_max_torque: f32,
-    #[propty = "Enum"]
-    pub actuator_type: i32,
+    #[isenum]
+    pub actuator_type: ActuatorType,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Hint {
     #[delegate]
     pub message: Message,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Hole {
     #[delegate]
     pub feature: Feature,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct HopperBin {
     #[delegate]
     pub backpack_item: BackpackItem,
     pub active: bool,
-    #[propty = "Enum"]
-    pub bin_type: i32,
+    #[isenum]
+    pub bin_type: BinType,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Humanoid {
     #[delegate]
     pub base: Base,
@@ -1661,16 +1665,16 @@ pub struct Humanoid {
     pub requires_neck: bool,
     pub use_jump_power: bool,
 
-    #[propty = "Enum"]
-    pub rig_type: i32,
-    #[propty = "Enum"]
-    pub name_occlusion: i32,
-    #[propty = "Enum"]
-    pub health_display_type: i32,
-    #[propty = "Enum"]
-    pub collision_type: i32,
-    #[propty = "Enum"]
-    pub display_distance_type: i32,
+    #[isenum]
+    pub rig_type: HumanoidRigType,
+    #[isenum]
+    pub name_occlusion: NameOcclusion,
+    #[isenum]
+    pub health_display_type: HumanoidHealthDisplayType,
+    #[isenum]
+    pub collision_type: HumanoidCollisionType,
+    #[isenum]
+    pub display_distance_type: HumanoidDisplayDistanceType,
 
     pub name_display_distance: f32,
     pub health_display_distance: f32,
@@ -1688,13 +1692,13 @@ pub struct Humanoid {
     pub display_name: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct HumanoidController {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct HumanoidDescription {
     #[delegate]
     pub base: Base,
@@ -1743,7 +1747,7 @@ pub struct HumanoidDescription {
     pub torso_color: Color3,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ImageButton {
     #[delegate]
     pub gui_button: GuiButton,
@@ -1754,16 +1758,14 @@ pub struct ImageButton {
     pub image_rect_offset: Vector2,
     pub image_rect_size: Vector2,
     pub image_transparency: f32,
-    #[propty = "Enum"]
-    pub scale_type: i32,
+    #[isenum]
+    pub scale_type: ScaleType,
     pub slice_center: Rect,
     pub slice_scale: f32,
     pub tile_size: UDim2,
-    #[propty = "Enum"]
-    pub style: i32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ImageHandleAdornment {
     #[delegate]
     pub handle_adornment: HandleAdornment,
@@ -1771,7 +1773,7 @@ pub struct ImageHandleAdornment {
     pub size: Vector2,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ImageLabel {
     #[delegate]
     pub gui_object: GuiObject,
@@ -1780,21 +1782,21 @@ pub struct ImageLabel {
     pub image_rect_offset: Vector2,
     pub image_rect_size: Vector2,
     pub image_transparency: f32,
-    #[propty = "Enum"]
-    pub scale_type: i32,
+    #[isenum]
+    pub scale_type: ScaleType,
     pub slice_center: Rect,
     pub slice_scale: f32,
     pub tile_size: UDim2,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct InstanceAdornment {
     #[delegate]
     pub gui_base: GuiBase3D,
-    pub adornee: Weak<RefCell<Instance>>,
+    pub adornee: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct IntConstrainedValue {
     #[delegate]
     pub base: Base,
@@ -1804,14 +1806,14 @@ pub struct IntConstrainedValue {
     pub value: i64,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct IntValue {
     #[delegate]
     pub base: Base,
     pub value: i64,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct JointInstance {
     #[delegate]
     pub base: Base,
@@ -1819,46 +1821,46 @@ pub struct JointInstance {
     pub enabled: bool,
     pub c0: CFrame,
     pub c1: CFrame,
-    pub part_0: Weak<RefCell<Instance>>,
-    pub part_1: Weak<RefCell<Instance>>,
+    pub part_0: InstanceRef,
+    pub part_1: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Keyframe {
     #[delegate]
     pub base: Base,
     pub time: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct KeyframeMarker {
     #[delegate]
     pub base: Base,
     pub value: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct KeyframeSequence {
     #[delegate]
     pub base: Base,
     #[propname = "Loop"]
     pub loop_seq: bool,
-    #[propty = "Enum"]
-    pub priority: i32,
+    #[isenum]
+    pub priority: AnimationPriority,
     pub authored_hip_height: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct LayerCollector {
     #[delegate]
     pub gui_base: GuiBase2D,
     pub enabled: bool,
     pub reset_on_spawn: bool,
-    #[propty = "Enum"]
-    pub z_index_behavior: i32,
+    #[isenum]
+    pub z_index_behavior: ZIndexBehavior,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Light {
     #[delegate]
     pub base: Base,
@@ -1868,7 +1870,7 @@ pub struct Light {
     pub color: Color3,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct LineForce {
     #[delegate]
     pub constraint: Constraint,
@@ -1879,7 +1881,7 @@ pub struct LineForce {
     pub max_force: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct LineHandleAdornment {
     #[delegate]
     pub handle_adornment: HandleAdornment,
@@ -1887,7 +1889,7 @@ pub struct LineHandleAdornment {
     pub thickness: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct LocalizationTable {
     #[delegate]
     pub base: Base,
@@ -1895,20 +1897,20 @@ pub struct LocalizationTable {
     pub source_locale_id: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct LocalScript {
     #[delegate]
     pub script: Script,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct LuaSourceContainer {
     #[delegate]
     pub base: Base,
     pub script_guid: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ManualGlue {
     #[delegate]
     pub joint_instance: JointInstance,
@@ -1916,7 +1918,7 @@ pub struct ManualGlue {
     pub surface_1: i32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ManualWeld {
     #[delegate]
     pub joint_instance: JointInstance,
@@ -1924,7 +1926,7 @@ pub struct ManualWeld {
     pub surface_1: i32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct MeshPart {
     #[delegate]
     pub triangle_mesh_part: TriangleMeshPart,
@@ -1936,33 +1938,33 @@ pub struct MeshPart {
     // Deprecated mesh ID
     #[propname = "MeshID"]
     pub mesh_id2: String,
-    #[propty = "Enum"]
-    pub render_fidelity: i32,
+    #[isenum]
+    pub render_fidelity: RenderFidelity,
     #[propname = "TextureID"]
     pub texture_id: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Message {
     #[delegate]
     pub base: Base,
     pub text: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Model {
     #[delegate]
     pub base: Base,
-    #[propty = "Enum"]
-    pub level_of_detail: i32,
+    #[isenum]
+    pub level_of_detail: ModelLevelOfDetail,
     pub model_in_primary: CFrame,
     pub model_mesh_data: Vec<u8>,
     pub model_mesh_size: Vector3,
     pub model_mesh_c_frame: CFrame,
-    pub primary_part: Weak<RefCell<Instance>>,
+    pub primary_part: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ModuleScript {
     #[delegate]
     pub lua_source_container: LuaSourceContainer,
@@ -1970,7 +1972,7 @@ pub struct ModuleScript {
     pub source: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Motor {
     #[delegate]
     pub joint_instance: JointInstance,
@@ -1978,81 +1980,81 @@ pub struct Motor {
     pub max_velocity: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Motor6D {
     #[delegate]
     pub motor: Motor,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct MotorFeature {
     #[delegate]
     pub feature: Feature,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct NegateOperation {
     #[delegate]
     pub part_operation: PartOperation,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct NoCollisionConstraint {
     #[delegate]
     pub base: Base,
     pub enabled: bool,
-    pub part_0: Weak<RefCell<Instance>>,
-    pub part_1: Weak<RefCell<Instance>>,
+    pub part_0: InstanceRef,
+    pub part_1: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct NumberPose {
     #[delegate]
     pub pose_base: PoseBase,
     pub value: f64,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct NumberValue {
     #[delegate]
     pub base: Base,
     pub value: f64,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ObjectValue {
     #[delegate]
     pub base: Base,
-    pub value: Weak<RefCell<Instance>>,
+    pub value: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Pants {
     #[delegate]
     pub clothing: Clothing,
     pub pants_template: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Part {
     #[delegate]
     pub base_part: BasePart,
     #[propname = "formFactorRaw"]
-    #[propty = "Enum"]
-    pub form_factor_raw: i32,
+    #[isenum]
+    pub form_factor: FormFactor,
     #[propname = "shape"]
-    #[propty = "Enum"]
-    pub shape: i32,
+    #[isenum]
+    pub shape: PartType,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct PartAdornment {
     #[delegate]
     pub gui_base: GuiBase3D,
-    pub adornee: Weak<RefCell<Instance>>,
+    pub adornee: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ParticleEmitter {
     #[delegate]
     pub base: Base,
@@ -2061,13 +2063,13 @@ pub struct ParticleEmitter {
     pub acceleration: Vector3,
     pub color: ColorSequence,
     pub drag: f32,
-    #[propty = "Enum"]
-    pub emission_direction: i32,
+    #[isenum]
+    pub emission_direction: NormalId,
     pub lifetime: NumberRange,
     pub light_emission: f32,
     pub light_influence: f32,
-    #[propty = "Enum"]
-    pub orientation: i32,
+    #[isenum]
+    pub orientation: ParticleOrientation,
     pub rate: f32,
     pub rot_speed: NumberRange,
     pub rotation: NumberRange,
@@ -2081,17 +2083,17 @@ pub struct ParticleEmitter {
     pub z_offset: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct PartOperation {
     #[delegate]
     pub triangle_mesh_part: TriangleMeshPart,
     pub use_part_color: bool,
     pub smoothing_angle: f32,
-    #[propty = "Enum"]
-    pub render_fidelity: i32,
+    #[isenum]
+    pub render_fidelity: RenderFidelity,
 
-    #[propty = "Enum"]
-    pub form_factor: i32,
+    #[isenum]
+    pub form_factor: FormFactor,
     pub asset_id: String,
     pub mesh_data: String,
     pub child_data: String,
@@ -2099,7 +2101,7 @@ pub struct PartOperation {
     pub child_data_2: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct PartOperationAsset {
     #[delegate]
     pub base: Base,
@@ -2107,52 +2109,52 @@ pub struct PartOperationAsset {
     pub child_data: Vec<u8>,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct PitchShiftSoundEffect {
     #[delegate]
     pub sound_effect: SoundEffect,
     pub octave: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct PointLight {
     #[delegate]
     pub light: Light,
     pub range: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Pose {
     #[delegate]
     pub pose_base: PoseBase,
     pub c_frame: CFrame,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct PoseBase {
     #[delegate]
     pub base: Base,
-    #[propty = "Enum"]
-    pub easing_direction: i32,
-    #[propty = "Enum"]
-    pub easing_style: i32,
+    #[isenum]
+    pub easing_direction: PoseEasingDirection,
+    #[isenum]
+    pub easing_style: PoseEasingStyle,
     pub weight: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct PostEffect {
     #[delegate]
     pub base: Base,
     pub enabled: bool,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct PrismaticConstraint {
     #[delegate]
     pub sliding_ball_constraint: SlidingBallConstraint,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ProximityPrompt {
     #[delegate]
     pub base: Base,
@@ -2161,49 +2163,49 @@ pub struct ProximityPrompt {
     pub clickable_prompt: bool,
     pub requires_line_of_sight: bool,
     pub action_text: String,
-    #[propty = "Enum"]
-    pub exclusivity: i32,
-    #[propty = "Enum"]
-    pub gamepad_key_code: i32,
+    #[isenum]
+    pub exclusivity: ProximityPromptExclusivity,
+    #[isenum]
+    pub gamepad_key_code: KeyCode,
     pub hold_duration: f32,
-    #[propty = "Enum"]
-    pub keyboard_key_code: i32,
+    #[isenum]
+    pub keyboard_key_code: KeyCode,
     pub max_activation_distance: f32,
     pub object_text: String,
-    pub root_localization_table: Weak<RefCell<Instance>>,
-    #[propty = "Enum"]
-    pub style: i32,
+    pub root_localization_table: InstanceRef,
+    #[isenum]
+    pub style: ProximityPromptStyle,
     #[propname = "UIOffset"]
     pub ui_offset: Vector2,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct PVAdornment {
     #[delegate]
     pub gui_base: GuiBase3D,
-    pub adornee: Weak<RefCell<Instance>>,
+    pub adornee: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct RayValue {
     #[delegate]
     pub base: Base,
     pub value: Ray,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ReflectionMetadata {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ReflectionMetadataCallbacks {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ReflectionMetadataClass {
     #[delegate]
     pub reflection_meta_item: ReflectionMetadataItem,
@@ -2213,43 +2215,43 @@ pub struct ReflectionMetadataClass {
     pub preferred_parent: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ReflectionMetadataClasses {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ReflectionMetadataEnum {
     #[delegate]
     pub reflection_meta_item: ReflectionMetadataItem,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ReflectionMetadataEnumItem {
     #[delegate]
     pub reflection_meta_item: ReflectionMetadataItem,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ReflectionMetadataEnums {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ReflectionMetadataEvents {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ReflectionMetadataFunctions {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ReflectionMetadataItem {
     #[delegate]
     pub base: Base,
@@ -2274,45 +2276,45 @@ pub struct ReflectionMetadataItem {
 
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ReflectionMetadataMember {
     #[delegate]
     pub reflection_meta_item: ReflectionMetadataItem,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ReflectionMetadataProperties {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ReflectionMetadataYieldFunctions {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct RemoteEvent {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct RemoteFunction {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct RenderingTest {
     #[delegate]
     pub base: Base,
     pub should_skip: bool,
     pub c_frame: CFrame,
     pub comparison_diff_threshold: i32,
-    #[propty = "Enum"]
-    pub comparison_method: i32,
+    #[isenum]
+    pub comparison_method: RenderingTestComparisonMethod,
     pub comparison_psnr_threshold: f32,
     pub description: String,
     pub field_of_view: f32,
@@ -2320,7 +2322,7 @@ pub struct RenderingTest {
     pub ticket: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ReverbSoundEffect {
     #[delegate]
     pub sound_effect: SoundEffect,
@@ -2331,7 +2333,7 @@ pub struct ReverbSoundEffect {
     pub wet_level: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct RocketPropulsion {
     #[delegate]
     pub base: Base,
@@ -2339,7 +2341,7 @@ pub struct RocketPropulsion {
     pub max_speed: f32,
     pub max_thrust: f32,
     pub max_torque: Vector3,
-    pub target: Weak<RefCell<Instance>>,
+    pub target: InstanceRef,
     pub target_offset: Vector3,
     pub target_radius: f32,
     pub thrust_d: f32,
@@ -2348,7 +2350,7 @@ pub struct RocketPropulsion {
     pub turn_p: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct RodConstraint {
     #[delegate]
     pub constraint: Constraint,
@@ -2359,7 +2361,7 @@ pub struct RodConstraint {
     pub thickness: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct RopeConstraint {
     #[delegate]
     pub constraint: Constraint,
@@ -2368,25 +2370,25 @@ pub struct RopeConstraint {
     pub thickness: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Rotate {
     #[delegate]
     pub joint_instance: JointInstance,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct RotateP {
     #[delegate]
     pub dynamic_rotate: DynamicRotate,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct RotateV {
     #[delegate]
     pub dynamic_rotate: DynamicRotate,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ScreenGui {
     #[delegate]
     pub layer_collector: LayerCollector,
@@ -2394,48 +2396,48 @@ pub struct ScreenGui {
     pub display_order: i32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Script {
     #[delegate]
     pub base_script: BaseScript,
     pub source: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ScrollingFrame {
     #[delegate]
     pub gui_object: GuiObject,
     pub scrolling_enabled: bool,
-    #[propty = "Enum"]
-    pub automatic_canvas_size: i32,
+    #[isenum]
+    pub automatic_canvas_size: AutomaticSize,
     pub bottom_image: String,
     pub canvas_position: Vector2,
     pub canvas_size: UDim2,
-    #[propty = "Enum"]
-    pub elastic_behavior: i32,
-    #[propty = "Enum"]
-    pub horizontal_scroll_bar_inset: i32,
+    #[isenum]
+    pub elastic_behavior: ElasticBehavior,
+    #[isenum]
+    pub horizontal_scroll_bar_inset: ScrollBarInset,
     pub mid_image: String,
     pub scroll_bar_image_color3: Color3,
     pub scroll_bar_image_transparency: f32,
     pub scroll_bar_thickness: i32,
-    #[propty = "Enum"]
-    pub scrolling_direction: i32,
+    #[isenum]
+    pub scrolling_direction: ScrollingDirection,
     pub top_image: String,
-    #[propty = "Enum"]
-    pub vertical_scroll_bar_inset: i32,
-    #[propty = "Enum"]
-    pub vertical_scroll_bar_position: i32,
+    #[isenum]
+    pub vertical_scroll_bar_inset: ScrollBarInset,
+    #[isenum]
+    pub vertical_scroll_bar_position: VerticalScrollBarPosition,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Seat {
     #[delegate]
     pub part: Part,
     pub disabled: bool,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct SelectionBox {
     #[delegate]
     pub instance_adornment: InstanceAdornment,
@@ -2444,28 +2446,28 @@ pub struct SelectionBox {
     pub surface_transparency: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct SelectionLasso {
     #[delegate]
     pub gui_base: GuiBase3D,
-    pub humanoid: Weak<RefCell<Instance>>,
+    pub humanoid: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct SelectionPartLasso {
     #[delegate]
     pub selection_lasso: SelectionLasso,
-    pub part: Weak<RefCell<Instance>>,
+    pub part: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct SelectionPointLasso {
     #[delegate]
     pub selection_lasso: SelectionLasso,
     pub point: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct SelectionSphere {
     #[delegate]
     pub pv_adornment: PVAdornment,
@@ -2473,14 +2475,14 @@ pub struct SelectionSphere {
     pub surface_transparency: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Shirt {
     #[delegate]
     pub clothing: Clothing,
     pub shirt_template: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ShirtGraphic {
     #[delegate]
     pub base: Base,
@@ -2488,13 +2490,13 @@ pub struct ShirtGraphic {
     pub graphic: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct SkateboardController {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct SkateboardPlatform {
     #[delegate]
     pub part: Part,
@@ -2503,14 +2505,14 @@ pub struct SkateboardPlatform {
     pub throttle: i32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Skin {
     #[delegate]
     pub base: Base,
     pub skin_color: BrickColor,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Sky {
     #[delegate]
     pub base: Base,
@@ -2528,13 +2530,13 @@ pub struct Sky {
     pub skybox_up: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct SlidingBallConstraint {
     #[delegate]
     pub constraint: Constraint,
     pub limits_enabled: bool,
-    #[propty = "Enum"]
-    pub actuator_type: i32,
+    #[isenum]
+    pub actuator_type: ActuatorType,
     pub lower_limit: f32,
     pub motor_max_acceleration: f32,
     pub motor_max_force: f32,
@@ -2547,7 +2549,7 @@ pub struct SlidingBallConstraint {
     pub velocity: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Smoke {
     #[delegate]
     pub base: Base,
@@ -2561,13 +2563,13 @@ pub struct Smoke {
     pub size: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Snap {
     #[delegate]
     pub joint_instance: JointInstance,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Sound {
     #[delegate]
     pub base: Base,
@@ -2575,9 +2577,9 @@ pub struct Sound {
     pub playing: bool,
     pub play_on_remove: bool,
     pub playback_speed: f32,
-    #[propty = "Enum"]
-    pub roll_off_mode: i32,
-    pub sound_group: Weak<RefCell<Instance>>,
+    #[isenum]
+    pub roll_off_mode: RollOffMode,
+    pub sound_group: InstanceRef,
     #[propname = "xmlRead_MaxDistance_3"]
     pub max_distance: f32,
     pub time_position: f64,
@@ -2586,7 +2588,7 @@ pub struct Sound {
     pub emitter_size: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct SoundEffect {
     #[delegate]
     pub base: Base,
@@ -2594,14 +2596,14 @@ pub struct SoundEffect {
     pub priority: i32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct SoundGroup {
     #[delegate]
     pub base: Base,
     pub volume: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Sparkles {
     #[delegate]
     pub base: Base,
@@ -2609,7 +2611,7 @@ pub struct Sparkles {
     pub sparkle_color: Color3,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct SpawnLocation {
     #[delegate]
     pub part: Part,
@@ -2620,32 +2622,32 @@ pub struct SpawnLocation {
     pub team_color: BrickColor,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct SpecialMesh {
     #[delegate]
     pub file_mesh: FileMesh,
-    #[propty = "Enum"]
-    pub mesh_type: i32,
+    #[isenum]
+    pub mesh_type: MeshType,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct SphereHandleAdornment {
     #[delegate]
     pub handle_adornment: HandleAdornment,
     pub radius: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct SpotLight {
     #[delegate]
     pub light: Light,
     pub angle: f32,
-    #[propty = "Enum"]
-    pub face: i32,
+    #[isenum]
+    pub face: NormalId,
     pub range: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct SpringConstraint {
     #[delegate]
     pub constraint: Constraint,
@@ -2661,26 +2663,26 @@ pub struct SpringConstraint {
     pub thickness: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct StandalonePluginScripts {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct StarterGear {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct StringValue {
     #[delegate]
     pub base: Base,
     pub value: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct SunRaysEffect {
     #[delegate]
     pub post_effect: PostEffect,
@@ -2688,12 +2690,12 @@ pub struct SunRaysEffect {
     pub spread: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct SurfaceAppearance {
     #[delegate]
     pub base: Base,
-    #[propty = "Enum"]
-    pub alpha_mode: i32,
+    #[isenum]
+    pub alpha_mode: AlphaMode,
     pub color_map: String,
     pub metalness_map: String,
     pub normal_map: String,
@@ -2701,44 +2703,44 @@ pub struct SurfaceAppearance {
     pub texture_pack: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct SurfaceGui {
     #[delegate]
     pub layer_collector: LayerCollector,
     pub active: bool,
     pub always_on_top: bool,
     pub clips_descendants: bool,
-    pub adornee: Weak<RefCell<Instance>>,
+    pub adornee: InstanceRef,
     pub canvas_size: Vector2,
-    #[propty = "Enum"]
-    pub face: i32,
+    #[isenum]
+    pub face: NormalId,
     pub light_influence: f32,
     pub pixels_per_stud: f32,
-    #[propty = "Enum"]
-    pub sizing_mode: i32,
+    #[isenum]
+    pub sizing_mode: SurfaceGuiSizingMode,
     pub tool_punch_through_distance: f32,
     pub z_offset: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct SurfaceLight {
     #[delegate]
     pub light: Light,
     pub angle: f32,
-    #[propty = "Enum"]
-    pub face: i32,
+    #[isenum]
+    pub face: NormalId,
     pub range: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct SurfaceSelection {
     #[delegate]
     pub part_adornment: PartAdornment,
-    #[propty = "Enum"]
-    pub target_surface: i32,
+    #[isenum]
+    pub target_surface: NormalId,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Team {
     #[delegate]
     pub base: Base,
@@ -2746,7 +2748,7 @@ pub struct Team {
     pub team_color: BrickColor,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct TeleportOptions {
     #[delegate]
     pub base: Base,
@@ -2755,13 +2757,13 @@ pub struct TeleportOptions {
     pub server_instance_id: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Terrain {
     #[delegate]
     pub base_part: BasePart,
     pub decoration: bool,
-    #[propty = "Enum"]
-    pub acquisition_method: i32,
+    #[isenum]
+    pub acquisition_method: TerrainAcquisitionMethod,
     pub water_wave_size: f32,
     pub water_wave_speed: f32,
     pub water_color: Color3,
@@ -2773,7 +2775,7 @@ pub struct Terrain {
     pub material_colors: Vec<u8>,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct TerrainRegion {
     #[delegate]
     pub base: Base,
@@ -2782,7 +2784,7 @@ pub struct TerrainRegion {
     pub extents_min: Vector3Int16,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct TextBox {
     #[delegate]
     pub gui_object: GuiObject,
@@ -2793,8 +2795,8 @@ pub struct TextBox {
     pub text_scaled: bool,
     pub text_wrapped: bool,
     pub multi_line: bool,
-    #[propty = "Enum"]
-    pub font: i32,
+    #[isenum]
+    pub font: Font,
     pub line_height: f32,
     pub max_visible_graphemes: i32,
     pub placeholder_color3: Color3,
@@ -2805,23 +2807,23 @@ pub struct TextBox {
     pub text_stroke_color3: Color3,
     pub text_stroke_transparency: f32,
     pub text_transparency: f32,
-    #[propty = "Enum"]
-    pub text_truncate: i32,
-    #[propty = "Enum"]
-    pub text_x_alignment: i32,
-    #[propty = "Enum"]
-    pub text_y_alignment: i32,
+    #[isenum]
+    pub text_truncate: TextTruncate,
+    #[isenum]
+    pub text_x_alignment: TextXAlignment,
+    #[isenum]
+    pub text_y_alignment: TextYAlignment,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct TextButton {
     #[delegate]
     pub gui_button: GuiButton,
     pub rich_text: bool,
     pub text_scaled: bool,
     pub text_wrapped: bool,
-    #[propty = "Enum"]
-    pub font: i32,
+    #[isenum]
+    pub font: Font,
     pub line_height: f32,
     pub max_visible_graphemes: i32,
     pub text: String,
@@ -2830,25 +2832,23 @@ pub struct TextButton {
     pub text_stroke_color3: Color3,
     pub text_stroke_transparency: f32,
     pub text_transparency: f32,
-    #[propty = "Enum"]
-    pub text_truncate: i32,
-    #[propty = "Enum"]
-    pub text_x_alignment: i32,
-    #[propty = "Enum"]
-    pub text_y_alignment: i32,
-    #[propty = "Enum"]
-    pub style: i32,
+    #[isenum]
+    pub text_truncate: TextTruncate,
+    #[isenum]
+    pub text_x_alignment: TextXAlignment,
+    #[isenum]
+    pub text_y_alignment: TextYAlignment,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct TextLabel {
     #[delegate]
     pub gui_object: GuiObject,
     pub rich_text: bool,
     pub text_scaled: bool,
     pub text_wrapped: bool,
-    #[propty = "Enum"]
-    pub font: i32,
+    #[isenum]
+    pub font: Font,
     pub line_height: f32,
     pub max_visible_graphemes: i32,
     pub text: String,
@@ -2857,15 +2857,15 @@ pub struct TextLabel {
     pub text_stroke_color3: Color3,
     pub text_stroke_transparency: f32,
     pub text_transparency: f32,
-    #[propty = "Enum"]
-    pub text_truncate: i32,
-    #[propty = "Enum"]
-    pub text_x_alignment: i32,
-    #[propty = "Enum"]
-    pub text_y_alignment: i32,
+    #[isenum]
+    pub text_truncate: TextTruncate,
+    #[isenum]
+    pub text_x_alignment: TextXAlignment,
+    #[isenum]
+    pub text_y_alignment: TextYAlignment,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Texture {
     #[delegate]
     pub decal: Decal,
@@ -2875,7 +2875,7 @@ pub struct Texture {
     pub studs_per_tile_v: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Tool {
     #[delegate]
     pub backpack_item: BackpackItem,
@@ -2887,23 +2887,23 @@ pub struct Tool {
     pub tool_tip: String,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Torque {
     #[delegate]
     pub constraint: Constraint,
-    #[propty = "Enum"]
-    pub relative_to: i32,
+    #[isenum]
+    pub relative_to: ActuatorRelativeTo,
     pub torque: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Trail {
     #[delegate]
     pub base: Base,
     pub enabled: bool,
     pub face_camera: bool,
-    pub attachment_0: Weak<RefCell<Instance>>,
-    pub attachment_1: Weak<RefCell<Instance>>,
+    pub attachment_0: InstanceRef,
+    pub attachment_1: InstanceRef,
     pub color: ColorSequence,
     pub lifetime: f32,
     pub light_emission: f32,
@@ -2912,13 +2912,13 @@ pub struct Trail {
     pub min_length: f32,
     pub texture: String,
     pub texture_length: f32,
-    #[propty = "Enum"]
-    pub texture_mode: i32,
+    #[isenum]
+    pub texture_mode: TextureMode,
     pub transparency: NumberSequence,
     pub width_scale: NumberSequence,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct TremoloSoundEffect {
     #[delegate]
     pub sound_effect: SoundEffect,
@@ -2927,7 +2927,7 @@ pub struct TremoloSoundEffect {
     pub frequency: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct TriangleMeshPart {
     #[delegate]
     pub base_part: BasePart,
@@ -2938,48 +2938,40 @@ pub struct TriangleMeshPart {
     pub initial_size: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct TrussPart {
     #[delegate]
     pub base_part: BasePart,
     #[propname = "style"]
-    #[propty = "Enum"]
-    pub style: i32,
+    #[isenum]
+    pub style: TrussStyle,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Tween {
     #[delegate]
     pub base: Base,
 }
 
-// #[derive(Debug, Clone, FromProperty)]
-// pub struct TweenBase {
-//     #[delegate]
-//     pub base: Base,
-//     #[propty = "Enum"]
-//     pub playback_state: i32,
-// }
-
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct UIAspectRatioConstraint {
     #[delegate]
     pub base: Base,
     pub aspect_ratio: f32,
-    #[propty = "Enum"]
-    pub aspect_type: i32,
-    #[propty = "Enum"]
-    pub dominant_axis: i32,
+    #[isenum]
+    pub aspect_type: AspectType,
+    #[isenum]
+    pub dominant_axis: DominantAxis,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct UICorner {
     #[delegate]
     pub base: Base,
     pub corner_radius: UDim,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct UIGradient {
     #[delegate]
     pub base: Base,
@@ -2990,39 +2982,39 @@ pub struct UIGradient {
     pub transparency: NumberSequence,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct UIGridLayout {
     #[delegate]
     pub ui_grid_style_layout: UIGridStyleLayout,
     pub cell_padding: UDim2,
     pub cell_size: UDim2,
     pub fill_direction_max_cells: i32,
-    #[propty = "Enum"]
-    pub start_corner: i32,
+    #[isenum]
+    pub start_corner: StartCorner,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct UIGridStyleLayout {
     #[delegate]
     pub base: Base,
-    #[propty = "Enum"]
-    pub fill_direction: i32,
-    #[propty = "Enum"]
-    pub horizontal_alignment: i32,
-    #[propty = "Enum"]
-    pub vertical_alignment: i32,
-    #[propty = "Enum"]
-    pub sort_order: i32,
+    #[isenum]
+    pub fill_direction: FillDirection,
+    #[isenum]
+    pub horizontal_alignment: HorizontalAlignment,
+    #[isenum]
+    pub vertical_alignment: VerticalAlignment,
+    #[isenum]
+    pub sort_order: SortOrder,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct UIListLayout {
     #[delegate]
     pub ui_grid_style_layout: UIGridStyleLayout,
     pub padding: UDim,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct UIPadding {
     #[delegate]
     pub base: Base,
@@ -3032,7 +3024,7 @@ pub struct UIPadding {
     pub padding_right: UDim,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct UIPageLayout {
     #[delegate]
     pub ui_grid_style_layout: UIGridStyleLayout,
@@ -3041,22 +3033,22 @@ pub struct UIPageLayout {
     pub gamepad_input_enabled: bool,
     pub scroll_wheel_input_enabled: bool,
     pub touch_input_enabled: bool,
-    #[propty = "Enum"]
-    pub easing_direction: i32,
-    #[propty = "Enum"]
-    pub easing_style: i32,
+    #[isenum]
+    pub easing_direction: EasingDirection,
+    #[isenum]
+    pub easing_style: EasingStyle,
     pub padding: UDim,
     pub tween_time: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct UIScale {
     #[delegate]
     pub base: Base,
     pub scale: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct UISizeConstraint {
     #[delegate]
     pub base: Base,
@@ -3064,32 +3056,32 @@ pub struct UISizeConstraint {
     pub min_size: Vector2,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct UIStroke {
     #[delegate]
     pub base: Base,
     pub enabled: bool,
-    #[propty = "Enum"]
-    pub apply_stroke_mode: i32,
+    #[isenum]
+    pub apply_stroke_mode: ApplyStrokeMode,
     pub color: Color3,
-    #[propty = "Enum"]
-    pub line_join_mode: i32,
+    #[isenum]
+    pub line_join_mode: LineJoinMode,
     pub thickness: f32,
     pub transparency: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct UITableLayout {
     #[delegate]
     pub ui_grid_style_layout: UIGridStyleLayout,
     pub fill_empty_space_columns: bool,
     pub fill_empty_space_rows: bool,
-    #[propty = "Enum"]
-    pub major_axis: i32,
+    #[isenum]
+    pub major_axis: TableMajorAxis,
     pub padding: UDim2,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct UITextSizeConstraint {
     #[delegate]
     pub base: Base,
@@ -3097,13 +3089,13 @@ pub struct UITextSizeConstraint {
     pub max_text_size: i32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct UnionOperation {
     #[delegate]
     pub part_operation: PartOperation,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct UniversalConstraint {
     #[delegate]
     pub constraint: Constraint,
@@ -3113,30 +3105,30 @@ pub struct UniversalConstraint {
     pub restitution: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Vector3Value {
     #[delegate]
     pub base: Base,
     pub value: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct VectorForce {
     #[delegate]
     pub constraint: Constraint,
     pub apply_at_center_of_mass: bool,
     pub force: Vector3,
-    #[propty = "Enum"]
-    pub relative_to: i32,
+    #[isenum]
+    pub relative_to: ActuatorRelativeTo,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct VehicleController {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct VehicleSeat {
     #[delegate]
     pub base_part: BasePart,
@@ -3151,17 +3143,17 @@ pub struct VehicleSeat {
     pub turn_speed: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct VelocityMotor {
     #[delegate]
     pub joint_instance: JointInstance,
     pub current_angle: f32,
     pub desired_angle: f32,
-    pub hole: Weak<RefCell<Instance>>,
+    pub hole: InstanceRef,
     pub max_velocity: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct VideoFrame {
     #[delegate]
     pub gui_object: GuiObject,
@@ -3172,7 +3164,7 @@ pub struct VideoFrame {
     pub volume: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct ViewportFrame {
     #[delegate]
     pub gui_object: GuiObject,
@@ -3185,35 +3177,35 @@ pub struct ViewportFrame {
     pub camera_field_of_view: f32,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct WedgePart {
     #[delegate]
     pub base_part: BasePart,
     #[propname = "formFactorRaw"]
-    #[propty = "Enum"]
-    pub form_factor_raw: i32,
+    #[isenum]
+    pub form_factor: FormFactor,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Weld {
     #[delegate]
     pub joint_instance: JointInstance,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct WeldConstraint {
     #[delegate]
     pub base: Base,
     #[propname = "Part0Internal"]
-    pub part_0: Weak<RefCell<Instance>>,
+    pub part_0: InstanceRef,
     #[propname = "Part1Internal"]
-    pub part_1: Weak<RefCell<Instance>>,
+    pub part_1: InstanceRef,
     pub state: i32,
     #[propname = "CFrame0"]
     pub c_frame: CFrame,
 }
 
-#[derive(Debug, Clone, FromProperty)]
+#[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct WorldModel {
     #[delegate]
     pub model: Model,

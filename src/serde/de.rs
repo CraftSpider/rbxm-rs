@@ -935,6 +935,6 @@ mod tests {
 
     #[test]
     fn test_instances() {
-        from_file("./examples/InstanceTest.rbxm").unwrap();
+        dbg!(from_file("./examples/InstanceTest.rbxm").unwrap());
     }
 }
