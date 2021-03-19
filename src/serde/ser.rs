@@ -537,6 +537,7 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
             if let Block::Property { properties, .. } = prop_block {
                 let raw = match prop_value {
                     // TODO: BinaryString/RawString sometimes should be converted to a shared string
+                    //       This will be handled in the ToProperty derive eventually, hopefully
                     Property::BinaryString(blob) => RawProperty::RawString(blob.clone()),
                     Property::TextString(str) => RawProperty::RawString(str.clone().into_bytes()),
                     Property::InstanceRef(val) => {

@@ -8,21 +8,23 @@ use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 use std::cell::RefCell;
 
+// TODO: Implement AsRef for all inheritance chains
+
 macro_rules! chomp_prop {
     // A binary string could be valid text, allow that
     ($map:ident, $name:literal, BinaryString) => {
         match $map.remove($name) {
             Some(Property::BinaryString(val)) => val,
             Some(Property::TextString(str)) => str.into_bytes(),
-            Some(prop) => panic!("Property was of wrong type: {:?}", prop),
-            None => panic!("Property with name {} wasn't found", $name),
+            Some(_) => return Err($crate::SerdeError::WrongPropertyType($name.to_string())),
+            None => return Err($crate::SerdeError::MissingProperty($name.to_string())),
         }
     };
     ($map:ident, $name:literal, $prop:ident) => {
         match $map.remove($name) {
             Some(Property::$prop(val)) => val,
-            Some(prop) => panic!("Property was of wrong type: {:?}", prop),
-            None => panic!("Property with name {} wasn't found", $name),
+            Some(_) => return Err($crate::SerdeError::WrongPropertyType($name.to_string())),
+            None => return Err($crate::SerdeError::MissingProperty($name.to_string())),
         };
     };
 }
@@ -695,7 +697,7 @@ impl InstanceKind {
                 if let Property::TextString(name) = props.get("Name").unwrap() {
                     name
                 } else {
-                    panic!()
+                    panic!("Instance didn't have a Name")
                 }
             }
         }

@@ -15,6 +15,10 @@ pub enum Error {
     UnknownProperty(u8),
     UnknownVariant(i32),
 
+    WrongPropertyType(String),
+    MissingProperty(String),
+    UnconsumedProperties(String, Vec<String>),
+
     IoError(IoError),
     InvalidString,
     InvalidLz4,
@@ -30,6 +34,11 @@ impl fmt::Display for Error {
             Error::UnknownCFrame(id) => format!("Unknown CFrame type `{}`", id),
             Error::UnknownProperty(id) => format!("Unknown property type `{}`", id),
             Error::UnknownVariant(id) => format!("Unknown enum variant with ID `{}`", id),
+
+            Error::WrongPropertyType(prop_name) => format!("Property {} was the wrong type", prop_name),
+            Error::MissingProperty(prop_name) => format!("Property {} was missing", prop_name),
+            Error::UnconsumedProperties(class_name, prop_names) => format!("Instance type {} had unexpected properties with names {:?}", class_name, prop_names),
+
             Error::IoError(err) => format!("Error in IO: {}", err),
             Error::InvalidString => "String contained invalid UTF data".to_string(),
             Error::InvalidLz4 => "LZ4 block couldn't be deserialized".to_string(),

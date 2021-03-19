@@ -1,6 +1,6 @@
 use crate::model::*;
 use crate::model::instance::*;
-use crate::serde::Result;
+use crate::serde::{Error, Result};
 use std::collections::HashMap;
 
 #[derive(Debug)]
@@ -344,10 +344,13 @@ pub fn make_kind(kind: &str, mut properties: HashMap<String, Property>) -> Resul
     };
 
     if !properties.is_empty() {
-        println!("Properties not fully consumed: {:?}, Class: {:?}", properties, out.class_name())
+        return Err(Error::UnconsumedProperties(
+            out.class_name(),
+            properties.into_iter().map(|(keys, _)| keys).collect()
+        ));
+    } else {
+        Ok(out)
     }
-
-    Ok(out)
 }
 
 pub fn break_kind(kind: &InstanceKind) -> HashMap<String, Property> {

@@ -145,7 +145,6 @@ fn chomp_interleaved_f32<R: Read>(reader: &mut R, len: usize) -> Result<Vec<f32>
     for i in 0..len {
         let mut bytes = [0; 4];
         for j in 0..4 {
-            // println!("[{}]", i + j * len);
             bytes[j] = data[i + j * len];
         }
         out[i] = decode_f32(u32::from_be_bytes(bytes));
@@ -627,8 +626,6 @@ impl<'de, R: Read> Deserializer<R> {
             return Err(Error::BadMagic);
         }
 
-        // println!("Unique Insts: {:?}, Total Insts: {:?}, Blocks: {:#?}", unique_tys, total_objs, self.blocks);
-
         make_model(num_classes as usize, num_instances as usize, self.blocks)
     }
 
@@ -644,8 +641,6 @@ impl<'de, R: Read> Deserializer<R> {
 
         let data = self.chomp_lz4()?;
         let block_reader = &mut (&data as &[u8]);
-
-        // println!("Data: {:?}", data);
 
         match &*name {
             "SSTR" => {
@@ -720,8 +715,6 @@ impl<'de, R: Read> Deserializer<R> {
                         }
                     })
                     .ok_or(Error::UnknownClass(class_index))?;
-
-                // println!("Property Name: {}\nProperty Ty: {}", property_name, prop_ty);
 
                 let mut properties = Vec::with_capacity(num_props);
                 for _ in 0..num_props {
@@ -815,7 +808,6 @@ impl<'de, R: Read> Deserializer<R> {
                             break;
                         }
                         _ => {
-                            println!("Unknown Property Data:\nClass: {}\nProperty: {}\nName: {}\nData: {:?}", class_index, prop_ty, property_name, data);
                             return Err(Error::UnknownProperty(prop_ty));
                         }
                     };
