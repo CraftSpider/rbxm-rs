@@ -1,5 +1,5 @@
 use crate::model::*;
-use crate::serde::internal::{make_kind, Block, RawProperty};
+use crate::serde::internal::{make_kind, RawProperty};
 use crate::serde::{Error, Result};
 
 use std::cell::RefCell;
@@ -423,169 +423,27 @@ fn chomp_color3_u8<R: Read>(reader: &mut R) -> Result<Color3Uint8> {
     })
 }
 
-fn make_model(num_classes: usize, num_instances: usize, blocks: Vec<Block>) -> Result<RbxModel> {
-    let mut meta = HashMap::new();
-    let mut shared = Vec::new();
-    let mut classes = HashMap::new();
-    let mut instances = HashMap::new();
-    let mut raw_properties: HashMap<_, HashMap<_, _>> = HashMap::new();
-    let mut parent_info = HashMap::new();
-    let mut child_info: HashMap<_, Vec<_>> = HashMap::new();
-
-    // Extract data from binary blocks. This is a sad in terms of number of maps, but the cleanest
-    // way I could think of.
-    for b in blocks {
-        match b {
-            Block::Meta(data) => meta.extend(data),
-            Block::SharedStr(blobs) => shared.extend(blobs),
-            Block::Instance {
-                class_name,
-                index,
-                is_service: _,
-                instance_ids,
-            } => {
-                for i in &instance_ids {
-                    instances.insert(
-                        *i,
-                        (
-                            class_name.clone(),
-                            Rc::new(RefCell::new(Instance::uninit())),
-                        ),
-                    );
-                }
-
-                classes.insert(index, instance_ids);
-            }
-            Block::Property {
-                class_index,
-                property_name,
-                properties,
-            } => {
-                let ids = classes
-                    .get(&class_index)
-                    .ok_or(Error::UnknownClass(class_index))?;
-
-                for (id, prop) in ids.iter().zip(properties) {
-                    raw_properties
-                        .entry(*id)
-                        .or_default()
-                        .insert(property_name.clone(), prop);
-                }
-            }
-            Block::Parent {
-                instance_referents,
-                parent_referents,
-            } => {
-                for (child_id, parent_id) in instance_referents
-                    .into_iter()
-                    .zip(parent_referents.into_iter())
-                {
-                    parent_info.insert(child_id, parent_id);
-                    child_info.entry(parent_id).or_default().push(child_id);
-                }
-            }
-            Block::End => continue,
-        }
-    }
-
-    assert_eq!(classes.len(), num_classes);
-    assert_eq!(instances.len(), num_instances);
-
-    // Do reference resolution, and populate information
-    let instances = instances
-        .iter()
-        .map(|(id, (class_name, inst))| {
-            let parent_id = parent_info.remove(id).ok_or(Error::UnknownInstance(*id))?;
-
-            let parent = if parent_id != -1 {
-                Rc::downgrade(
-                    &instances
-                        .get(&parent_id)
-                        .ok_or(Error::UnknownInstance(parent_id))?
-                        .1,
-                )
-            } else {
-                Weak::default()
-            };
-
-            let children = child_info
-                .remove(id)
-                .unwrap_or_default()
-                .into_iter()
-                .map(|child_id| {
-                    Ok(Rc::clone(
-                        &instances
-                            .get(&child_id)
-                            .ok_or(Error::UnknownInstance(child_id))?
-                            .1,
-                    ))
-                })
-                .collect::<Result<Vec<_>>>()?;
-
-            let raw_props = raw_properties
-                .remove(id)
-                .ok_or(Error::UnknownInstance(*id))?;
-
-            let props = raw_props
-                .into_iter()
-                .map(|(name, value)| {
-                    let prop = match value {
-                        RawProperty::RawString(blob) => String::from_utf8(blob)
-                            .map(Property::TextString)
-                            .unwrap_or_else(|err| Property::BinaryString(err.into_bytes())),
-                        RawProperty::SharedString(shared_id) => {
-                            let blob = &shared[shared_id as usize];
-                            String::from_utf8(blob.clone())
-                                .map(Property::TextString)
-                                .unwrap_or_else(|err| Property::BinaryString(err.into_bytes()))
-                        }
-                        RawProperty::InstanceRef(ref_id) => {
-                            let weak = Rc::downgrade(
-                                &instances
-                                    .get(&ref_id)
-                                    .ok_or(Error::UnknownInstance(ref_id))?
-                                    .1,
-                            );
-                            Property::InstanceRef(weak)
-                        }
-                        prop => prop.into_real(),
-                    };
-
-                    Ok((name, prop))
-                })
-                .collect::<Result<_>>()?;
-
-            {
-                let mut mut_inst = inst.borrow_mut();
-                mut_inst.parent = parent;
-                mut_inst.children = children;
-                mut_inst.kind = make_kind(class_name, props)?;
-            }
-
-            Ok(inst)
-        })
-        .collect::<Result<Vec<_>>>()?;
-
-    // Figure out our root instances
-    let roots = instances
-        .into_iter()
-        .filter(|inst| inst.borrow().parent.ptr_eq(&Weak::default()))
-        .map(|inst| Rc::clone(inst))
-        .collect::<Vec<_>>();
-
-    Ok(RbxModel { meta, roots })
+#[derive(Default)]
+struct RawInfo {
+    meta: HashMap<String, String>,
+    shared_strs: Vec<Vec<u8>>,
+    class_ids: HashMap<i32, Vec<i32>>,
+    instances: HashMap<i32, (String, Rc<RefCell<Instance>>)>,
+    raw_props: HashMap<i32, HashMap<String, RawProperty>>,
+    parent_info: HashMap<i32, i32>,
+    child_info: HashMap<i32, Vec<i32>>,
 }
 
 pub struct Deserializer<R> {
     reader: R,
-    blocks: Vec<Block>,
+    raw_info: RawInfo,
 }
 
 impl<'de, R: Read> Deserializer<R> {
     pub fn new(reader: R) -> Deserializer<R> {
         Deserializer {
             reader,
-            blocks: Default::default(),
+            raw_info: RawInfo::default(),
         }
     }
 
@@ -611,13 +469,7 @@ impl<'de, R: Read> Deserializer<R> {
         );
         assert_eq!(unknown, (0, 0));
 
-        loop {
-            let block = self.chomp_block()?;
-            match block {
-                Block::End => break,
-                _ => self.blocks.push(block),
-            }
-        }
+        while self.chomp_block()? {}
 
         let mut magic_end = [0; 9];
         self.reader.read_exact(&mut magic_end)?;
@@ -626,17 +478,114 @@ impl<'de, R: Read> Deserializer<R> {
             return Err(Error::BadMagic);
         }
 
-        make_model(num_classes as usize, num_instances as usize, self.blocks)
+        assert_eq!(self.raw_info.class_ids.len(), num_classes as usize);
+        assert_eq!(self.raw_info.instances.len(), num_instances as usize);
+
+        self.make_model()
     }
 
-    fn chomp_block(&mut self) -> Result<Block> {
+    fn make_model(self) -> Result<RbxModel> {
+        let RawInfo {
+            meta,
+            shared_strs,
+            class_ids: _,
+            instances,
+            mut raw_props,
+            mut parent_info,
+            mut child_info,
+        } = self.raw_info;
+
+        // Do reference resolution, and populate information
+        let instances = instances
+            .iter()
+            .map(|(id, (class_name, inst))| {
+                let parent_id = parent_info.remove(id).ok_or(Error::UnknownInstance(*id))?;
+
+                let parent = if parent_id != -1 {
+                    Rc::downgrade(
+                        &instances
+                            .get(&parent_id)
+                            .ok_or(Error::UnknownInstance(parent_id))?
+                            .1,
+                    )
+                } else {
+                    Weak::default()
+                };
+
+                let children = child_info
+                    .remove(id)
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|child_id| {
+                        Ok(Rc::clone(
+                            &instances
+                                .get(&child_id)
+                                .ok_or(Error::UnknownInstance(child_id))?
+                                .1,
+                        ))
+                    })
+                    .collect::<Result<Vec<_>>>()?;
+
+                let raw_props = raw_props.remove(id).ok_or(Error::UnknownInstance(*id))?;
+
+                let props = raw_props
+                    .into_iter()
+                    .map(|(name, value)| {
+                        let prop = match value {
+                            RawProperty::RawString(blob) => String::from_utf8(blob)
+                                .map(Property::TextString)
+                                .unwrap_or_else(|err| Property::BinaryString(err.into_bytes())),
+                            RawProperty::RawSharedString(shared_id) => {
+                                let blob = &shared_strs[shared_id as usize];
+                                String::from_utf8(blob.clone())
+                                    .map(Property::TextString)
+                                    .unwrap_or_else(|err| Property::BinaryString(err.into_bytes()))
+                            }
+                            RawProperty::InstanceRef(ref_id) => {
+                                let weak = Rc::downgrade(
+                                    &instances
+                                        .get(&ref_id)
+                                        .ok_or(Error::UnknownInstance(ref_id))?
+                                        .1,
+                                );
+                                Property::InstanceRef(weak)
+                            }
+                            prop => prop.into_real(),
+                        };
+
+                        Ok((name, prop))
+                    })
+                    .collect::<Result<_>>()?;
+
+                {
+                    let mut mut_inst = inst.borrow_mut();
+                    mut_inst.parent = parent;
+                    mut_inst.children = children;
+                    mut_inst.kind = make_kind(class_name, props)?;
+                }
+
+                Ok(inst)
+            })
+            .collect::<Result<Vec<_>>>()?;
+
+        // Figure out our root instances
+        let roots = instances
+            .into_iter()
+            .filter(|inst| inst.borrow().parent.ptr_eq(&Weak::default()))
+            .map(|inst| Rc::clone(inst))
+            .collect::<Vec<_>>();
+
+        Ok(RbxModel { meta, roots })
+    }
+
+    fn chomp_block(&mut self) -> Result<bool> {
         let name = self.chomp_blockname()?;
 
         if name == "END" {
             let mut end_data = [0; 12];
             self.reader.read_exact(&mut end_data)?;
             assert_eq!(end_data, [0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0]);
-            return Ok(Block::End);
+            return Ok(false);
         }
 
         let data = self.chomp_lz4()?;
@@ -648,7 +597,6 @@ impl<'de, R: Read> Deserializer<R> {
                 assert_eq!(unknown, 0);
                 let num_strs = chomp_i32_raw(block_reader)?;
 
-                let mut blobs = Vec::with_capacity(num_strs as usize);
                 for _ in 0..num_strs {
                     let unknown1 = chomp_i32_raw(block_reader)?;
                     let unknown2 = chomp_i32_raw(block_reader)?;
@@ -659,62 +607,53 @@ impl<'de, R: Read> Deserializer<R> {
                     assert_eq!(unknown3, 0);
                     assert_eq!(unknown4, 0);
 
-                    blobs.push(chomp_binary_string(block_reader)?);
+                    self.raw_info
+                        .shared_strs
+                        .push(chomp_binary_string(block_reader)?);
                 }
-
-                Ok(Block::SharedStr(blobs))
             }
             "META" => {
                 let num_pairs = chomp_i32_raw(block_reader)?;
-                let mut map = HashMap::new();
                 for _ in 0..num_pairs {
                     let key = chomp_string(block_reader)?;
                     let value = chomp_string(block_reader)?;
-                    map.insert(key, value);
+                    self.raw_info.meta.insert(key, value);
                 }
-
-                Ok(Block::Meta(map))
             }
             "INST" => {
                 let index = chomp_i32_raw(block_reader)?;
                 let class_name = chomp_string(block_reader)?;
-                let is_service = chomp_bool(block_reader)?;
+                let _is_service = chomp_bool(block_reader)?;
                 let instance_count = chomp_i32_raw(block_reader)?;
                 let mut instance_ids =
                     chomp_interleaved_i32_transformed(block_reader, instance_count as usize)?;
 
                 make_cumulative(&mut instance_ids);
 
-                Ok(Block::Instance {
-                    index,
-                    class_name,
-                    is_service,
-                    instance_ids,
-                })
+                for id in &instance_ids {
+                    self.raw_info.instances.insert(
+                        *id,
+                        (
+                            class_name.clone(),
+                            Rc::new(RefCell::new(Instance::uninit())),
+                        ),
+                    );
+                }
+
+                self.raw_info.class_ids.insert(index, instance_ids);
             }
             "PROP" => {
                 let class_index = chomp_i32_raw(block_reader)?;
                 let property_name = chomp_string(block_reader)?;
                 let prop_ty = chomp_u8(block_reader)?;
 
-                let num_props = self
-                    .blocks
-                    .iter()
-                    .find(|b| {
-                        if let Block::Instance { index, .. } = b {
-                            *index == class_index
-                        } else {
-                            false
-                        }
-                    })
-                    .map(|b| {
-                        if let Block::Instance { instance_ids, .. } = b {
-                            instance_ids.len()
-                        } else {
-                            unreachable!()
-                        }
-                    })
+                let class_ids = self
+                    .raw_info
+                    .class_ids
+                    .get(&class_index)
                     .ok_or(Error::UnknownClass(class_index))?;
+
+                let num_props = class_ids.len();
 
                 let mut properties = Vec::with_capacity(num_props);
                 for _ in 0..num_props {
@@ -803,7 +742,7 @@ impl<'de, R: Read> Deserializer<R> {
                             properties.extend(
                                 chomp_interleaved_i32_raw(block_reader, num_props)?
                                     .into_iter()
-                                    .map(RawProperty::SharedString),
+                                    .map(RawProperty::RawSharedString),
                             );
                             break;
                         }
@@ -822,11 +761,13 @@ impl<'de, R: Read> Deserializer<R> {
                     prop_ty
                 );
 
-                Ok(Block::Property {
-                    class_index,
-                    property_name,
-                    properties,
-                })
+                for (inst_id, property) in class_ids.iter().zip(properties.into_iter()) {
+                    self.raw_info
+                        .raw_props
+                        .entry(*inst_id)
+                        .or_default()
+                        .insert(property_name.clone(), property);
+                }
             }
             "PRNT" => {
                 let unknown = chomp_u8(block_reader)?;
@@ -840,13 +781,21 @@ impl<'de, R: Read> Deserializer<R> {
                 make_cumulative(&mut instance_referents);
                 make_cumulative(&mut parent_referents);
 
-                Ok(Block::Parent {
-                    instance_referents,
-                    parent_referents,
-                })
+                for (child_id, parent_id) in instance_referents
+                    .into_iter()
+                    .zip(parent_referents.into_iter())
+                {
+                    self.raw_info.parent_info.insert(child_id, parent_id);
+                    self.raw_info
+                        .child_info
+                        .entry(parent_id)
+                        .or_default()
+                        .push(child_id);
+                }
             }
-            _ => Err(Error::UnknownBlock(name)),
+            _ => return Err(Error::UnknownBlock(name)),
         }
+        Ok(true)
     }
 
     fn chomp_blockname(&mut self) -> Result<String> {

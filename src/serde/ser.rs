@@ -2,7 +2,7 @@ use crate::model::{
     Axis, Color3, Color3Uint8, ColorSequence, Face, Instance, NumberRange, NumberSequence,
     Property, RbxModel, Vector2, Vector3, Vector3Int16,
 };
-use crate::serde::internal::{break_kind, Block, RawProperty};
+use crate::serde::internal::{break_kind, RawProperty};
 use crate::serde::Result;
 
 use std::cell::RefCell;
@@ -21,6 +21,28 @@ macro_rules! float_match {
             0
         };
     }
+}
+
+#[derive(Debug)]
+pub(crate) enum Block {
+    Meta(HashMap<String, String>),
+    SharedStr(Vec<Vec<u8>>),
+    Instance {
+        index: i32,
+        class_name: String,
+        is_service: bool,
+        instance_ids: Vec<i32>,
+    },
+    Property {
+        class_index: i32,
+        property_name: String,
+        properties: Vec<RawProperty>,
+    },
+    Parent {
+        instance_referents: Vec<i32>,
+        parent_referents: Vec<i32>,
+    },
+    End,
 }
 
 pub struct Serializer<W> {
@@ -468,7 +490,7 @@ fn write_shared_strings<W: Write>(writer: &mut W, properties: &[RawProperty]) ->
     let mut indices = Vec::with_capacity(properties.len());
 
     for prop in properties {
-        if let RawProperty::SharedString(index) = prop {
+        if let RawProperty::RawSharedString(index) = prop {
             indices.push(*index);
         } else {
             unreachable!()
@@ -572,6 +594,7 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
         instance_referents: child_ref,
         parent_referents: parent_ref,
     });
+    out.push(Block::End);
 
     (num_classes as i32, num_insts as i32, out)
 }
@@ -685,7 +708,7 @@ impl<W: Write> Serializer<W> {
                     RawProperty::CustomPhysicalProperties(..) => 25,
                     RawProperty::Color3Uint8(..) => 26,
                     RawProperty::Int64(..) => 27,
-                    RawProperty::SharedString(..) => 28,
+                    RawProperty::RawSharedString(..) => 28,
                 };
 
                 write_u8(writer, prop_ty)?;
@@ -742,7 +765,7 @@ impl<W: Write> Serializer<W> {
                         RawProperty::CustomPhysicalProperties(val) => write_bool(writer, *val)?,
                         RawProperty::Color3Uint8(val) => write_color3_u8(writer, val)?,
                         RawProperty::Int64(val) => write_i64(writer, *val)?,
-                        RawProperty::SharedString(..) => {
+                        RawProperty::RawSharedString(..) => {
                             write_shared_strings(writer, &properties)?;
                             break;
                         }

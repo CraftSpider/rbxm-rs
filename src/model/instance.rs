@@ -2,13 +2,11 @@ use crate::model::data::*;
 use crate::model::enums::*;
 use crate::model::Property;
 use crate::serde::internal::{FromProperty, ToProperty};
-use rbxm_proc::{FromProperty, ToProperty};
+use rbxm_proc::{FromProperty, Inherits, ToProperty};
 
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
-
-// TODO: Implement AsRef for all inheritance chains
 
 macro_rules! chomp_prop {
     // A binary string could be valid text, allow that
@@ -488,233 +486,213 @@ impl InstanceKind {
 
     pub fn name(&self) -> &str {
         match self {
-            InstanceKind::Accessory(data) => &data.accoutrement.base.name,
-            InstanceKind::Accoutrement(data) => &data.base.name,
-            InstanceKind::Actor(data) => &data.model.base.name,
-            InstanceKind::AlignOrientation(data) => &data.constraint.base.name,
-            InstanceKind::AlignPosition(data) => &data.constraint.base.name,
-            InstanceKind::AngularVelocity(data) => &data.constraint.base.name,
-            InstanceKind::Animation(data) => &data.base.name,
-            InstanceKind::AnimationController(data) => &data.base.name,
-            InstanceKind::ArcHandles(data) => &data.part_adornment.gui_base.base.name,
-            InstanceKind::Atmosphere(data) => &data.base.name,
-            InstanceKind::Backpack(data) => &data.base.name,
-            InstanceKind::BallSocketConstraint(data) => &data.constraint.base.name,
-            InstanceKind::Beam(data) => &data.base.name,
-            InstanceKind::BillboardGui(data) => &data.layer_collector.gui_base.base.name,
-            InstanceKind::BinaryStringValue(data) => &data.base.name,
-            InstanceKind::BindableEvent(data) => &data.base.name,
-            InstanceKind::BindableFunction(data) => &data.base.name,
-            InstanceKind::BlockMesh(data) => &data.bevel_mesh.data_model_mesh.base.name,
-            InstanceKind::BloomEffect(data) => &data.post_effect.base.name,
-            InstanceKind::BlurEffect(data) => &data.post_effect.base.name,
-            InstanceKind::BodyAngularVelocity(data) => &data.base.name,
-            InstanceKind::BodyColors(data) => &data.base.name,
-            InstanceKind::BodyForce(data) => &data.base.name,
-            InstanceKind::BodyGyro(data) => &data.base.name,
-            InstanceKind::BodyPosition(data) => &data.base.name,
-            InstanceKind::BodyThrust(data) => &data.base.name,
-            InstanceKind::BodyVelocity(data) => &data.base.name,
-            InstanceKind::BoolValue(data) => &data.base.name,
-            InstanceKind::BoxHandleAdornment(data) => {
-                &data.handle_adornment.pv_adornment.gui_base.base.name
-            }
-            InstanceKind::BrickColorValue(data) => &data.base.name,
-            InstanceKind::Camera(data) => &data.base.name,
-            InstanceKind::CFrameValue(data) => &data.base.name,
-            InstanceKind::CharacterMesh(data) => &data.base.name,
-            InstanceKind::ChorusSoundEffect(data) => &data.sound_effect.base.name,
-            InstanceKind::ClickDetector(data) => &data.base.name,
-            InstanceKind::Clouds(data) => &data.base.name,
-            InstanceKind::Color3Value(data) => &data.base.name,
-            InstanceKind::ColorCorrectionEffect(data) => &data.post_effect.base.name,
-            InstanceKind::CompressorSoundEffect(data) => &data.sound_effect.base.name,
-            InstanceKind::ConeHandleAdornment(data) => {
-                &data.handle_adornment.pv_adornment.gui_base.base.name
-            }
-            InstanceKind::Configuration(data) => &data.base.name,
-            InstanceKind::CornerWedgePart(data) => &data.base_part.base.name,
-            InstanceKind::CustomEvent(data) => &data.base.name,
-            InstanceKind::CustomEventReceiver(data) => &data.base.name,
-            InstanceKind::CylinderHandleAdornment(data) => {
-                &data.handle_adornment.pv_adornment.gui_base.base.name
-            }
-            InstanceKind::CylinderMesh(data) => &data.bevel_mesh.data_model_mesh.base.name,
-            InstanceKind::CylindricalConstraint(data) => {
-                &data.sliding_ball_constraint.constraint.base.name
-            }
-            InstanceKind::Decal(data) => &data.face_instance.base.name,
-            InstanceKind::DepthOfFieldEffect(data) => &data.post_effect.base.name,
-            InstanceKind::Dialog(data) => &data.base.name,
-            InstanceKind::DialogChoice(data) => &data.base.name,
-            InstanceKind::DistortionSoundEffect(data) => &data.sound_effect.base.name,
-            InstanceKind::DoubleConstrainedValue(data) => &data.base.name,
-            InstanceKind::EchoSoundEffect(data) => &data.sound_effect.base.name,
-            InstanceKind::EqualizerSoundEffect(data) => &data.sound_effect.base.name,
-            InstanceKind::Explosion(data) => &data.base.name,
-            InstanceKind::FileMesh(data) => &data.data_model_mesh.base.name,
-            InstanceKind::Fire(data) => &data.base.name,
-            InstanceKind::Flag(data) => &data.tool.backpack_item.base.name,
-            InstanceKind::FlagStand(data) => &data.part.base_part.base.name,
-            InstanceKind::FlangeSoundEffect(data) => &data.sound_effect.base.name,
-            InstanceKind::FloorWire(data) => &data.gui_base.base.name,
-            InstanceKind::Folder(data) => &data.base.name,
-            InstanceKind::ForceField(data) => &data.base.name,
-            InstanceKind::Frame(data) => &data.gui_object.gui_base.base.name,
-            InstanceKind::FunctionalTest(data) => &data.base.name,
-            InstanceKind::Glue(data) => &data.joint_instance.base.name,
-            InstanceKind::GuiMain(data) => &data.screen_gui.layer_collector.gui_base.base.name,
-            InstanceKind::Handles(data) => &data.part_adornment.gui_base.base.name,
-            InstanceKind::Hat(data) => &data.accoutrement.base.name,
-            InstanceKind::HingeConstraint(data) => &data.constraint.base.name,
-            InstanceKind::Hint(data) => &data.message.base.name,
-            InstanceKind::Hole(data) => &data.feature.base.name,
-            InstanceKind::HopperBin(data) => &data.backpack_item.base.name,
-            InstanceKind::Humanoid(data) => &data.base.name,
-            InstanceKind::HumanoidController(data) => &data.base.name,
-            InstanceKind::HumanoidDescription(data) => &data.base.name,
-            InstanceKind::ImageButton(data) => &data.gui_button.gui_object.gui_base.base.name,
-            InstanceKind::ImageHandleAdornment(data) => {
-                &data.handle_adornment.pv_adornment.gui_base.base.name
-            }
-            InstanceKind::ImageLabel(data) => &data.gui_object.gui_base.base.name,
-            InstanceKind::IntConstrainedValue(data) => &data.base.name,
-            InstanceKind::IntValue(data) => &data.base.name,
-            InstanceKind::Keyframe(data) => &data.base.name,
-            InstanceKind::KeyframeMarker(data) => &data.base.name,
-            InstanceKind::KeyframeSequence(data) => &data.base.name,
-            InstanceKind::LineForce(data) => &data.constraint.base.name,
-            InstanceKind::LineHandleAdornment(data) => {
-                &data.handle_adornment.pv_adornment.gui_base.base.name
-            }
-            InstanceKind::LocalizationTable(data) => &data.base.name,
-            InstanceKind::LocalScript(data) => &data.script.base_script.source_container.base.name,
-            InstanceKind::ManualGlue(data) => &data.joint_instance.base.name,
-            InstanceKind::ManualWeld(data) => &data.joint_instance.base.name,
-            InstanceKind::MeshPart(data) => &data.triangle_mesh_part.base_part.base.name,
-            InstanceKind::Message(data) => &data.base.name,
-            InstanceKind::Model(data) => &data.base.name,
-            InstanceKind::ModuleScript(data) => &data.lua_source_container.base.name,
-            InstanceKind::Motor(data) => &data.joint_instance.base.name,
-            InstanceKind::Motor6D(data) => &data.motor.joint_instance.base.name,
-            InstanceKind::MotorFeature(data) => &data.feature.base.name,
-            InstanceKind::NegateOperation(data) => {
-                &data.part_operation.triangle_mesh_part.base_part.base.name
-            }
-            InstanceKind::NoCollisionConstraint(data) => &data.base.name,
-            InstanceKind::NumberPose(data) => &data.pose_base.base.name,
-            InstanceKind::NumberValue(data) => &data.base.name,
-            InstanceKind::ObjectValue(data) => &data.base.name,
-            InstanceKind::Pants(data) => &data.clothing.base.name,
-            InstanceKind::Part(data) => &data.base_part.base.name,
-            InstanceKind::ParticleEmitter(data) => &data.base.name,
-            InstanceKind::PartOperation(data) => &data.triangle_mesh_part.base_part.base.name,
-            InstanceKind::PartOperationAsset(data) => &data.base.name,
-            InstanceKind::PitchShiftSoundEffect(data) => &data.sound_effect.base.name,
-            InstanceKind::PointLight(data) => &data.light.base.name,
-            InstanceKind::Pose(data) => &data.pose_base.base.name,
-            InstanceKind::PrismaticConstraint(data) => {
-                &data.sliding_ball_constraint.constraint.base.name
-            }
-            InstanceKind::ProximityPrompt(data) => &data.base.name,
-            InstanceKind::RayValue(data) => &data.base.name,
-            InstanceKind::ReflectionMetadata(data) => &data.base.name,
-            InstanceKind::ReflectionMetadataCallbacks(data) => &data.base.name,
-            InstanceKind::ReflectionMetadataClass(data) => &data.reflection_meta_item.base.name,
-            InstanceKind::ReflectionMetadataClasses(data) => &data.base.name,
-            InstanceKind::ReflectionMetadataEnum(data) => &data.reflection_meta_item.base.name,
-            InstanceKind::ReflectionMetadataEnumItem(data) => &data.reflection_meta_item.base.name,
-            InstanceKind::ReflectionMetadataEnums(data) => &data.base.name,
-            InstanceKind::ReflectionMetadataEvents(data) => &data.base.name,
-            InstanceKind::ReflectionMetadataFunctions(data) => &data.base.name,
-            InstanceKind::ReflectionMetadataMember(data) => &data.reflection_meta_item.base.name,
-            InstanceKind::ReflectionMetadataProperties(data) => &data.base.name,
-            InstanceKind::ReflectionMetadataYieldFunctions(data) => &data.base.name,
-            InstanceKind::RemoteEvent(data) => &data.base.name,
-            InstanceKind::RemoteFunction(data) => &data.base.name,
-            InstanceKind::RenderingTest(data) => &data.base.name,
-            InstanceKind::ReverbSoundEffect(data) => &data.sound_effect.base.name,
-            InstanceKind::RocketPropulsion(data) => &data.base.name,
-            InstanceKind::RodConstraint(data) => &data.constraint.base.name,
-            InstanceKind::RopeConstraint(data) => &data.constraint.base.name,
-            InstanceKind::Rotate(data) => &data.joint_instance.base.name,
-            InstanceKind::RotateP(data) => &data.dynamic_rotate.joint_instance.base.name,
-            InstanceKind::RotateV(data) => &data.dynamic_rotate.joint_instance.base.name,
-            InstanceKind::ScreenGui(data) => &data.layer_collector.gui_base.base.name,
-            InstanceKind::Script(data) => &data.base_script.source_container.base.name,
-            InstanceKind::ScrollingFrame(data) => &data.gui_object.gui_base.base.name,
-            InstanceKind::Seat(data) => &data.part.base_part.base.name,
-            InstanceKind::SelectionBox(data) => &data.instance_adornment.gui_base.base.name,
-            InstanceKind::SelectionPartLasso(data) => &data.selection_lasso.gui_base.base.name,
-            InstanceKind::SelectionPointLasso(data) => &data.selection_lasso.gui_base.base.name,
-            InstanceKind::SelectionSphere(data) => &data.pv_adornment.gui_base.base.name,
-            InstanceKind::Shirt(data) => &data.clothing.base.name,
-            InstanceKind::ShirtGraphic(data) => &data.base.name,
-            InstanceKind::SkateboardController(data) => &data.base.name,
-            InstanceKind::SkateboardPlatform(data) => &data.part.base_part.base.name,
-            InstanceKind::Skin(data) => &data.base.name,
-            InstanceKind::Sky(data) => &data.base.name,
-            InstanceKind::Smoke(data) => &data.base.name,
-            InstanceKind::Snap(data) => &data.joint_instance.base.name,
-            InstanceKind::Sound(data) => &data.base.name,
-            InstanceKind::SoundGroup(data) => &data.base.name,
-            InstanceKind::Sparkles(data) => &data.base.name,
-            InstanceKind::SpawnLocation(data) => &data.part.base_part.base.name,
-            InstanceKind::SpecialMesh(data) => &data.file_mesh.data_model_mesh.base.name,
-            InstanceKind::SphereHandleAdornment(data) => {
-                &data.handle_adornment.pv_adornment.gui_base.base.name
-            }
-            InstanceKind::SpotLight(data) => &data.light.base.name,
-            InstanceKind::SpringConstraint(data) => &data.constraint.base.name,
-            InstanceKind::StandalonePluginScripts(data) => &data.base.name,
-            InstanceKind::StarterGear(data) => &data.base.name,
-            InstanceKind::StringValue(data) => &data.base.name,
-            InstanceKind::SunRaysEffect(data) => &data.post_effect.base.name,
-            InstanceKind::SurfaceAppearance(data) => &data.base.name,
-            InstanceKind::SurfaceGui(data) => &data.layer_collector.gui_base.base.name,
-            InstanceKind::SurfaceLight(data) => &data.light.base.name,
-            InstanceKind::SurfaceSelection(data) => &data.part_adornment.gui_base.base.name,
-            InstanceKind::Team(data) => &data.base.name,
-            InstanceKind::TeleportOptions(data) => &data.base.name,
-            InstanceKind::Terrain(data) => &data.base_part.base.name,
-            InstanceKind::TerrainRegion(data) => &data.base.name,
-            InstanceKind::TextBox(data) => &data.gui_object.gui_base.base.name,
-            InstanceKind::TextButton(data) => &data.gui_button.gui_object.gui_base.base.name,
-            InstanceKind::TextLabel(data) => &data.gui_object.gui_base.base.name,
-            InstanceKind::Texture(data) => &data.decal.face_instance.base.name,
-            InstanceKind::Tool(data) => &data.backpack_item.base.name,
-            InstanceKind::Torque(data) => &data.constraint.base.name,
-            InstanceKind::Trail(data) => &data.base.name,
-            InstanceKind::TremoloSoundEffect(data) => &data.sound_effect.base.name,
-            InstanceKind::TrussPart(data) => &data.base_part.base.name,
-            InstanceKind::Tween(data) => &data.base.name,
-            InstanceKind::UIAspectRatioConstraint(data) => &data.base.name,
-            InstanceKind::UICorner(data) => &data.base.name,
-            InstanceKind::UIGradient(data) => &data.base.name,
-            InstanceKind::UIGridLayout(data) => &data.ui_grid_style_layout.base.name,
-            InstanceKind::UIListLayout(data) => &data.ui_grid_style_layout.base.name,
-            InstanceKind::UIPadding(data) => &data.base.name,
-            InstanceKind::UIPageLayout(data) => &data.ui_grid_style_layout.base.name,
-            InstanceKind::UIScale(data) => &data.base.name,
-            InstanceKind::UISizeConstraint(data) => &data.base.name,
-            InstanceKind::UIStroke(data) => &data.base.name,
-            InstanceKind::UITableLayout(data) => &data.ui_grid_style_layout.base.name,
-            InstanceKind::UITextSizeConstraint(data) => &data.base.name,
-            InstanceKind::UnionOperation(data) => {
-                &data.part_operation.triangle_mesh_part.base_part.base.name
-            }
-            InstanceKind::UniversalConstraint(data) => &data.constraint.base.name,
-            InstanceKind::Vector3Value(data) => &data.base.name,
-            InstanceKind::VectorForce(data) => &data.constraint.base.name,
-            InstanceKind::VehicleController(data) => &data.base.name,
-            InstanceKind::VehicleSeat(data) => &data.base_part.base.name,
-            InstanceKind::VelocityMotor(data) => &data.joint_instance.base.name,
-            InstanceKind::VideoFrame(data) => &data.gui_object.gui_base.base.name,
-            InstanceKind::ViewportFrame(data) => &data.gui_object.gui_base.base.name,
-            InstanceKind::WedgePart(data) => &data.base_part.base.name,
-            InstanceKind::Weld(data) => &data.joint_instance.base.name,
-            InstanceKind::WeldConstraint(data) => &data.base.name,
-            InstanceKind::WorldModel(data) => &data.model.base.name,
+            InstanceKind::Accessory(data) => &data.name,
+            InstanceKind::Accoutrement(data) => &data.name,
+            InstanceKind::Actor(data) => &data.name,
+            InstanceKind::AlignOrientation(data) => &data.name,
+            InstanceKind::AlignPosition(data) => &data.name,
+            InstanceKind::AngularVelocity(data) => &data.name,
+            InstanceKind::Animation(data) => &data.name,
+            InstanceKind::AnimationController(data) => &data.name,
+            InstanceKind::ArcHandles(data) => &data.name,
+            InstanceKind::Atmosphere(data) => &data.name,
+            InstanceKind::Backpack(data) => &data.name,
+            InstanceKind::BallSocketConstraint(data) => &data.name,
+            InstanceKind::Beam(data) => &data.name,
+            InstanceKind::BillboardGui(data) => &data.name,
+            InstanceKind::BinaryStringValue(data) => &data.name,
+            InstanceKind::BindableEvent(data) => &data.name,
+            InstanceKind::BindableFunction(data) => &data.name,
+            InstanceKind::BlockMesh(data) => &data.name,
+            InstanceKind::BloomEffect(data) => &data.name,
+            InstanceKind::BlurEffect(data) => &data.name,
+            InstanceKind::BodyAngularVelocity(data) => &data.name,
+            InstanceKind::BodyColors(data) => &data.name,
+            InstanceKind::BodyForce(data) => &data.name,
+            InstanceKind::BodyGyro(data) => &data.name,
+            InstanceKind::BodyPosition(data) => &data.name,
+            InstanceKind::BodyThrust(data) => &data.name,
+            InstanceKind::BodyVelocity(data) => &data.name,
+            InstanceKind::BoolValue(data) => &data.name,
+            InstanceKind::BoxHandleAdornment(data) => &data.name,
+            InstanceKind::BrickColorValue(data) => &data.name,
+            InstanceKind::Camera(data) => &data.name,
+            InstanceKind::CFrameValue(data) => &data.name,
+            InstanceKind::CharacterMesh(data) => &data.name,
+            InstanceKind::ChorusSoundEffect(data) => &data.name,
+            InstanceKind::ClickDetector(data) => &data.name,
+            InstanceKind::Clouds(data) => &data.name,
+            InstanceKind::Color3Value(data) => &data.name,
+            InstanceKind::ColorCorrectionEffect(data) => &data.name,
+            InstanceKind::CompressorSoundEffect(data) => &data.name,
+            InstanceKind::ConeHandleAdornment(data) => &data.name,
+            InstanceKind::Configuration(data) => &data.name,
+            InstanceKind::CornerWedgePart(data) => &data.name,
+            InstanceKind::CustomEvent(data) => &data.name,
+            InstanceKind::CustomEventReceiver(data) => &data.name,
+            InstanceKind::CylinderHandleAdornment(data) => &data.name,
+            InstanceKind::CylinderMesh(data) => &data.name,
+            InstanceKind::CylindricalConstraint(data) => &data.name,
+            InstanceKind::Decal(data) => &data.name,
+            InstanceKind::DepthOfFieldEffect(data) => &data.name,
+            InstanceKind::Dialog(data) => &data.name,
+            InstanceKind::DialogChoice(data) => &data.name,
+            InstanceKind::DistortionSoundEffect(data) => &data.name,
+            InstanceKind::DoubleConstrainedValue(data) => &data.name,
+            InstanceKind::EchoSoundEffect(data) => &data.name,
+            InstanceKind::EqualizerSoundEffect(data) => &data.name,
+            InstanceKind::Explosion(data) => &data.name,
+            InstanceKind::FileMesh(data) => &data.name,
+            InstanceKind::Fire(data) => &data.name,
+            InstanceKind::Flag(data) => &data.name,
+            InstanceKind::FlagStand(data) => &data.name,
+            InstanceKind::FlangeSoundEffect(data) => &data.name,
+            InstanceKind::FloorWire(data) => &data.name,
+            InstanceKind::Folder(data) => &data.name,
+            InstanceKind::ForceField(data) => &data.name,
+            InstanceKind::Frame(data) => &data.name,
+            InstanceKind::FunctionalTest(data) => &data.name,
+            InstanceKind::Glue(data) => &data.name,
+            InstanceKind::GuiMain(data) => &data.name,
+            InstanceKind::Handles(data) => &data.name,
+            InstanceKind::Hat(data) => &data.name,
+            InstanceKind::HingeConstraint(data) => &data.name,
+            InstanceKind::Hint(data) => &data.name,
+            InstanceKind::Hole(data) => &data.name,
+            InstanceKind::HopperBin(data) => &data.name,
+            InstanceKind::Humanoid(data) => &data.name,
+            InstanceKind::HumanoidController(data) => &data.name,
+            InstanceKind::HumanoidDescription(data) => &data.name,
+            InstanceKind::ImageButton(data) => &data.name,
+            InstanceKind::ImageHandleAdornment(data) => &data.name,
+            InstanceKind::ImageLabel(data) => &data.name,
+            InstanceKind::IntConstrainedValue(data) => &data.name,
+            InstanceKind::IntValue(data) => &data.name,
+            InstanceKind::Keyframe(data) => &data.name,
+            InstanceKind::KeyframeMarker(data) => &data.name,
+            InstanceKind::KeyframeSequence(data) => &data.name,
+            InstanceKind::LineForce(data) => &data.name,
+            InstanceKind::LineHandleAdornment(data) => &data.name,
+            InstanceKind::LocalizationTable(data) => &data.name,
+            InstanceKind::LocalScript(data) => &data.name,
+            InstanceKind::ManualGlue(data) => &data.name,
+            InstanceKind::ManualWeld(data) => &data.name,
+            InstanceKind::MeshPart(data) => &data.name,
+            InstanceKind::Message(data) => &data.name,
+            InstanceKind::Model(data) => &data.name,
+            InstanceKind::ModuleScript(data) => &data.name,
+            InstanceKind::Motor(data) => &data.name,
+            InstanceKind::Motor6D(data) => &data.name,
+            InstanceKind::MotorFeature(data) => &data.name,
+            InstanceKind::NegateOperation(data) => &data.name,
+            InstanceKind::NoCollisionConstraint(data) => &data.name,
+            InstanceKind::NumberPose(data) => &data.name,
+            InstanceKind::NumberValue(data) => &data.name,
+            InstanceKind::ObjectValue(data) => &data.name,
+            InstanceKind::Pants(data) => &data.name,
+            InstanceKind::Part(data) => &data.name,
+            InstanceKind::ParticleEmitter(data) => &data.name,
+            InstanceKind::PartOperation(data) => &data.name,
+            InstanceKind::PartOperationAsset(data) => &data.name,
+            InstanceKind::PitchShiftSoundEffect(data) => &data.name,
+            InstanceKind::PointLight(data) => &data.name,
+            InstanceKind::Pose(data) => &data.name,
+            InstanceKind::PrismaticConstraint(data) => &data.name,
+            InstanceKind::ProximityPrompt(data) => &data.name,
+            InstanceKind::RayValue(data) => &data.name,
+            InstanceKind::ReflectionMetadata(data) => &data.name,
+            InstanceKind::ReflectionMetadataCallbacks(data) => &data.name,
+            InstanceKind::ReflectionMetadataClass(data) => &data.name,
+            InstanceKind::ReflectionMetadataClasses(data) => &data.name,
+            InstanceKind::ReflectionMetadataEnum(data) => &data.name,
+            InstanceKind::ReflectionMetadataEnumItem(data) => &data.name,
+            InstanceKind::ReflectionMetadataEnums(data) => &data.name,
+            InstanceKind::ReflectionMetadataEvents(data) => &data.name,
+            InstanceKind::ReflectionMetadataFunctions(data) => &data.name,
+            InstanceKind::ReflectionMetadataMember(data) => &data.name,
+            InstanceKind::ReflectionMetadataProperties(data) => &data.name,
+            InstanceKind::ReflectionMetadataYieldFunctions(data) => &data.name,
+            InstanceKind::RemoteEvent(data) => &data.name,
+            InstanceKind::RemoteFunction(data) => &data.name,
+            InstanceKind::RenderingTest(data) => &data.name,
+            InstanceKind::ReverbSoundEffect(data) => &data.name,
+            InstanceKind::RocketPropulsion(data) => &data.name,
+            InstanceKind::RodConstraint(data) => &data.name,
+            InstanceKind::RopeConstraint(data) => &data.name,
+            InstanceKind::Rotate(data) => &data.name,
+            InstanceKind::RotateP(data) => &data.name,
+            InstanceKind::RotateV(data) => &data.name,
+            InstanceKind::ScreenGui(data) => &data.name,
+            InstanceKind::Script(data) => &data.name,
+            InstanceKind::ScrollingFrame(data) => &data.name,
+            InstanceKind::Seat(data) => &data.name,
+            InstanceKind::SelectionBox(data) => &data.name,
+            InstanceKind::SelectionPartLasso(data) => &data.name,
+            InstanceKind::SelectionPointLasso(data) => &data.name,
+            InstanceKind::SelectionSphere(data) => &data.name,
+            InstanceKind::Shirt(data) => &data.name,
+            InstanceKind::ShirtGraphic(data) => &data.name,
+            InstanceKind::SkateboardController(data) => &data.name,
+            InstanceKind::SkateboardPlatform(data) => &data.name,
+            InstanceKind::Skin(data) => &data.name,
+            InstanceKind::Sky(data) => &data.name,
+            InstanceKind::Smoke(data) => &data.name,
+            InstanceKind::Snap(data) => &data.name,
+            InstanceKind::Sound(data) => &data.name,
+            InstanceKind::SoundGroup(data) => &data.name,
+            InstanceKind::Sparkles(data) => &data.name,
+            InstanceKind::SpawnLocation(data) => &data.name,
+            InstanceKind::SpecialMesh(data) => &data.name,
+            InstanceKind::SphereHandleAdornment(data) => &data.name,
+            InstanceKind::SpotLight(data) => &data.name,
+            InstanceKind::SpringConstraint(data) => &data.name,
+            InstanceKind::StandalonePluginScripts(data) => &data.name,
+            InstanceKind::StarterGear(data) => &data.name,
+            InstanceKind::StringValue(data) => &data.name,
+            InstanceKind::SunRaysEffect(data) => &data.name,
+            InstanceKind::SurfaceAppearance(data) => &data.name,
+            InstanceKind::SurfaceGui(data) => &data.name,
+            InstanceKind::SurfaceLight(data) => &data.name,
+            InstanceKind::SurfaceSelection(data) => &data.name,
+            InstanceKind::Team(data) => &data.name,
+            InstanceKind::TeleportOptions(data) => &data.name,
+            InstanceKind::Terrain(data) => &data.name,
+            InstanceKind::TerrainRegion(data) => &data.name,
+            InstanceKind::TextBox(data) => &data.name,
+            InstanceKind::TextButton(data) => &data.name,
+            InstanceKind::TextLabel(data) => &data.name,
+            InstanceKind::Texture(data) => &data.name,
+            InstanceKind::Tool(data) => &data.name,
+            InstanceKind::Torque(data) => &data.name,
+            InstanceKind::Trail(data) => &data.name,
+            InstanceKind::TremoloSoundEffect(data) => &data.name,
+            InstanceKind::TrussPart(data) => &data.name,
+            InstanceKind::Tween(data) => &data.name,
+            InstanceKind::UIAspectRatioConstraint(data) => &data.name,
+            InstanceKind::UICorner(data) => &data.name,
+            InstanceKind::UIGradient(data) => &data.name,
+            InstanceKind::UIGridLayout(data) => &data.name,
+            InstanceKind::UIListLayout(data) => &data.name,
+            InstanceKind::UIPadding(data) => &data.name,
+            InstanceKind::UIPageLayout(data) => &data.name,
+            InstanceKind::UIScale(data) => &data.name,
+            InstanceKind::UISizeConstraint(data) => &data.name,
+            InstanceKind::UIStroke(data) => &data.name,
+            InstanceKind::UITableLayout(data) => &data.name,
+            InstanceKind::UITextSizeConstraint(data) => &data.name,
+            InstanceKind::UnionOperation(data) => &data.name,
+            InstanceKind::UniversalConstraint(data) => &data.name,
+            InstanceKind::Vector3Value(data) => &data.name,
+            InstanceKind::VectorForce(data) => &data.name,
+            InstanceKind::VehicleController(data) => &data.name,
+            InstanceKind::VehicleSeat(data) => &data.name,
+            InstanceKind::VelocityMotor(data) => &data.name,
+            InstanceKind::VideoFrame(data) => &data.name,
+            InstanceKind::ViewportFrame(data) => &data.name,
+            InstanceKind::WedgePart(data) => &data.name,
+            InstanceKind::Weld(data) => &data.name,
+            InstanceKind::WeldConstraint(data) => &data.name,
+            InstanceKind::WorldModel(data) => &data.name,
             InstanceKind::Other(_, props) => {
                 if let Property::TextString(name) = props.get("Name").unwrap() {
                     name
@@ -734,26 +712,26 @@ pub struct Base {
     pub attributes_serialize: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Accessory {
     #[delegate]
     pub accoutrement: Accoutrement,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Accoutrement {
     #[delegate]
     pub base: Base,
     pub attachment_point: CFrame,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Actor {
     #[delegate]
     pub model: Model,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct AlignOrientation {
     #[delegate]
     pub constraint: Constraint,
@@ -770,7 +748,7 @@ pub struct AlignOrientation {
     pub responsiveness: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct AlignPosition {
     #[delegate]
     pub constraint: Constraint,
@@ -784,7 +762,7 @@ pub struct AlignPosition {
     pub responsiveness: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct AngularVelocity {
     #[delegate]
     pub constraint: Constraint,
@@ -795,27 +773,27 @@ pub struct AngularVelocity {
     pub angular_velocity: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Animation {
     #[delegate]
     pub base: Base,
     pub animation_id: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct AnimationController {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ArcHandles {
     #[delegate]
     pub part_adornment: PartAdornment,
     pub axes: Axis,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Atmosphere {
     #[delegate]
     pub base: Base,
@@ -827,20 +805,20 @@ pub struct Atmosphere {
     pub offset: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Backpack {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct BackpackItem {
     #[delegate]
     pub base: Base,
     pub texture_id: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct BallSocketConstraint {
     #[delegate]
     pub constraint: Constraint,
@@ -857,7 +835,7 @@ pub struct BallSocketConstraint {
     pub twist_lower_angle: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct BasePart {
     #[delegate]
     pub base: Base,
@@ -929,7 +907,7 @@ pub struct BasePart {
     pub right_param_b: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct BaseScript {
     #[delegate]
     pub source_container: LuaSourceContainer,
@@ -937,7 +915,7 @@ pub struct BaseScript {
     pub linked_source: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Beam {
     #[delegate]
     pub base: Base,
@@ -966,7 +944,7 @@ pub struct Beam {
     pub attachment_1: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct BevelMesh {
     #[delegate]
     pub data_model_mesh: DataModelMesh,
@@ -976,7 +954,7 @@ pub struct BevelMesh {
     pub bevel_roundness: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct BillboardGui {
     #[delegate]
     pub layer_collector: LayerCollector,
@@ -1001,32 +979,32 @@ pub struct BillboardGui {
     pub player_to_hide_from: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct BinaryStringValue {
     #[delegate]
     pub base: Base,
     pub value: Vec<u8>,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct BindableEvent {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct BindableFunction {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct BlockMesh {
     #[delegate]
     pub bevel_mesh: BevelMesh,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct BloomEffect {
     #[delegate]
     pub post_effect: PostEffect,
@@ -1035,14 +1013,14 @@ pub struct BloomEffect {
     pub threshold: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct BlurEffect {
     #[delegate]
     pub post_effect: PostEffect,
     pub size: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct BodyAngularVelocity {
     #[delegate]
     pub base: Base,
@@ -1051,7 +1029,7 @@ pub struct BodyAngularVelocity {
     pub max_torque: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct BodyColors {
     #[delegate]
     pub base: Base,
@@ -1063,14 +1041,14 @@ pub struct BodyColors {
     pub right_leg_color3: Color3,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct BodyForce {
     #[delegate]
     pub base: Base,
     pub force: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct BodyGyro {
     #[delegate]
     pub base: Base,
@@ -1080,7 +1058,7 @@ pub struct BodyGyro {
     pub max_torque: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct BodyPosition {
     #[delegate]
     pub base: Base,
@@ -1090,7 +1068,7 @@ pub struct BodyPosition {
     pub max_force: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct BodyThrust {
     #[delegate]
     pub base: Base,
@@ -1098,7 +1076,7 @@ pub struct BodyThrust {
     pub location: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct BodyVelocity {
     #[delegate]
     pub base: Base,
@@ -1107,28 +1085,28 @@ pub struct BodyVelocity {
     pub max_force: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct BoolValue {
     #[delegate]
     pub base: Base,
     pub value: bool,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct BoxHandleAdornment {
     #[delegate]
     pub handle_adornment: HandleAdornment,
     pub size: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct BrickColorValue {
     #[delegate]
     pub base: Base,
     pub value: BrickColor,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Camera {
     #[delegate]
     pub base: Base,
@@ -1144,14 +1122,14 @@ pub struct Camera {
     pub head_scale: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct CFrameValue {
     #[delegate]
     pub base: Base,
     pub value: CFrame,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct CharacterMesh {
     #[delegate]
     pub base: Base,
@@ -1162,7 +1140,7 @@ pub struct CharacterMesh {
     pub mesh_id: i64,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ChorusSoundEffect {
     #[delegate]
     pub sound_effect: SoundEffect,
@@ -1171,7 +1149,7 @@ pub struct ChorusSoundEffect {
     pub rate: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ClickDetector {
     #[delegate]
     pub base: Base,
@@ -1179,14 +1157,14 @@ pub struct ClickDetector {
     pub max_activation_distance: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Clothing {
     #[delegate]
     pub base: Base,
     pub color3: Color3,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Clouds {
     #[delegate]
     pub base: Base,
@@ -1194,14 +1172,14 @@ pub struct Clouds {
     pub density: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Color3Value {
     #[delegate]
     pub base: Base,
     pub value: Color3,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ColorCorrectionEffect {
     #[delegate]
     pub post_effect: PostEffect,
@@ -1211,7 +1189,7 @@ pub struct ColorCorrectionEffect {
     pub tint_color: Color3,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct CompressorSoundEffect {
     #[delegate]
     pub sound_effect: SoundEffect,
@@ -1223,7 +1201,7 @@ pub struct CompressorSoundEffect {
     pub side_chain: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ConeHandleAdornment {
     #[delegate]
     pub handle_adornment: HandleAdornment,
@@ -1231,19 +1209,19 @@ pub struct ConeHandleAdornment {
     pub radius: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Configuration {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct CornerWedgePart {
     #[delegate]
     pub base_part: BasePart,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Constraint {
     #[delegate]
     pub base: Base,
@@ -1254,21 +1232,21 @@ pub struct Constraint {
     pub attachment_1: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct CustomEvent {
     #[delegate]
     pub base: Base,
     pub persisted_current_value: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct CustomEventReceiver {
     #[delegate]
     pub base: Base,
     pub source: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct CylinderHandleAdornment {
     #[delegate]
     pub handle_adornment: HandleAdornment,
@@ -1278,13 +1256,13 @@ pub struct CylinderHandleAdornment {
     pub radius: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct CylinderMesh {
     #[delegate]
     pub bevel_mesh: BevelMesh,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct CylindricalConstraint {
     #[delegate]
     pub sliding_ball_constraint: SlidingBallConstraint,
@@ -1304,7 +1282,7 @@ pub struct CylindricalConstraint {
     pub servo_max_torque: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct DataModelMesh {
     #[delegate]
     pub base: Base,
@@ -1319,7 +1297,7 @@ pub struct DataModelMesh {
     pub lody: LevelOfDetailSetting,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Decal {
     #[delegate]
     pub face_instance: FaceInstance,
@@ -1328,7 +1306,7 @@ pub struct Decal {
     pub transparency: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct DepthOfFieldEffect {
     #[delegate]
     pub post_effect: PostEffect,
@@ -1338,7 +1316,7 @@ pub struct DepthOfFieldEffect {
     pub near_intensity: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Dialog {
     #[delegate]
     pub base: Base,
@@ -1356,7 +1334,7 @@ pub struct Dialog {
     pub trigger_offset: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct DialogChoice {
     #[delegate]
     pub base: Base,
@@ -1366,14 +1344,14 @@ pub struct DialogChoice {
     pub user_dialog: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct DistortionSoundEffect {
     #[delegate]
     pub sound_effect: SoundEffect,
     pub level: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct DoubleConstrainedValue {
     #[delegate]
     pub base: Base,
@@ -1383,14 +1361,14 @@ pub struct DoubleConstrainedValue {
     pub value: f64,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct DynamicRotate {
     #[delegate]
     pub joint_instance: JointInstance,
     pub base_angle: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct EchoSoundEffect {
     #[delegate]
     pub sound_effect: SoundEffect,
@@ -1400,7 +1378,7 @@ pub struct EchoSoundEffect {
     pub wet_level: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct EqualizerSoundEffect {
     #[delegate]
     pub sound_effect: SoundEffect,
@@ -1409,7 +1387,7 @@ pub struct EqualizerSoundEffect {
     pub high_gain: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Explosion {
     #[delegate]
     pub base: Base,
@@ -1422,7 +1400,7 @@ pub struct Explosion {
     pub position: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct FaceInstance {
     #[delegate]
     pub base: Base,
@@ -1430,7 +1408,7 @@ pub struct FaceInstance {
     pub face: NormalId,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Feature {
     #[delegate]
     pub base: Base,
@@ -1445,7 +1423,7 @@ pub struct Feature {
     pub top_bottom: TopBottom,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct FileMesh {
     #[delegate]
     pub data_model_mesh: DataModelMesh,
@@ -1453,7 +1431,7 @@ pub struct FileMesh {
     pub texture_id: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Fire {
     #[delegate]
     pub base: Base,
@@ -1466,21 +1444,21 @@ pub struct Fire {
     pub size: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Flag {
     #[delegate]
     pub tool: Tool,
     pub team_color: BrickColor,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct FlagStand {
     #[delegate]
     pub part: Part,
     pub team_color: BrickColor,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct FlangeSoundEffect {
     #[delegate]
     pub sound_effect: SoundEffect,
@@ -1489,7 +1467,7 @@ pub struct FlangeSoundEffect {
     pub rate: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct FloorWire {
     #[delegate]
     pub gui_base: GuiBase3D,
@@ -1503,20 +1481,20 @@ pub struct FloorWire {
     pub to: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Folder {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ForceField {
     #[delegate]
     pub base: Base,
     pub visible: bool,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Frame {
     #[delegate]
     pub gui_object: GuiObject,
@@ -1524,7 +1502,7 @@ pub struct Frame {
     pub style: FrameStyle,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct FunctionalTest {
     #[delegate]
     pub base: Base,
@@ -1532,7 +1510,7 @@ pub struct FunctionalTest {
     pub description: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Glue {
     #[delegate]
     pub joint_instance: JointInstance,
@@ -1542,7 +1520,7 @@ pub struct Glue {
     pub f3: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct GuiBase2D {
     #[delegate]
     pub base: Base,
@@ -1550,7 +1528,7 @@ pub struct GuiBase2D {
     pub root_localization_table: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct GuiBase3D {
     #[delegate]
     pub base: Base,
@@ -1559,7 +1537,7 @@ pub struct GuiBase3D {
     pub transparency: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct GuiButton {
     #[delegate]
     pub gui_object: GuiObject,
@@ -1570,13 +1548,13 @@ pub struct GuiButton {
     pub style: ButtonStyle,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct GuiMain {
     #[delegate]
     pub screen_gui: ScreenGui,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct GuiObject {
     #[delegate]
     pub gui_base: GuiBase2D,
@@ -1611,7 +1589,7 @@ pub struct GuiObject {
     pub next_selection_down: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct HandleAdornment {
     #[delegate]
     pub pv_adornment: PVAdornment,
@@ -1623,7 +1601,7 @@ pub struct HandleAdornment {
     pub c_frame: CFrame,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Handles {
     #[delegate]
     pub part_adornment: PartAdornment,
@@ -1632,13 +1610,13 @@ pub struct Handles {
     pub style: HandlesStyle,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Hat {
     #[delegate]
     pub accoutrement: Accoutrement,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct HingeConstraint {
     #[delegate]
     pub constraint: Constraint,
@@ -1657,19 +1635,19 @@ pub struct HingeConstraint {
     pub actuator_type: ActuatorType,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Hint {
     #[delegate]
     pub message: Message,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Hole {
     #[delegate]
     pub feature: Feature,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct HopperBin {
     #[delegate]
     pub backpack_item: BackpackItem,
@@ -1678,7 +1656,7 @@ pub struct HopperBin {
     pub bin_type: BinType,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Humanoid {
     #[delegate]
     pub base: Base,
@@ -1716,13 +1694,13 @@ pub struct Humanoid {
     pub display_name: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct HumanoidController {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct HumanoidDescription {
     #[delegate]
     pub base: Base,
@@ -1771,7 +1749,7 @@ pub struct HumanoidDescription {
     pub torso_color: Color3,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ImageButton {
     #[delegate]
     pub gui_button: GuiButton,
@@ -1789,7 +1767,7 @@ pub struct ImageButton {
     pub tile_size: UDim2,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ImageHandleAdornment {
     #[delegate]
     pub handle_adornment: HandleAdornment,
@@ -1797,7 +1775,7 @@ pub struct ImageHandleAdornment {
     pub size: Vector2,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ImageLabel {
     #[delegate]
     pub gui_object: GuiObject,
@@ -1813,14 +1791,14 @@ pub struct ImageLabel {
     pub tile_size: UDim2,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct InstanceAdornment {
     #[delegate]
     pub gui_base: GuiBase3D,
     pub adornee: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct IntConstrainedValue {
     #[delegate]
     pub base: Base,
@@ -1830,14 +1808,14 @@ pub struct IntConstrainedValue {
     pub value: i64,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct IntValue {
     #[delegate]
     pub base: Base,
     pub value: i64,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct JointInstance {
     #[delegate]
     pub base: Base,
@@ -1849,21 +1827,21 @@ pub struct JointInstance {
     pub part_1: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Keyframe {
     #[delegate]
     pub base: Base,
     pub time: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct KeyframeMarker {
     #[delegate]
     pub base: Base,
     pub value: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct KeyframeSequence {
     #[delegate]
     pub base: Base,
@@ -1874,7 +1852,7 @@ pub struct KeyframeSequence {
     pub authored_hip_height: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct LayerCollector {
     #[delegate]
     pub gui_base: GuiBase2D,
@@ -1884,7 +1862,7 @@ pub struct LayerCollector {
     pub z_index_behavior: ZIndexBehavior,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Light {
     #[delegate]
     pub base: Base,
@@ -1894,7 +1872,7 @@ pub struct Light {
     pub color: Color3,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct LineForce {
     #[delegate]
     pub constraint: Constraint,
@@ -1905,7 +1883,7 @@ pub struct LineForce {
     pub max_force: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct LineHandleAdornment {
     #[delegate]
     pub handle_adornment: HandleAdornment,
@@ -1913,7 +1891,7 @@ pub struct LineHandleAdornment {
     pub thickness: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct LocalizationTable {
     #[delegate]
     pub base: Base,
@@ -1921,20 +1899,20 @@ pub struct LocalizationTable {
     pub source_locale_id: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct LocalScript {
     #[delegate]
     pub script: Script,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct LuaSourceContainer {
     #[delegate]
     pub base: Base,
     pub script_guid: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ManualGlue {
     #[delegate]
     pub joint_instance: JointInstance,
@@ -1942,7 +1920,7 @@ pub struct ManualGlue {
     pub surface_1: i32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ManualWeld {
     #[delegate]
     pub joint_instance: JointInstance,
@@ -1950,7 +1928,7 @@ pub struct ManualWeld {
     pub surface_1: i32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct MeshPart {
     #[delegate]
     pub triangle_mesh_part: TriangleMeshPart,
@@ -1968,14 +1946,14 @@ pub struct MeshPart {
     pub texture_id: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Message {
     #[delegate]
     pub base: Base,
     pub text: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Model {
     #[delegate]
     pub base: Base,
@@ -1988,7 +1966,7 @@ pub struct Model {
     pub primary_part: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ModuleScript {
     #[delegate]
     pub lua_source_container: LuaSourceContainer,
@@ -1996,7 +1974,7 @@ pub struct ModuleScript {
     pub source: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Motor {
     #[delegate]
     pub joint_instance: JointInstance,
@@ -2004,25 +1982,25 @@ pub struct Motor {
     pub max_velocity: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Motor6D {
     #[delegate]
     pub motor: Motor,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct MotorFeature {
     #[delegate]
     pub feature: Feature,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct NegateOperation {
     #[delegate]
     pub part_operation: PartOperation,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct NoCollisionConstraint {
     #[delegate]
     pub base: Base,
@@ -2031,35 +2009,35 @@ pub struct NoCollisionConstraint {
     pub part_1: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct NumberPose {
     #[delegate]
     pub pose_base: PoseBase,
     pub value: f64,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct NumberValue {
     #[delegate]
     pub base: Base,
     pub value: f64,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ObjectValue {
     #[delegate]
     pub base: Base,
     pub value: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Pants {
     #[delegate]
     pub clothing: Clothing,
     pub pants_template: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Part {
     #[delegate]
     pub base_part: BasePart,
@@ -2071,14 +2049,14 @@ pub struct Part {
     pub shape: PartType,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct PartAdornment {
     #[delegate]
     pub gui_base: GuiBase3D,
     pub adornee: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ParticleEmitter {
     #[delegate]
     pub base: Base,
@@ -2107,7 +2085,7 @@ pub struct ParticleEmitter {
     pub z_offset: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct PartOperation {
     #[delegate]
     pub triangle_mesh_part: TriangleMeshPart,
@@ -2125,7 +2103,7 @@ pub struct PartOperation {
     pub child_data_2: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct PartOperationAsset {
     #[delegate]
     pub base: Base,
@@ -2133,28 +2111,28 @@ pub struct PartOperationAsset {
     pub child_data: Vec<u8>,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct PitchShiftSoundEffect {
     #[delegate]
     pub sound_effect: SoundEffect,
     pub octave: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct PointLight {
     #[delegate]
     pub light: Light,
     pub range: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Pose {
     #[delegate]
     pub pose_base: PoseBase,
     pub c_frame: CFrame,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct PoseBase {
     #[delegate]
     pub base: Base,
@@ -2165,20 +2143,20 @@ pub struct PoseBase {
     pub weight: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct PostEffect {
     #[delegate]
     pub base: Base,
     pub enabled: bool,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct PrismaticConstraint {
     #[delegate]
     pub sliding_ball_constraint: SlidingBallConstraint,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ProximityPrompt {
     #[delegate]
     pub base: Base,
@@ -2203,33 +2181,33 @@ pub struct ProximityPrompt {
     pub ui_offset: Vector2,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct PVAdornment {
     #[delegate]
     pub gui_base: GuiBase3D,
     pub adornee: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct RayValue {
     #[delegate]
     pub base: Base,
     pub value: Ray,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ReflectionMetadata {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ReflectionMetadataCallbacks {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ReflectionMetadataClass {
     #[delegate]
     pub reflection_meta_item: ReflectionMetadataItem,
@@ -2239,43 +2217,43 @@ pub struct ReflectionMetadataClass {
     pub preferred_parent: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ReflectionMetadataClasses {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ReflectionMetadataEnum {
     #[delegate]
     pub reflection_meta_item: ReflectionMetadataItem,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ReflectionMetadataEnumItem {
     #[delegate]
     pub reflection_meta_item: ReflectionMetadataItem,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ReflectionMetadataEnums {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ReflectionMetadataEvents {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ReflectionMetadataFunctions {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ReflectionMetadataItem {
     #[delegate]
     pub base: Base,
@@ -2299,37 +2277,37 @@ pub struct ReflectionMetadataItem {
     pub ui_num_ticks: f64,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ReflectionMetadataMember {
     #[delegate]
     pub reflection_meta_item: ReflectionMetadataItem,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ReflectionMetadataProperties {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ReflectionMetadataYieldFunctions {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct RemoteEvent {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct RemoteFunction {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct RenderingTest {
     #[delegate]
     pub base: Base,
@@ -2345,7 +2323,7 @@ pub struct RenderingTest {
     pub ticket: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ReverbSoundEffect {
     #[delegate]
     pub sound_effect: SoundEffect,
@@ -2356,7 +2334,7 @@ pub struct ReverbSoundEffect {
     pub wet_level: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct RocketPropulsion {
     #[delegate]
     pub base: Base,
@@ -2373,7 +2351,7 @@ pub struct RocketPropulsion {
     pub turn_p: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct RodConstraint {
     #[delegate]
     pub constraint: Constraint,
@@ -2384,7 +2362,7 @@ pub struct RodConstraint {
     pub thickness: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct RopeConstraint {
     #[delegate]
     pub constraint: Constraint,
@@ -2393,25 +2371,25 @@ pub struct RopeConstraint {
     pub thickness: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Rotate {
     #[delegate]
     pub joint_instance: JointInstance,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct RotateP {
     #[delegate]
     pub dynamic_rotate: DynamicRotate,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct RotateV {
     #[delegate]
     pub dynamic_rotate: DynamicRotate,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ScreenGui {
     #[delegate]
     pub layer_collector: LayerCollector,
@@ -2419,14 +2397,14 @@ pub struct ScreenGui {
     pub display_order: i32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Script {
     #[delegate]
     pub base_script: BaseScript,
     pub source: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ScrollingFrame {
     #[delegate]
     pub gui_object: GuiObject,
@@ -2453,14 +2431,14 @@ pub struct ScrollingFrame {
     pub vertical_scroll_bar_position: VerticalScrollBarPosition,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Seat {
     #[delegate]
     pub part: Part,
     pub disabled: bool,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct SelectionBox {
     #[delegate]
     pub instance_adornment: InstanceAdornment,
@@ -2469,28 +2447,28 @@ pub struct SelectionBox {
     pub surface_transparency: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct SelectionLasso {
     #[delegate]
     pub gui_base: GuiBase3D,
     pub humanoid: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct SelectionPartLasso {
     #[delegate]
     pub selection_lasso: SelectionLasso,
     pub part: InstanceRef,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct SelectionPointLasso {
     #[delegate]
     pub selection_lasso: SelectionLasso,
     pub point: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct SelectionSphere {
     #[delegate]
     pub pv_adornment: PVAdornment,
@@ -2498,14 +2476,14 @@ pub struct SelectionSphere {
     pub surface_transparency: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Shirt {
     #[delegate]
     pub clothing: Clothing,
     pub shirt_template: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ShirtGraphic {
     #[delegate]
     pub base: Base,
@@ -2513,13 +2491,13 @@ pub struct ShirtGraphic {
     pub graphic: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct SkateboardController {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct SkateboardPlatform {
     #[delegate]
     pub part: Part,
@@ -2528,14 +2506,14 @@ pub struct SkateboardPlatform {
     pub throttle: i32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Skin {
     #[delegate]
     pub base: Base,
     pub skin_color: BrickColor,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Sky {
     #[delegate]
     pub base: Base,
@@ -2553,7 +2531,7 @@ pub struct Sky {
     pub skybox_up: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct SlidingBallConstraint {
     #[delegate]
     pub constraint: Constraint,
@@ -2572,7 +2550,7 @@ pub struct SlidingBallConstraint {
     pub velocity: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Smoke {
     #[delegate]
     pub base: Base,
@@ -2586,13 +2564,13 @@ pub struct Smoke {
     pub size: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Snap {
     #[delegate]
     pub joint_instance: JointInstance,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Sound {
     #[delegate]
     pub base: Base,
@@ -2611,7 +2589,7 @@ pub struct Sound {
     pub emitter_size: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct SoundEffect {
     #[delegate]
     pub base: Base,
@@ -2619,14 +2597,14 @@ pub struct SoundEffect {
     pub priority: i32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct SoundGroup {
     #[delegate]
     pub base: Base,
     pub volume: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Sparkles {
     #[delegate]
     pub base: Base,
@@ -2634,7 +2612,7 @@ pub struct Sparkles {
     pub sparkle_color: Color3,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct SpawnLocation {
     #[delegate]
     pub part: Part,
@@ -2645,7 +2623,7 @@ pub struct SpawnLocation {
     pub team_color: BrickColor,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct SpecialMesh {
     #[delegate]
     pub file_mesh: FileMesh,
@@ -2653,14 +2631,14 @@ pub struct SpecialMesh {
     pub mesh_type: MeshType,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct SphereHandleAdornment {
     #[delegate]
     pub handle_adornment: HandleAdornment,
     pub radius: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct SpotLight {
     #[delegate]
     pub light: Light,
@@ -2670,7 +2648,7 @@ pub struct SpotLight {
     pub range: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct SpringConstraint {
     #[delegate]
     pub constraint: Constraint,
@@ -2686,26 +2664,26 @@ pub struct SpringConstraint {
     pub thickness: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct StandalonePluginScripts {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct StarterGear {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct StringValue {
     #[delegate]
     pub base: Base,
     pub value: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct SunRaysEffect {
     #[delegate]
     pub post_effect: PostEffect,
@@ -2713,7 +2691,7 @@ pub struct SunRaysEffect {
     pub spread: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct SurfaceAppearance {
     #[delegate]
     pub base: Base,
@@ -2726,7 +2704,7 @@ pub struct SurfaceAppearance {
     pub texture_pack: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct SurfaceGui {
     #[delegate]
     pub layer_collector: LayerCollector,
@@ -2745,7 +2723,7 @@ pub struct SurfaceGui {
     pub z_offset: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct SurfaceLight {
     #[delegate]
     pub light: Light,
@@ -2755,7 +2733,7 @@ pub struct SurfaceLight {
     pub range: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct SurfaceSelection {
     #[delegate]
     pub part_adornment: PartAdornment,
@@ -2763,7 +2741,7 @@ pub struct SurfaceSelection {
     pub target_surface: NormalId,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Team {
     #[delegate]
     pub base: Base,
@@ -2771,7 +2749,7 @@ pub struct Team {
     pub team_color: BrickColor,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct TeleportOptions {
     #[delegate]
     pub base: Base,
@@ -2780,7 +2758,7 @@ pub struct TeleportOptions {
     pub server_instance_id: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Terrain {
     #[delegate]
     pub base_part: BasePart,
@@ -2798,7 +2776,7 @@ pub struct Terrain {
     pub material_colors: Vec<u8>,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct TerrainRegion {
     #[delegate]
     pub base: Base,
@@ -2807,7 +2785,7 @@ pub struct TerrainRegion {
     pub extents_min: Vector3Int16,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct TextBox {
     #[delegate]
     pub gui_object: GuiObject,
@@ -2838,7 +2816,7 @@ pub struct TextBox {
     pub text_y_alignment: TextYAlignment,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct TextButton {
     #[delegate]
     pub gui_button: GuiButton,
@@ -2863,7 +2841,7 @@ pub struct TextButton {
     pub text_y_alignment: TextYAlignment,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct TextLabel {
     #[delegate]
     pub gui_object: GuiObject,
@@ -2888,7 +2866,7 @@ pub struct TextLabel {
     pub text_y_alignment: TextYAlignment,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Texture {
     #[delegate]
     pub decal: Decal,
@@ -2898,7 +2876,7 @@ pub struct Texture {
     pub studs_per_tile_v: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Tool {
     #[delegate]
     pub backpack_item: BackpackItem,
@@ -2910,7 +2888,7 @@ pub struct Tool {
     pub tool_tip: String,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Torque {
     #[delegate]
     pub constraint: Constraint,
@@ -2919,7 +2897,7 @@ pub struct Torque {
     pub torque: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Trail {
     #[delegate]
     pub base: Base,
@@ -2941,7 +2919,7 @@ pub struct Trail {
     pub width_scale: NumberSequence,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct TremoloSoundEffect {
     #[delegate]
     pub sound_effect: SoundEffect,
@@ -2950,7 +2928,7 @@ pub struct TremoloSoundEffect {
     pub frequency: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct TriangleMeshPart {
     #[delegate]
     pub base_part: BasePart,
@@ -2961,7 +2939,7 @@ pub struct TriangleMeshPart {
     pub initial_size: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct TrussPart {
     #[delegate]
     pub base_part: BasePart,
@@ -2970,13 +2948,13 @@ pub struct TrussPart {
     pub style: TrussStyle,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Tween {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct UIAspectRatioConstraint {
     #[delegate]
     pub base: Base,
@@ -2987,14 +2965,14 @@ pub struct UIAspectRatioConstraint {
     pub dominant_axis: DominantAxis,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct UICorner {
     #[delegate]
     pub base: Base,
     pub corner_radius: UDim,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct UIGradient {
     #[delegate]
     pub base: Base,
@@ -3005,7 +2983,7 @@ pub struct UIGradient {
     pub transparency: NumberSequence,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct UIGridLayout {
     #[delegate]
     pub ui_grid_style_layout: UIGridStyleLayout,
@@ -3016,7 +2994,7 @@ pub struct UIGridLayout {
     pub start_corner: StartCorner,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct UIGridStyleLayout {
     #[delegate]
     pub base: Base,
@@ -3030,14 +3008,14 @@ pub struct UIGridStyleLayout {
     pub sort_order: SortOrder,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct UIListLayout {
     #[delegate]
     pub ui_grid_style_layout: UIGridStyleLayout,
     pub padding: UDim,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct UIPadding {
     #[delegate]
     pub base: Base,
@@ -3047,7 +3025,7 @@ pub struct UIPadding {
     pub padding_right: UDim,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct UIPageLayout {
     #[delegate]
     pub ui_grid_style_layout: UIGridStyleLayout,
@@ -3064,14 +3042,14 @@ pub struct UIPageLayout {
     pub tween_time: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct UIScale {
     #[delegate]
     pub base: Base,
     pub scale: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct UISizeConstraint {
     #[delegate]
     pub base: Base,
@@ -3079,7 +3057,7 @@ pub struct UISizeConstraint {
     pub min_size: Vector2,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct UIStroke {
     #[delegate]
     pub base: Base,
@@ -3093,7 +3071,7 @@ pub struct UIStroke {
     pub transparency: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct UITableLayout {
     #[delegate]
     pub ui_grid_style_layout: UIGridStyleLayout,
@@ -3104,7 +3082,7 @@ pub struct UITableLayout {
     pub padding: UDim2,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct UITextSizeConstraint {
     #[delegate]
     pub base: Base,
@@ -3112,13 +3090,13 @@ pub struct UITextSizeConstraint {
     pub max_text_size: i32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct UnionOperation {
     #[delegate]
     pub part_operation: PartOperation,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct UniversalConstraint {
     #[delegate]
     pub constraint: Constraint,
@@ -3128,14 +3106,14 @@ pub struct UniversalConstraint {
     pub restitution: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Vector3Value {
     #[delegate]
     pub base: Base,
     pub value: Vector3,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct VectorForce {
     #[delegate]
     pub constraint: Constraint,
@@ -3145,13 +3123,13 @@ pub struct VectorForce {
     pub relative_to: ActuatorRelativeTo,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct VehicleController {
     #[delegate]
     pub base: Base,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct VehicleSeat {
     #[delegate]
     pub base_part: BasePart,
@@ -3166,7 +3144,7 @@ pub struct VehicleSeat {
     pub turn_speed: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct VelocityMotor {
     #[delegate]
     pub joint_instance: JointInstance,
@@ -3176,7 +3154,7 @@ pub struct VelocityMotor {
     pub max_velocity: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct VideoFrame {
     #[delegate]
     pub gui_object: GuiObject,
@@ -3187,7 +3165,7 @@ pub struct VideoFrame {
     pub volume: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct ViewportFrame {
     #[delegate]
     pub gui_object: GuiObject,
@@ -3200,7 +3178,7 @@ pub struct ViewportFrame {
     pub camera_field_of_view: f32,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct WedgePart {
     #[delegate]
     pub base_part: BasePart,
@@ -3209,13 +3187,13 @@ pub struct WedgePart {
     pub form_factor: FormFactor,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct Weld {
     #[delegate]
     pub joint_instance: JointInstance,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct WeldConstraint {
     #[delegate]
     pub base: Base,
@@ -3228,7 +3206,7 @@ pub struct WeldConstraint {
     pub c_frame: CFrame,
 }
 
-#[derive(Debug, Clone, FromProperty, ToProperty)]
+#[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
 pub struct WorldModel {
     #[delegate]
     pub model: Model,

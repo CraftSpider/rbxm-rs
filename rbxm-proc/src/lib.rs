@@ -3,6 +3,8 @@ use proc_macro::{TokenStream, Span};
 use quote::quote;
 use syn::{parse_macro_input, DeriveInput, LitStr, Ident};
 
+// TODO: Merge FromProperty/ToProperty? Name would probably be like PropertyConvert or something
+
 fn match_path(path: &syn::Path, ident: &str) -> bool {
     path.is_ident(&Ident::new(ident, Span::call_site().into()))
 }
@@ -23,6 +25,46 @@ fn to_pascal_case(ident: &Ident) -> LitStr {
         })
         .collect::<String>();
     LitStr::new(&ident, Span::call_site().into())
+}
+
+#[proc_macro_derive(Inherits)]
+pub fn inherits(item: TokenStream) -> TokenStream {
+    let item = parse_macro_input!(item as DeriveInput);
+    let item_name = &item.ident;
+
+    let fields = match &item.data {
+        syn::Data::Struct(data) => &data.fields,
+        _ => panic!("Inherits not supported on non-structs"),
+    };
+    let named_fields = match fields {
+        syn::Fields::Named(fields) => fields,
+        _ => panic!("Inherits requires named fields"),
+    };
+
+    let field = named_fields
+        .named
+        .first()
+        .unwrap();
+
+    let (target_ty, target_name) = (&field.ty, field.ident.as_ref().unwrap());
+
+    let expanded = quote!(
+        impl core::ops::Deref for #item_name {
+            type Target = #target_ty;
+
+            fn deref(&self) -> &Self::Target {
+                &self.#target_name
+            }
+        }
+
+        impl core::ops::DerefMut for #item_name {
+            fn deref_mut(&mut self) -> &mut Self::Target {
+                &mut self.#target_name
+            }
+        }
+    );
+
+    TokenStream::from(expanded)
 }
 
 #[proc_macro_derive(FromProperty, attributes(delegate, isenum, propname, propty))]
@@ -211,7 +253,7 @@ pub fn to_property(item: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_derive(EnumConvert)]
-pub fn try_from(item: TokenStream) -> TokenStream {
+pub fn enum_convert(item: TokenStream) -> TokenStream {
     let item = parse_macro_input!(item as DeriveInput);
     let item_name = &item.ident;
 

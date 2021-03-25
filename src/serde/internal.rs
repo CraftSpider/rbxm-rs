@@ -3,28 +3,6 @@ use crate::model::*;
 use crate::serde::{Error, Result};
 use std::collections::HashMap;
 
-#[derive(Debug)]
-pub(crate) enum Block {
-    Meta(HashMap<String, String>),
-    SharedStr(Vec<Vec<u8>>),
-    Instance {
-        index: i32,
-        class_name: String,
-        is_service: bool,
-        instance_ids: Vec<i32>,
-    },
-    Property {
-        class_index: i32,
-        property_name: String,
-        properties: Vec<RawProperty>,
-    },
-    Parent {
-        instance_referents: Vec<i32>,
-        parent_referents: Vec<i32>,
-    },
-    End,
-}
-
 #[derive(Debug, Clone)]
 pub enum RawProperty {
     RawString(Vec<u8>), // This may or may not be a 'real' string, it can also be just a data blob
@@ -54,7 +32,7 @@ pub enum RawProperty {
     Rect(Rect),
     CustomPhysicalProperties(bool),
     Color3Uint8(Color3Uint8),
-    SharedString(i32),
+    RawSharedString(i32),
 }
 
 impl RawProperty {
@@ -86,7 +64,7 @@ impl RawProperty {
             RawProperty::CustomPhysicalProperties(val) => Property::CustomPhysicalProperties(val),
             RawProperty::Color3Uint8(val) => Property::Color3Uint8(val),
             RawProperty::Int64(val) => Property::Int64(val),
-            RawProperty::SharedString(..) => unreachable!(),
+            RawProperty::RawSharedString(..) => unreachable!(),
         }
     }
 
@@ -283,9 +261,9 @@ pub fn make_kind(kind: &str, mut properties: HashMap<String, Property>) -> Resul
         "HumanoidController" => {
             InstanceKind::HumanoidController(HumanoidController::from_properties(&mut properties)?)
         }
-        "HumanoidDescription" => InstanceKind::HumanoidDescription(
-            Box::new(HumanoidDescription::from_properties(&mut properties)?),
-        ),
+        "HumanoidDescription" => InstanceKind::HumanoidDescription(Box::new(
+            HumanoidDescription::from_properties(&mut properties)?,
+        )),
         "ImageButton" => InstanceKind::ImageButton(ImageButton::from_properties(&mut properties)?),
         "ImageHandleAdornment" => InstanceKind::ImageHandleAdornment(
             ImageHandleAdornment::from_properties(&mut properties)?,
