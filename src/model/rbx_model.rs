@@ -1,6 +1,7 @@
-use crate::model::{Error, Instance, Result};
+use super::OwnedInstance;
+use crate::model::ModelError;
 
-use std::cell::{Ref, RefCell};
+use std::cell::Ref;
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -9,9 +10,9 @@ enum PathSegment<'a> {
     Name(&'a str),
 }
 
-fn split_path(path: &str) -> Result<Vec<PathSegment>> {
+fn split_path(path: &str) -> Result<Vec<PathSegment>, ModelError> {
     if path.is_empty() {
-        return Err(Error::InvalidPath);
+        return Err(ModelError::InvalidPath);
     }
 
     path.split('.')
@@ -21,20 +22,22 @@ fn split_path(path: &str) -> Result<Vec<PathSegment>> {
                 if segment.chars().all(char::is_alphanumeric) {
                     Ok(PathSegment::Name(segment))
                 } else {
-                    Err(Error::InvalidPath)
+                    Err(ModelError::InvalidPath)
                 }
             }
         })
         .collect()
 }
 
+/// A full Roblox model
 #[derive(Debug, Clone)]
 pub struct RbxModel {
-    pub meta: HashMap<String, String>,
-    pub roots: Vec<Rc<RefCell<Instance>>>,
+    pub(crate) meta: HashMap<String, String>,
+    pub(crate) roots: Vec<OwnedInstance>,
 }
 
 impl RbxModel {
+    /// Create a new empty model
     pub fn new() -> RbxModel {
         RbxModel {
             meta: HashMap::new(),
@@ -42,11 +45,21 @@ impl RbxModel {
         }
     }
 
-    pub fn get_path(&self, path: &str) -> Result<Rc<RefCell<Instance>>> {
+    /// Get an instance from a model, based on a path to that instance.
+    ///
+    /// # Path Syntax
+    ///
+    /// - Components are separated by `/`
+    /// - A component can be either an index or a name
+    /// - An index component is a usize representing the Nth child
+    /// - A name component is any non-number string matching a possible instance name
+    pub fn get_path(&self, path: &str) -> Result<OwnedInstance, ModelError> {
         let parts = split_path(path)?;
 
         let mut cur = match &parts[0] {
-            PathSegment::Index(index) => Rc::clone(self.roots.get(*index).ok_or(Error::NotFound)?),
+            PathSegment::Index(index) => {
+                Rc::clone(self.roots.get(*index).ok_or(ModelError::NotFound)?)
+            }
             PathSegment::Name(name) => {
                 let results = self
                     .roots
@@ -54,9 +67,9 @@ impl RbxModel {
                     .filter(|inst| inst.borrow().kind.name() == *name)
                     .collect::<Vec<_>>();
                 if results.len() > 1 {
-                    return Err(Error::AmbiguousPath);
+                    return Err(ModelError::AmbiguousPath);
                 }
-                Rc::clone(results.get(0).ok_or(Error::NotFound)?)
+                Rc::clone(results.get(0).ok_or(ModelError::NotFound)?)
             }
         };
 
@@ -65,7 +78,7 @@ impl RbxModel {
                 let children = Ref::map(cur.borrow(), |inst| &inst.children);
                 match segment {
                     PathSegment::Index(index) => {
-                        Rc::clone(children.get(*index).ok_or(Error::NotFound)?)
+                        Rc::clone(children.get(*index).ok_or(ModelError::NotFound)?)
                     }
                     PathSegment::Name(name) => {
                         let results = children
@@ -73,9 +86,9 @@ impl RbxModel {
                             .filter(|inst| inst.borrow().kind.name() == *name)
                             .collect::<Vec<_>>();
                         if results.len() > 1 {
-                            return Err(Error::AmbiguousPath);
+                            return Err(ModelError::AmbiguousPath);
                         }
-                        Rc::clone(results.get(0).ok_or(Error::NotFound)?)
+                        Rc::clone(results.get(0).ok_or(ModelError::NotFound)?)
                     }
                 }
             };
@@ -84,6 +97,31 @@ impl RbxModel {
         }
 
         Ok(cur)
+    }
+
+    /// Get a reference to the set of meta values for this model
+    pub fn meta(&self) -> &HashMap<String, String> {
+        &self.meta
+    }
+
+    /// Get a mutable reference to the set of meta values for this model
+    pub fn meta_mut(&mut self) -> &mut HashMap<String, String> {
+        &mut self.meta
+    }
+
+    /// Get the root instances of this model
+    pub fn roots(&self) -> &Vec<OwnedInstance> {
+        &self.roots
+    }
+
+    /// Add a root instance to this model
+    pub fn add_root(&mut self, inst: OwnedInstance) {
+        self.roots.push(inst)
+    }
+
+    /// Remove a root instance from this model
+    pub fn remove_root(&mut self, inst: &OwnedInstance) {
+        self.roots.retain(|item| !Rc::ptr_eq(item, inst));
     }
 }
 

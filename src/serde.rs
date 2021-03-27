@@ -1,3 +1,5 @@
+//! The ability to serialize/deserialize an RBXM file
+
 pub mod de;
 pub mod error;
 pub(crate) mod internal;

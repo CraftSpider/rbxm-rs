@@ -1,9 +1,15 @@
+//! Crate for items related to Roblox Instances, the base components of all models.
+
+#![allow(missing_docs)]
+
+use super::{InstanceRef, OwnedInstance};
 use crate::model::data::*;
 use crate::model::enums::*;
 use crate::model::Property;
 use crate::serde::internal::{FromProperty, ToProperty};
 use rbxm_proc::{FromProperty, Inherits, ToProperty};
 
+use crate::model::error::InstanceError;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
@@ -27,33 +33,138 @@ macro_rules! chomp_prop {
     };
 }
 
-type InstanceRef = Weak<RefCell<Instance>>;
-
+/// Represents a Roblox [Instance][rbx-instances],
+/// the base component which all models are made up of.
+///
+/// **Reference Link**: [class/Instance][rbx-instances]
+///
+/// [rbx-instances]: https://developer.roblox.com/en-us/api-reference/class/Instance
 #[derive(Debug, Clone)]
 pub struct Instance {
-    pub children: Vec<Rc<RefCell<Instance>>>,
-    pub parent: Weak<RefCell<Instance>>,
+    pub(crate) children: Vec<OwnedInstance>,
+    pub(crate) parent: Weak<RefCell<Instance>>,
     pub kind: InstanceKind,
 }
 
+#[warn(missing_docs)]
 impl Instance {
-    pub fn new(kind: InstanceKind, parent: Option<&Rc<RefCell<Instance>>>) -> Instance {
-        Instance {
+    /// Create a new Instance of the specified kind, optionally attaching it to a parent. May fail
+    /// if the parent cannot be mutably borrowed.
+    pub fn new(
+        kind: InstanceKind,
+        parent: Option<&OwnedInstance>,
+    ) -> Result<OwnedInstance, InstanceError> {
+        let out = Rc::new(RefCell::new(Instance {
             children: vec![],
-            parent: parent.map(|rc| Rc::downgrade(rc)).unwrap_or_default(),
+            parent: Weak::default(),
             kind,
+        }));
+
+        if let Some(parent) = parent {
+            Instance::add_child(parent, out.clone())?
         }
+
+        Ok(out)
     }
 
-    pub(crate) fn uninit() -> Instance {
-        Instance {
+    pub(crate) fn uninit() -> OwnedInstance {
+        Rc::new(RefCell::new(Instance {
             children: Vec::default(),
             parent: Weak::default(),
             kind: InstanceKind::Other(String::default(), HashMap::default()),
+        }))
+    }
+
+    /// Add a child to a parent Instance. May fail if either cannot be mutably borrowed, or the
+    /// provided Instance is already a child of the parent.
+    pub fn add_child(parent: &OwnedInstance, child: OwnedInstance) -> Result<(), InstanceError> {
+        let mut parent_mut = parent
+            .try_borrow_mut()
+            .map_err(|_| InstanceError::FailedBorrowMut)?;
+
+        if parent_mut.has_child(&child) {
+            return Err(InstanceError::AlreadyHasChild);
         }
+
+        {
+            let mut child_mut = child
+                .try_borrow_mut()
+                .map_err(|_| InstanceError::FailedBorrowMut)?;
+
+            if let Some(parent) = child_mut.parent.upgrade() {
+                parent
+                    .try_borrow_mut()
+                    .map_err(|_| InstanceError::FailedBorrowMut)?
+                    .children
+                    .retain(|existing| !Rc::ptr_eq(existing, &child))
+            }
+
+            child_mut.parent = Rc::downgrade(parent);
+        }
+
+        parent_mut.children.push(child);
+
+        Ok(())
+    }
+
+    /// Remove a child from a parent instance. May fail if either instance cannot be mutably borrowed,
+    /// or the provided instance is already a child of the parent.
+    pub fn remove_child(
+        parent: &OwnedInstance,
+        child: &OwnedInstance,
+    ) -> Result<(), InstanceError> {
+        let mut parent_mut = parent
+            .try_borrow_mut()
+            .map_err(|_| InstanceError::FailedBorrowMut)?;
+
+        if !parent_mut.has_child(&child) {
+            return Err(InstanceError::NoSuchChild);
+        }
+
+        {
+            let mut child_mut = child
+                .try_borrow_mut()
+                .map_err(|_| InstanceError::FailedBorrowMut)?;
+
+            child_mut.parent = Weak::default();
+        }
+
+        parent_mut
+            .children
+            .retain(|existing| !Rc::ptr_eq(existing, child));
+
+        Ok(())
+    }
+
+    /// Get the current children of this Instance
+    pub fn children(&self) -> &Vec<OwnedInstance> {
+        &self.children
+    }
+
+    /// Get the parent of this model, if it has one
+    pub fn parent(&self) -> Option<OwnedInstance> {
+        self.parent.upgrade()
+    }
+
+    /// Check if this Instance has some other Instance as a child.
+    pub fn has_child(&self, inst: &OwnedInstance) -> bool {
+        self.children.iter().any(|child| Rc::ptr_eq(child, inst))
+    }
+
+    /// Get the class name of this Instance
+    pub fn class_name(&self) -> String {
+        self.kind.class_name()
+    }
+
+    /// Get the name of this Instance
+    pub fn name(&self) -> &str {
+        self.kind.name()
     }
 }
 
+/// Represent the kind of an [`Instance`]. This is not meant to be matched exhaustively, more often
+/// only checking if an Instance is of a certain specific kind, otherwise performing some default
+/// activity.
 #[non_exhaustive]
 #[derive(Debug, Clone)]
 pub enum InstanceKind {
@@ -268,7 +379,9 @@ pub enum InstanceKind {
     Other(String, HashMap<String, Property>),
 }
 
+#[warn(missing_docs)]
 impl InstanceKind {
+    /// Get the name of the class for this kind
     pub fn class_name(&self) -> String {
         String::from(match self {
             InstanceKind::Accessory(..) => "Accessory",
@@ -484,6 +597,7 @@ impl InstanceKind {
         })
     }
 
+    /// Get the name of this kind
     pub fn name(&self) -> &str {
         match self {
             InstanceKind::Accessory(data) => &data.name,
@@ -704,11 +818,16 @@ impl InstanceKind {
     }
 }
 
+/// Information common to all instances, presumably part of Instance itself.
 #[derive(Debug, Clone, FromProperty, ToProperty)]
 pub struct Base {
+    /// The name of this instance
     pub name: String,
+    /// TODO: Unknown
     pub tags: String,
+    /// TODO: Unknown
     pub source_asset_id: i64,
+    /// TODO: Unknown
     pub attributes_serialize: String,
 }
 
@@ -790,7 +909,7 @@ pub struct AnimationController {
 pub struct ArcHandles {
     #[delegate]
     pub part_adornment: PartAdornment,
-    pub axes: Axis,
+    pub axes: Axes,
 }
 
 #[derive(Debug, Clone, Inherits, FromProperty, ToProperty)]
@@ -1605,7 +1724,7 @@ pub struct HandleAdornment {
 pub struct Handles {
     #[delegate]
     pub part_adornment: PartAdornment,
-    pub faces: Face,
+    pub faces: Faces,
     #[isenum]
     pub style: HandlesStyle,
 }
@@ -3210,4 +3329,62 @@ pub struct WeldConstraint {
 pub struct WorldModel {
     #[delegate]
     pub model: Model,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn dummy_kind() -> InstanceKind {
+        InstanceKind::Other("TestClass".to_string(), HashMap::new())
+    }
+
+    // TODO: Use assert_matches when it stabilizes
+
+    #[test]
+    fn test_instance_new_without_parent() {
+        let inst = Instance::new(dummy_kind(), None).unwrap();
+
+        assert_eq!(inst.borrow().children.len(), 0);
+    }
+
+    #[test]
+    fn test_instance_new_with_parent() {
+        let parent = Instance::new(dummy_kind(), None).unwrap();
+        let child = Instance::new(dummy_kind(), Some(&parent)).unwrap();
+
+        assert_eq!(parent.borrow().children.len(), 1);
+        match child.borrow().parent.upgrade() {
+            Some(inst) if Rc::ptr_eq(&inst, &parent) => (),
+            _ => panic!("Child parent was wrong"),
+        };
+    }
+
+    #[test]
+    fn test_instance_add_child() {
+        let parent = Instance::new(dummy_kind(), None).unwrap();
+        let child = Instance::new(dummy_kind(), None).unwrap();
+
+        Instance::add_child(&parent, child.clone()).expect("Couldn't add child to parent");
+
+        assert_eq!(parent.borrow().children.len(), 1);
+        match child.borrow().parent.upgrade() {
+            Some(inst) if Rc::ptr_eq(&inst, &parent) => (),
+            other => panic!("Child parent was wrong: {:?}", other),
+        };
+    }
+
+    #[test]
+    fn test_instance_remove_child() {
+        let parent = Instance::new(dummy_kind(), None).unwrap();
+        let child = Instance::new(dummy_kind(), Some(&parent)).unwrap();
+
+        Instance::remove_child(&parent, &child).expect("Couldn't remove child from parent");
+
+        assert_eq!(parent.borrow().children.len(), 0);
+        match child.borrow().parent.upgrade() {
+            None => (),
+            _ => panic!("Child still had a parent"),
+        };
+    }
 }

@@ -1,3 +1,5 @@
+//! The deserialization implementation for an RBXM
+
 use crate::model::*;
 use crate::serde::internal::{make_kind, RawProperty};
 use crate::serde::{Error, Result};
@@ -179,10 +181,14 @@ fn chomp_udim2s<R: Read>(reader: &mut R, len: usize) -> Result<Vec<UDim2>> {
         .zip(y_offsets.into_iter())
     {
         out.push(UDim2 {
-            x_scale,
-            y_scale,
-            x_offset,
-            y_offset,
+            x: UDim {
+                scale: x_scale,
+                offset: x_offset,
+            },
+            y: UDim {
+                scale: y_scale,
+                offset: y_offset,
+            },
         })
     }
     Ok(out)
@@ -215,9 +221,9 @@ fn chomp_rays<R: Read>(reader: &mut R, len: usize) -> Result<Vec<Ray>> {
     Ok(out)
 }
 
-fn chomp_face<R: Read>(reader: &mut R) -> Result<Face> {
+fn chomp_face<R: Read>(reader: &mut R) -> Result<Faces> {
     let data = chomp_u8(reader)?;
-    Ok(Face {
+    Ok(Faces {
         front: data & 0b00000001 > 0,
         bottom: data & 0b00000010 > 0,
         left: data & 0b00000100 > 0,
@@ -227,9 +233,9 @@ fn chomp_face<R: Read>(reader: &mut R) -> Result<Face> {
     })
 }
 
-fn chomp_axis<R: Read>(reader: &mut R) -> Result<Axis> {
+fn chomp_axis<R: Read>(reader: &mut R) -> Result<Axes> {
     let data = chomp_u8(reader)?;
-    Ok(Axis {
+    Ok(Axes {
         x: data & 0b100 != 0,
         y: data & 0b010 != 0,
         z: data & 0b001 != 0,
@@ -434,12 +440,14 @@ struct RawInfo {
     child_info: HashMap<i32, Vec<i32>>,
 }
 
+/// Necessary state for deserializing a value
 pub struct Deserializer<R> {
     reader: R,
     raw_info: RawInfo,
 }
 
 impl<'de, R: Read> Deserializer<R> {
+    /// Create a new deserializer from a reader and if necessary any other state
     pub fn new(reader: R) -> Deserializer<R> {
         Deserializer {
             reader,
@@ -447,6 +455,7 @@ impl<'de, R: Read> Deserializer<R> {
         }
     }
 
+    /// Deserialize a model from the input stream
     pub fn deserialize(mut self) -> Result<RbxModel> {
         let mut magic = [0; 16];
         self.reader.read_exact(&mut magic)?;
@@ -631,13 +640,9 @@ impl<'de, R: Read> Deserializer<R> {
                 make_cumulative(&mut instance_ids);
 
                 for id in &instance_ids {
-                    self.raw_info.instances.insert(
-                        *id,
-                        (
-                            class_name.clone(),
-                            Rc::new(RefCell::new(Instance::uninit())),
-                        ),
-                    );
+                    self.raw_info
+                        .instances
+                        .insert(*id, (class_name.clone(), Instance::uninit()));
                 }
 
                 self.raw_info.class_ids.insert(index, instance_ids);
@@ -827,14 +832,17 @@ impl<'de, R: Read> Deserializer<R> {
     }
 }
 
+/// Read a model from the provided IO reader
 pub fn from_reader<R: Read>(reader: R) -> Result<RbxModel> {
     Deserializer::new(reader).deserialize()
 }
 
+/// Read a model from an existing file
 pub fn from_file<P: AsRef<Path>>(path: P) -> Result<RbxModel> {
     from_reader(std::fs::File::open(path)?)
 }
 
+/// Read a model from a raw byte slice
 pub fn from_bytes(bytes: &[u8]) -> Result<RbxModel> {
     from_reader(bytes)
 }

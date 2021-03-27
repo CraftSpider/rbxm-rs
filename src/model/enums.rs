@@ -1,73 +1,133 @@
+//! Enums primarily used by Instance properties
+
 use rbxm_proc::EnumConvert;
 
-#[derive(Debug, Clone, EnumConvert)]
+/// The [`CFrame`][crate::model::CFrame] that this Instance is relative to
+///
+/// **Reference Link**: [enum/ActuatorRelativeTo](https://developer.roblox.com/en-us/api-reference/enum/ActuatorRelativeTo)
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum ActuatorRelativeTo {
+    /// Relative to the first attachment
     Attachment0 = 0,
+    /// Relative to the second attachment
     Attachment1 = 1,
+    /// Relative to the absolute game world
     World = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+/// The type of actuator this Instance is
+///
+/// **Reference Link**: [enum/ActuatorType](https://developer.roblox.com/en-us/api-reference/enum/ActuatorType)
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum ActuatorType {
+    /// No actuation
     None = 0,
+    /// Motor actuation
     Motor = 1,
+    /// Servo actuation
     Servo = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+/// When to cull this adornment
+///
+/// **Reference Link**: [enum/AdornCullingMode](https://developer.roblox.com/en-us/api-reference/enum/AdornCullingMode)
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum AdornCullingMode {
+    /// Cull automatically
     Automatic = 0,
+    /// Never cull
     Never = 1,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+/// The axis relationship between two alignment orientations
+///
+/// **Reference Link**: [enum/AlignType](https://developer.roblox.com/en-us/api-reference/enum/AlignType)
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum AlignType {
+    /// Axis are parallel
     Parallel = 0,
+    /// Axis are perpendicular
     Perpendicular = 1,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+/// How the alpha channel of a color map is used
+///
+/// **Reference Link**: [enum/AlphaMode](https://developer.roblox.com/en-us/api-reference/enum/AlphaMode)
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum AlphaMode {
+    /// Overlays the color map over the underlying part color
     Overlay = 0,
+    /// Overlays the color map over the underlying color3
     Transparency = 1,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+/// The priority of animations played at the same time
+///
+/// **Reference Link**: [enum/AnimationPriority](https://developer.roblox.com/en-us/api-reference/enum/AnimationPriority)
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum AnimationPriority {
+    /// Second lowest priority
     Idle = 0,
+    /// Second highest priority
     Movement = 1,
+    /// Highest priority
     Action = 2,
+    /// Lowest priority
     Core = 1000,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+/// How to apply this UI stroke
+///
+/// **Reference Link**: [enum/ApplyStrokeMode](https://developer.roblox.com/en-us/api-reference/enum/ApplyStrokeMode)
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum ApplyStrokeMode {
+    /// Contextual application
     Contextual = 0,
+    /// Border application
     Border = 1,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+/// Controls how an aspect ratio constraint applies
+///
+/// **Reference Link**: [enum/AspectType](https://developer.roblox.com/en-us/api-reference/enum/AspectType)
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum AspectType {
+    /// Match the parent's current size while maintaining aspect ratio
     FitWithinMaxSize = 0,
+    /// Match the parent's maximum size while maintaining aspect ratio
     ScaleWithParentSize = 1,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+/// Whether the element should automatically increase in size to the maximum allowed by the parent
+///
+/// **Reference Link**: [enum/AutomaticSize](https://developer.roblox.com/en-us/api-reference/enum/AutomaticSize)
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum AutomaticSize {
+    /// Do not use automatic size
     None = 0,
+    /// Resize along the X axis
     X = 1,
+    /// Resize along the Y axis
     Y = 2,
+    /// Resize along both X and Y axes
     XY = 3,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
-pub enum SingleAxis {
+/// Represents a single X, Y, or Z axis
+///
+/// **Reference Link**: [enum/Axis](https://developer.roblox.com/en-us/api-reference/enum/Axis)
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum Axis {
+    /// X axis
     X = 0,
+    /// Y axis
     Y = 1,
+    /// Z axis
     Z = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+///
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum BinType {
     Script = 0,
     GameTool = 1,
@@ -76,7 +136,7 @@ pub enum BinType {
     Hammer = 4,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum BodyPart {
     Head = 0,
     Torso = 1,
@@ -86,14 +146,14 @@ pub enum BodyPart {
     RightLeg = 5,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum BorderMode {
     Outline = 0,
     Middle = 1,
     Inset = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum ButtonStyle {
     Custom = 0,
     RobloxButtonDefault = 1,
@@ -103,7 +163,7 @@ pub enum ButtonStyle {
     RobloxRoundDropdownButton = 5,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum CameraType {
     Fixed = 0,
     Attach = 1,
@@ -115,40 +175,40 @@ pub enum CameraType {
     Orbital = 7,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum DialogBehaviorType {
     SinglePlayer = 0,
     MultiplePlayers = 1,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum DialogPurpose {
     Quest = 0,
     Help = 1,
     Shop = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum DialogTone {
     Neutral = 0,
     Friendly = 1,
     Enemy = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum DominantAxis {
     Width = 0,
     Height = 1,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum EasingDirection {
     In = 0,
     Out = 1,
     InOut = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum EasingStyle {
     Linear = 0,
     Sine = 1,
@@ -163,33 +223,33 @@ pub enum EasingStyle {
     Cubic = 10,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum ElasticBehavior {
     WhenScrollable = 0,
     Always = 1,
     Never = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum ExplosionType {
     NoCraters = 0,
     Craters = 1,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum FieldOfViewMode {
     Vertical = 0,
     Diagonal = 1,
     MaxAxis = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum FillDirection {
     Horizontal = 0,
     Vertical = 1,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum Font {
     Legacy = 0,
     Arial = 1,
@@ -239,7 +299,7 @@ pub enum Font {
     Ubuntu = 45,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum FormFactor {
     Symmetric = 0,
     Brick = 1,
@@ -247,7 +307,7 @@ pub enum FormFactor {
     Custom = 3,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum FrameStyle {
     Custom = 0,
     ChatBlue = 1,
@@ -258,60 +318,60 @@ pub enum FrameStyle {
     DropShadow = 6,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum HandlesStyle {
     Resize = 0,
     Movement = 1,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum HorizontalAlignment {
     Center = 0,
     Left = 1,
     Right = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum HumanoidCollisionType {
     OuterBox = 0,
     InnerBox = 1,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum HumanoidDisplayDistanceType {
     Viewer = 0,
     Subject = 1,
     None = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum HumanoidHealthDisplayType {
     DisplayWhenDamaged = 0,
     AlwaysOn = 1,
     AlwaysOff = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum HumanoidRigType {
     R6 = 0,
     R15 = 1,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum InOut {
     Edge = 0,
     Inset = 1,
     Center = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum InputType {
     NoInput = 0,
     Constant = 12,
     Sin = 13,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum KeyCode {
     Unknown = 0,
     Backspace = 8,
@@ -569,28 +629,28 @@ pub enum KeyCode {
     Thumbstick2 = 1017,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum LeftRight {
     Left = 0,
     Center = 1,
     Right = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum LevelOfDetailSetting {
     Low = 0,
     Medium = 1,
     High = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum LineJoinMode {
     Round = 0,
     Bevel = 1,
     Miter = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum Material {
     Plastic = 256,
     SmoothPlastic = 272,
@@ -631,7 +691,7 @@ pub enum Material {
     Water = 2048,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum MeshType {
     Head = 0,
     Torso = 1,
@@ -647,21 +707,21 @@ pub enum MeshType {
     CornerWedge = 11,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum ModelLevelOfDetail {
     Automatic = 0,
     StreamingMesh = 1,
     Disabled = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum NameOcclusion {
     NoOcclusion = 0,
     EnemyOcclusion = 1,
     OccludeAll = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum NormalId {
     Right = 0,
     Top = 1,
@@ -671,7 +731,7 @@ pub enum NormalId {
     Front = 5,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum ParticleOrientation {
     FacingCamera = 0,
     FacingCameraWorldUp = 1,
@@ -679,21 +739,21 @@ pub enum ParticleOrientation {
     VelocityPerpendicular = 3,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum PartType {
     Ball = 0,
     Block = 1,
     Cylinder = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum PoseEasingDirection {
     In = 0,
     Out = 1,
     InOut = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum PoseEasingStyle {
     Linear = 0,
     Constant = 1,
@@ -702,33 +762,33 @@ pub enum PoseEasingStyle {
     Bounce = 4,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum ProximityPromptExclusivity {
     OnePerButton = 0,
     OneGlobally = 1,
     AlwaysShow = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum ProximityPromptStyle {
     Default = 0,
     Custom = 1,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum RenderFidelity {
     Automatic = 0,
     Precise = 1,
     Performance = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum RenderingTestComparisonMethod {
     Psnr = 0,
     Diff = 1,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum RollOffMode {
     Inverse = 0,
     Linear = 1,
@@ -736,7 +796,7 @@ pub enum RollOffMode {
     InverseTapered = 3,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum ScaleType {
     Stretch = 0,
     Slice = 1,
@@ -745,35 +805,35 @@ pub enum ScaleType {
     Crop = 4,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum ScrollBarInset {
     None = 0,
     ScrollBar = 1,
     Always = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum ScrollingDirection {
     X = 1,
     Y = 2,
     XY = 4,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum SizeConstraint {
     RelativeXY = 0,
     RelativeXX = 1,
     RelativeYY = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum SortOrder {
     Name = 0,
     Custom = 1,
     LayoutOrder = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum StartCorner {
     TopLeft = 0,
     TopRight = 1,
@@ -781,13 +841,13 @@ pub enum StartCorner {
     BottomRight = 3,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum SurfaceGuiSizingMode {
     FixedSize = 0,
     PixelsPerStud = 1,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum SurfaceType {
     Smooth = 0,
     Glue = 1,
@@ -801,13 +861,13 @@ pub enum SurfaceType {
     SmoothNoOutlines = 10,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum TableMajorAxis {
     RowMajor = 0,
     ColumnMajor = 1,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum TerrainAcquisitionMethod {
     None = 0,
     Legacy = 1,
@@ -823,61 +883,61 @@ pub enum TerrainAcquisitionMethod {
     Other = 11,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum TextTruncate {
     None = 0,
     AtEnd = 1,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum TextureMode {
     Stretch = 0,
     Wrap = 1,
     Static = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum TextXAlignment {
     Left = 0,
     Right = 1,
     Center = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum TextYAlignment {
     Top = 0,
     Center = 1,
     Bottom = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum TopBottom {
     Top = 0,
     Center = 1,
     Bottom = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum TrussStyle {
     AlternatingSupports = 0,
     BridgeStyleSupports = 1,
     NoSupports = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum VerticalAlignment {
     Center = 0,
     Top = 1,
     Bottom = 2,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum VerticalScrollBarPosition {
     Right = 0,
     Left = 1,
 }
 
-#[derive(Debug, Clone, EnumConvert)]
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum ZIndexBehavior {
     Global = 0,
     Sibling = 1,

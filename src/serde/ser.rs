@@ -1,5 +1,7 @@
+//! The serialization implementation for an RBXM
+
 use crate::model::{
-    Axis, Color3, Color3Uint8, ColorSequence, Face, Instance, NumberRange, NumberSequence,
+    Axes, Color3, Color3Uint8, ColorSequence, Faces, Instance, NumberRange, NumberSequence,
     Property, RbxModel, Vector2, Vector3, Vector3Int16,
 };
 use crate::serde::internal::{break_kind, RawProperty};
@@ -45,6 +47,7 @@ pub(crate) enum Block {
     End,
 }
 
+/// Necessary state for serializing a value
 pub struct Serializer<W> {
     writer: W,
 }
@@ -203,10 +206,10 @@ fn write_udim2s<W: Write>(writer: &mut W, properties: &[RawProperty]) -> Result<
 
     for prop in properties {
         if let RawProperty::UDim2(udim) = prop {
-            x_scales.push(udim.x_scale);
-            y_scales.push(udim.y_scale);
-            x_offsets.push(udim.x_offset);
-            y_offsets.push(udim.y_offset);
+            x_scales.push(udim.x.scale);
+            y_scales.push(udim.y.scale);
+            x_offsets.push(udim.x.offset);
+            y_offsets.push(udim.y.offset);
         } else {
             unreachable!()
         }
@@ -249,7 +252,7 @@ fn write_rays<W: Write>(writer: &mut W, properties: &[RawProperty]) -> Result<()
     Ok(())
 }
 
-fn write_face<W: Write>(writer: &mut W, val: &Face) -> Result<()> {
+fn write_face<W: Write>(writer: &mut W, val: &Faces) -> Result<()> {
     let mut data = 0;
 
     if val.front {
@@ -275,7 +278,7 @@ fn write_face<W: Write>(writer: &mut W, val: &Face) -> Result<()> {
     Ok(())
 }
 
-fn write_axis<W: Write>(writer: &mut W, val: &Axis) -> Result<()> {
+fn write_axis<W: Write>(writer: &mut W, val: &Axes) -> Result<()> {
     let mut data = 0;
 
     if val.x {
@@ -600,10 +603,12 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
 }
 
 impl<W: Write> Serializer<W> {
+    /// Create a new serializer from a writer and if necessary any other state
     pub fn new(writer: W) -> Serializer<W> {
         Serializer { writer }
     }
 
+    /// Serialize a model to the output stream
     pub fn serialize(mut self, model: &RbxModel) -> Result<()> {
         let (num_classes, num_insts, blocks) = break_model(model);
 
@@ -802,14 +807,17 @@ impl<W: Write> Serializer<W> {
     }
 }
 
+/// Write a model out to a provided IO writer
 pub fn to_writer<W: Write>(writer: W, model: &RbxModel) -> Result<()> {
     Serializer::new(writer).serialize(model)
 }
 
+/// Write a model out to a file, creating it if necessary
 pub fn to_file<P: AsRef<Path>>(path: P, model: &RbxModel) -> Result<()> {
     to_writer(std::fs::File::create(path)?, model)
 }
 
+/// Write a model to a vector as raw bytes, and return it
 pub fn to_bytes(model: &RbxModel) -> Result<Vec<u8>> {
     let mut out = Vec::new();
     to_writer(&mut out, model)?;
