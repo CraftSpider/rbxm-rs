@@ -1,9 +1,9 @@
 use super::OwnedInstance;
 use crate::model::ModelError;
 
-use std::cell::Ref;
-use std::collections::HashMap;
+use core::cell::Ref;
 use std::rc::Rc;
+use std::collections::HashMap;
 
 enum PathSegment<'a> {
     Index(usize),
