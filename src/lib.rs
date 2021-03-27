@@ -37,6 +37,6 @@
 pub mod model;
 pub mod serde;
 
-pub use model::{RbxModel, Instance, ModelError, InstanceError};
+pub use model::{Instance, InstanceError, ModelError, RbxModel};
 pub use serde::Error as SerdeError;
 pub use serde::{from_file, to_file};

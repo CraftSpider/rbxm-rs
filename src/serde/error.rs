@@ -1,7 +1,7 @@
 //! Common error handling machinery for serialization/deserialization
 
-use core::fmt;
 use std::error::Error as StdError;
+use std::fmt;
 use std::io::Error as IoError;
 
 /// A result used for all ser/de methods that return a result

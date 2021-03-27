@@ -1,7 +1,7 @@
 //! Error types for Roblox model related activities
 
-use core::fmt;
 use std::error::Error as StdError;
+use std::fmt;
 
 /// The error type returned by model operations that may fail
 #[derive(Debug)]

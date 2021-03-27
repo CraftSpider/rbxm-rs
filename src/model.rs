@@ -13,7 +13,7 @@ mod rbx_model;
 
 pub use data::*;
 pub use enums::*;
-pub use error::{ModelError, InstanceError};
+pub use error::{InstanceError, ModelError};
 pub use instance::{Instance, InstanceKind};
 pub use property::Property;
 pub use rbx_model::RbxModel;
