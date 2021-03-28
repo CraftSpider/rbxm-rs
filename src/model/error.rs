@@ -1,7 +1,6 @@
 //! Error types for Roblox model related activities
 
-use std::error::Error as StdError;
-use std::fmt;
+use core::fmt;
 
 /// The error type returned by model operations that may fail
 #[derive(Debug)]
@@ -24,7 +23,8 @@ impl fmt::Display for ModelError {
     }
 }
 
-impl StdError for ModelError {}
+#[cfg(feature = "std")]
+impl std::error::Error for ModelError {}
 
 /// The error type returned by instance operations that may fail
 #[derive(Debug)]
@@ -50,4 +50,5 @@ impl fmt::Display for InstanceError {
     }
 }
 
-impl StdError for InstanceError {}
+#[cfg(feature = "std")]
+impl std::error::Error for InstanceError {}

@@ -1,9 +1,11 @@
 use super::OwnedInstance;
 use crate::model::ModelError;
 
-use std::cell::Ref;
-use std::collections::HashMap;
-use std::rc::Rc;
+use alloc::collections::BTreeMap;
+use alloc::rc::Rc;
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
+use core::cell::Ref;
 
 enum PathSegment<'a> {
     Index(usize),
@@ -32,7 +34,7 @@ fn split_path(path: &str) -> Result<Vec<PathSegment>, ModelError> {
 /// A full Roblox model
 #[derive(Debug, Clone)]
 pub struct RbxModel {
-    pub(crate) meta: HashMap<String, String>,
+    pub(crate) meta: BTreeMap<String, String>,
     pub(crate) roots: Vec<OwnedInstance>,
 }
 
@@ -40,7 +42,7 @@ impl RbxModel {
     /// Create a new empty model
     pub fn new() -> RbxModel {
         RbxModel {
-            meta: HashMap::new(),
+            meta: BTreeMap::new(),
             roots: Vec::new(),
         }
     }
@@ -100,12 +102,12 @@ impl RbxModel {
     }
 
     /// Get a reference to the set of meta values for this model
-    pub fn meta(&self) -> &HashMap<String, String> {
+    pub fn meta(&self) -> &BTreeMap<String, String> {
         &self.meta
     }
 
     /// Get a mutable reference to the set of meta values for this model
-    pub fn meta_mut(&mut self) -> &mut HashMap<String, String> {
+    pub fn meta_mut(&mut self) -> &mut BTreeMap<String, String> {
         &mut self.meta
     }
 
@@ -128,7 +130,7 @@ impl RbxModel {
 impl Default for RbxModel {
     fn default() -> RbxModel {
         let mut out = RbxModel {
-            meta: HashMap::default(),
+            meta: BTreeMap::default(),
             roots: Vec::default(),
         };
         out.meta

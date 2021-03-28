@@ -33,10 +33,17 @@
 
 #![deny(clippy::all)]
 #![warn(missing_docs)]
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[macro_use]
+extern crate alloc;
+
+mod __external {}
 
 pub mod model;
 pub mod serde;
 
 pub use model::{Instance, InstanceError, ModelError, RbxModel};
 pub use serde::Error as SerdeError;
+#[cfg(feature = "std")]
 pub use serde::{from_file, to_file};

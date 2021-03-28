@@ -1,5 +1,7 @@
 //! Base data types used primarily by Instance properties.
 
+use alloc::vec::Vec;
+
 /// A dimensional component representing a scale and an offset
 ///
 /// **Reference Link**: [datatype/UDim](https://developer.roblox.com/en-us/api-reference/datatype/UDim)

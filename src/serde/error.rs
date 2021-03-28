@@ -1,8 +1,8 @@
 //! Common error handling machinery for serialization/deserialization
 
-use std::error::Error as StdError;
-use std::fmt;
-use std::io::Error as IoError;
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
+use core::fmt;
 
 /// A result used for all ser/de methods that return a result
 pub type Result<T> = core::result::Result<T, Error>;
@@ -36,7 +36,7 @@ pub enum Error {
     UnconsumedProperties(String, Vec<String>),
 
     /// The input experienced an underlying IO error
-    IoError(IoError),
+    IoError(#[cfg(feature = "std")] std::io::Error),
     /// A string value contained invalid bytes
     InvalidString,
     /// An LZ4 block contained invalid bytes
@@ -63,7 +63,10 @@ impl fmt::Display for Error {
                 class_name, prop_names
             ),
 
+            #[cfg(feature = "std")]
             Error::IoError(err) => format!("Error in IO: {}", err),
+            #[cfg(not(feature = "std"))]
+            Error::IoError() => format!("Error in IO"),
             Error::InvalidString => "String contained invalid UTF data".to_string(),
             Error::InvalidLz4 => "LZ4 block couldn't be deserialized".to_string(),
         };
@@ -72,8 +75,9 @@ impl fmt::Display for Error {
     }
 }
 
-impl StdError for Error {
-    fn source(&self) -> Option<&(dyn StdError + 'static)> {
+#[cfg(feature = "std")]
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Error::IoError(e) => Some(e),
             _ => None,
@@ -81,8 +85,9 @@ impl StdError for Error {
     }
 }
 
-impl From<IoError> for Error {
-    fn from(err: IoError) -> Error {
+#[cfg(feature = "std")]
+impl From<std::io::Error> for Error {
+    fn from(err: std::io::Error) -> Error {
         Error::IoError(err)
     }
 }

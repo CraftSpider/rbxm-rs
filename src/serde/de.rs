@@ -4,11 +4,39 @@ use crate::model::*;
 use crate::serde::internal::{make_kind, RawProperty};
 use crate::serde::{Error, Result};
 
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::io::Read;
-use std::path::Path;
-use std::rc::{Rc, Weak};
+use alloc::collections::BTreeMap;
+use alloc::rc::{Rc, Weak};
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
+use core::cell::RefCell;
+
+/// A no_std minimal implementation of [`std::io::Read`]
+pub trait Read {
+    /// Read an exact buffer size
+    fn read_exact(&mut self, buf: &mut [u8]) -> Result<()>;
+}
+
+#[cfg(feature = "std")]
+impl<T: std::io::Read> Read for T {
+    fn read_exact(&mut self, buf: &mut [u8]) -> Result<()> {
+        <Self as std::io::Read>::read_exact(self, buf).map_err(Error::IoError)
+    }
+}
+
+#[cfg(not(feature = "std"))]
+impl Read for &[u8] {
+    fn read_exact(&mut self, buf: &mut [u8]) -> Result<()> {
+        if buf.len() < self.len() {
+            for i in 0..buf.len() {
+                buf[i] = self[i];
+            }
+            *self = &self[buf.len()..];
+            Ok(())
+        } else {
+            Err(Error::IoError())
+        }
+    }
+}
 
 // Decode the special formats used to store some values
 
@@ -431,13 +459,13 @@ fn chomp_color3_u8<R: Read>(reader: &mut R) -> Result<Color3Uint8> {
 
 #[derive(Default)]
 struct RawInfo {
-    meta: HashMap<String, String>,
+    meta: BTreeMap<String, String>,
     shared_strs: Vec<Vec<u8>>,
-    class_ids: HashMap<i32, Vec<i32>>,
-    instances: HashMap<i32, (String, Rc<RefCell<Instance>>)>,
-    raw_props: HashMap<i32, HashMap<String, RawProperty>>,
-    parent_info: HashMap<i32, i32>,
-    child_info: HashMap<i32, Vec<i32>>,
+    class_ids: BTreeMap<i32, Vec<i32>>,
+    instances: BTreeMap<i32, (String, Rc<RefCell<Instance>>)>,
+    raw_props: BTreeMap<i32, BTreeMap<String, RawProperty>>,
+    parent_info: BTreeMap<i32, i32>,
+    child_info: BTreeMap<i32, Vec<i32>>,
 }
 
 /// Necessary state for deserializing a value
@@ -811,9 +839,9 @@ impl<'de, R: Read> Deserializer<R> {
 
         let first_zero = data.iter().copied().position(|b| b == 0).unwrap_or(4) as usize;
 
-        Ok(std::str::from_utf8(&data[..first_zero])
+        Ok(core::str::from_utf8(&data[..first_zero])
             .map_err(|_| Error::InvalidString)?
-            .to_owned())
+            .to_string())
     }
 
     fn chomp_lz4(&mut self) -> Result<Vec<u8>> {
@@ -840,7 +868,8 @@ pub fn from_reader<R: Read>(reader: R) -> Result<RbxModel> {
 }
 
 /// Read a model from an existing file
-pub fn from_file<P: AsRef<Path>>(path: P) -> Result<RbxModel> {
+#[cfg(feature = "std")]
+pub fn from_file<P: AsRef<std::path::Path>>(path: P) -> Result<RbxModel> {
     from_reader(std::fs::File::open(path)?)
 }
 
@@ -879,21 +908,25 @@ mod tests {
         assert_eq!(array, [0, 1, 2, 7]);
     }
 
+    #[cfg(feature = "std")]
     #[test]
     fn test_brick() {
         from_file("./examples/BrickBase.rbxm").unwrap();
     }
 
+    #[cfg(feature = "std")]
     #[test]
     fn test_terrain() {
         from_file("./examples/TerrainBase.rbxm").unwrap();
     }
 
+    #[cfg(feature = "std")]
     #[test]
     fn test_cframes() {
         from_file("./examples/CFrameTest.rbxm").unwrap();
     }
 
+    #[cfg(feature = "std")]
     #[test]
     fn test_instances() {
         from_file("./examples/InstanceTest.rbxm").unwrap();

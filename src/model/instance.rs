@@ -5,14 +5,17 @@
 use super::{InstanceRef, OwnedInstance};
 use crate::model::data::*;
 use crate::model::enums::*;
+use crate::model::error::InstanceError;
 use crate::model::Property;
 use crate::serde::internal::{FromProperty, ToProperty};
 use rbxm_proc::{Inherits, PropertyConvert};
 
-use crate::model::error::InstanceError;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::rc::{Rc, Weak};
+use alloc::boxed::Box;
+use alloc::collections::BTreeMap;
+use alloc::rc::{Rc, Weak};
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
+use core::cell::RefCell;
 
 macro_rules! chomp_prop {
     // A binary string could be valid text, allow that
@@ -79,7 +82,7 @@ impl Instance {
         Rc::new(RefCell::new(Instance {
             children: Vec::default(),
             parent: Weak::default(),
-            kind: InstanceKind::Other(String::default(), HashMap::default()),
+            kind: InstanceKind::Other(String::default(), BTreeMap::default()),
         }))
     }
 
@@ -384,7 +387,7 @@ pub enum InstanceKind {
     WeldConstraint(WeldConstraint),
     WorldModel(WorldModel),
 
-    Other(String, HashMap<String, Property>),
+    Other(String, BTreeMap<String, Property>),
 }
 
 #[warn(missing_docs)]
@@ -3348,7 +3351,7 @@ mod tests {
     use super::*;
 
     fn dummy_kind() -> InstanceKind {
-        InstanceKind::Other("TestClass".to_string(), HashMap::new())
+        InstanceKind::Other("TestClass".to_string(), BTreeMap::new())
     }
 
     // TODO: Use assert_matches when it stabilizes

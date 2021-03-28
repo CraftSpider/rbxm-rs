@@ -1,7 +1,11 @@
 use crate::model::instance::*;
 use crate::model::*;
 use crate::serde::{Error, Result};
-use std::collections::HashMap;
+
+use alloc::boxed::Box;
+use alloc::collections::BTreeMap;
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 
 #[derive(Debug, Clone)]
 pub enum RawProperty {
@@ -104,14 +108,14 @@ impl RawProperty {
 }
 
 pub(crate) trait FromProperty: Sized {
-    fn from_properties(properties: &mut HashMap<String, Property>) -> Result<Self>;
+    fn from_properties(properties: &mut BTreeMap<String, Property>) -> Result<Self>;
 }
 
 pub(crate) trait ToProperty: Sized {
-    fn to_properties(&self, properties: &mut HashMap<String, Property>);
+    fn to_properties(&self, properties: &mut BTreeMap<String, Property>);
 }
 
-pub fn make_kind(kind: &str, mut properties: HashMap<String, Property>) -> Result<InstanceKind> {
+pub fn make_kind(kind: &str, mut properties: BTreeMap<String, Property>) -> Result<InstanceKind> {
     let out = match kind {
         "Accoutrement" => {
             InstanceKind::Accoutrement(Accoutrement::from_properties(&mut properties)?)
@@ -530,7 +534,17 @@ pub fn make_kind(kind: &str, mut properties: HashMap<String, Property>) -> Resul
             InstanceKind::WeldConstraint(WeldConstraint::from_properties(&mut properties)?)
         }
         "WorldModel" => InstanceKind::WorldModel(WorldModel::from_properties(&mut properties)?),
-        _ => InstanceKind::Other(kind.to_owned(), properties.drain().collect()),
+        _ => {
+            let kind = InstanceKind::Other(
+                kind.to_string(),
+                properties
+                    .iter()
+                    .map(|(key, val)| (key.clone(), val.clone()))
+                    .collect(),
+            );
+            properties.clear();
+            kind
+        }
     };
 
     if !properties.is_empty() {
@@ -543,8 +557,8 @@ pub fn make_kind(kind: &str, mut properties: HashMap<String, Property>) -> Resul
     }
 }
 
-pub fn break_kind(kind: &InstanceKind) -> HashMap<String, Property> {
-    let mut properties = HashMap::new();
+pub fn break_kind(kind: &InstanceKind) -> BTreeMap<String, Property> {
+    let mut properties = BTreeMap::new();
 
     match kind {
         InstanceKind::Accoutrement(data) => data.to_properties(&mut properties),

@@ -5,6 +5,10 @@ pub mod error;
 pub(crate) mod internal;
 pub mod ser;
 
-pub use de::{from_file, from_reader};
+#[cfg(feature = "std")]
+pub use de::from_file;
+pub use de::from_reader;
 pub use error::{Error, Result};
-pub use ser::{to_file, to_writer};
+#[cfg(feature = "std")]
+pub use ser::to_file;
+pub use ser::to_writer;

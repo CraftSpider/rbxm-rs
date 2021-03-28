@@ -18,5 +18,5 @@ pub use instance::{Instance, InstanceKind};
 pub use property::Property;
 pub use rbx_model::RbxModel;
 
-type OwnedInstance = std::rc::Rc<std::cell::RefCell<Instance>>;
-type InstanceRef = std::rc::Weak<std::cell::RefCell<Instance>>;
+type OwnedInstance = alloc::rc::Rc<core::cell::RefCell<Instance>>;
+type InstanceRef = alloc::rc::Weak<core::cell::RefCell<Instance>>;

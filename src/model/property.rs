@@ -3,6 +3,9 @@
 use super::InstanceRef;
 use crate::model::data::*;
 
+use alloc::string::String;
+use alloc::vec::Vec;
+
 /// This represents a property with an unknown type, handling any of the possible types.
 /// Should generally only be used if working with an [`Instance`][crate::model::Instance] not
 /// recognized by the crate.

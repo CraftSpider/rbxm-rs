@@ -1,5 +1,7 @@
 //! Enums primarily used by Instance properties
 
+#![allow(missing_docs)]
+
 use rbxm_proc::EnumConvert;
 
 /// The [`CFrame`][crate::model::CFrame] that this Instance is relative to

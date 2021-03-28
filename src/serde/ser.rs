@@ -7,11 +7,39 @@ use crate::model::{
 use crate::serde::internal::{break_kind, RawProperty};
 use crate::serde::Result;
 
-use std::cell::RefCell;
-use std::collections::{BTreeMap, HashMap};
-use std::io::Write;
-use std::path::Path;
-use std::rc::Rc;
+use alloc::collections::BTreeMap;
+use alloc::rc::Rc;
+use alloc::string::String;
+use alloc::vec::Vec;
+use core::cell::RefCell;
+
+/// A no_std minimal implementation of [`std::io::Write`]
+pub trait Write {
+    /// Write an exact buffer size
+    fn write_all(&mut self, buf: &[u8]) -> Result<()>;
+}
+
+#[cfg(feature = "std")]
+impl<T: std::io::Write> Write for T {
+    fn write_all(&mut self, buf: &[u8]) -> Result<()> {
+        <Self as std::io::Write>::write_all(self, buf).map_err(super::Error::IoError)
+    }
+}
+
+#[cfg(not(feature = "std"))]
+impl Write for Vec<u8> {
+    fn write_all(&mut self, buf: &[u8]) -> Result<()> {
+        self.extend_from_slice(buf);
+        Ok(())
+    }
+}
+
+#[cfg(not(feature = "std"))]
+impl<T: Write> Write for &mut T {
+    fn write_all(&mut self, buf: &[u8]) -> Result<()> {
+        <T as Write>::write_all(*self, buf)
+    }
+}
 
 macro_rules! float_match {
     ($var:expr, $($array:expr; $num:literal),+) => {
@@ -27,7 +55,7 @@ macro_rules! float_match {
 
 #[derive(Debug)]
 pub(crate) enum Block {
-    Meta(HashMap<String, String>),
+    Meta(BTreeMap<String, String>),
     SharedStr(Vec<Vec<u8>>),
     Instance {
         index: i32,
@@ -514,7 +542,7 @@ fn walk_children(collection: &mut Vec<Rc<RefCell<Instance>>>, todo: &[Rc<RefCell
 fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
     let mut insts = Vec::new();
     #[allow(clippy::mutable_key_type)]
-    let mut inst_to_id = HashMap::new();
+    let mut inst_to_id = BTreeMap::new();
 
     walk_children(&mut insts, &model.roots);
 
@@ -522,9 +550,9 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
         inst_to_id.insert(Rc::as_ptr(inst), index as i32);
     }
 
-    let mut inst_blocks = HashMap::new();
+    let mut inst_blocks = BTreeMap::new();
     let mut prop_blocks = BTreeMap::new();
-    let mut parents = HashMap::new();
+    let mut parents = BTreeMap::new();
     let mut shared_strs = Vec::new();
 
     for (index, inst) in insts.iter().enumerate() {
@@ -844,7 +872,8 @@ pub fn to_writer<W: Write>(writer: W, model: &RbxModel) -> Result<()> {
 }
 
 /// Write a model out to a file, creating it if necessary
-pub fn to_file<P: AsRef<Path>>(path: P, model: &RbxModel) -> Result<()> {
+#[cfg(feature = "std")]
+pub fn to_file<P: AsRef<std::path::Path>>(path: P, model: &RbxModel) -> Result<()> {
     to_writer(std::fs::File::create(path)?, model)
 }
 
@@ -885,6 +914,7 @@ mod tests {
         assert_eq!(array, [0, 1, 1, 5]);
     }
 
+    #[cfg(feature = "std")]
     #[test]
     fn test_reser() {
         let model = crate::serde::from_file("./examples/BrickBase.rbxm").unwrap();

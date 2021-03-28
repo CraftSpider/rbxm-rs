@@ -183,7 +183,7 @@ pub fn property_convert(item: TokenStream) -> TokenStream {
 
     let expanded = quote! {
         impl FromProperty for #item_name {
-            fn from_properties(properties: &mut std::collections::HashMap<String, Property>) -> std::result::Result<Self, crate::SerdeError> {
+            fn from_properties(properties: &mut alloc::collections::BTreeMap<String, Property>) -> core::result::Result<Self, crate::SerdeError> {
                 Ok(Self {
                     #(#constructor),*
                 })
@@ -191,7 +191,7 @@ pub fn property_convert(item: TokenStream) -> TokenStream {
         }
 
         impl ToProperty for #item_name {
-            fn to_properties(&self, properties: &mut std::collections::HashMap<String, Property>) {
+            fn to_properties(&self, properties: &mut alloc::collections::BTreeMap<String, Property>) {
                 #(#destructor;)*
             }
         }
@@ -234,10 +234,10 @@ pub fn enum_convert(item: TokenStream) -> TokenStream {
         .collect::<Vec<_>>();
 
     let expanded = quote! {
-        impl std::convert::TryFrom<i32> for #item_name {
+        impl core::convert::TryFrom<i32> for #item_name {
             type Error = ();
 
-            fn try_from(val: i32) -> std::result::Result<Self, ()> {
+            fn try_from(val: i32) -> core::result::Result<Self, ()> {
                 match val {
                     #(#variant_match,)*
                     _ => Err(()),
@@ -246,7 +246,7 @@ pub fn enum_convert(item: TokenStream) -> TokenStream {
         }
 
         #[allow(clippy::from_over_into)]
-        impl std::convert::Into<i32> for #item_name {
+        impl core::convert::Into<i32> for #item_name {
             fn into(self) -> i32 {
                 self as i32
             }
