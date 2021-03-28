@@ -72,6 +72,8 @@ impl RawProperty {
         match prop {
             Property::BinaryString(..) => unreachable!(),
             Property::TextString(..) => unreachable!(),
+            Property::SharedBinaryString(..) => unreachable!(),
+            Property::SharedTextString(..) => unreachable!(),
             Property::Bool(val) => RawProperty::Bool(val),
             Property::Int32(val) => RawProperty::Int32(val),
             Property::Float(val) => RawProperty::Float(val),

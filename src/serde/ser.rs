@@ -8,14 +8,14 @@ use crate::serde::internal::{break_kind, RawProperty};
 use crate::serde::Result;
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap};
 use std::io::Write;
 use std::path::Path;
 use std::rc::Rc;
 
 macro_rules! float_match {
     ($var:expr, $($array:expr; $num:literal),+) => {
-        if false { 0 }
+        if false { unreachable!() }
         $(else if $var == $array {
             $num
         })*
@@ -67,7 +67,7 @@ fn encode_i32(mut val: i32) -> u32 {
 fn encode_f32(val: f32) -> u32 {
     let mut raw = u32::from_ne_bytes(val.to_ne_bytes());
 
-    let sign = (raw & 0b1000_0000_0000_0000 > 0) as u32;
+    let sign = (raw & (1 << 31) > 0) as u32;
     raw <<= 1;
     raw |= sign;
     raw
@@ -373,7 +373,7 @@ fn write_cframes<W: Write>(writer: &mut W, properties: &[RawProperty]) -> Result
 
             angles.push(angle_ty);
 
-            if angle_ty != 0 {
+            if angle_ty == 0 {
                 for i in cframe.angle.iter() {
                     for j in i {
                         write_f32_raw(&mut angles, *j)?;
@@ -523,8 +523,9 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
     }
 
     let mut inst_blocks = HashMap::new();
-    let mut prop_blocks = HashMap::new();
+    let mut prop_blocks = BTreeMap::new();
     let mut parents = HashMap::new();
+    let mut shared_strs = Vec::new();
 
     for (index, inst) in insts.iter().enumerate() {
         let next_index = inst_blocks.len();
@@ -561,10 +562,31 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
                 });
             if let Block::Property { properties, .. } = prop_block {
                 let raw = match prop_value {
-                    // TODO: BinaryString/RawString sometimes should be converted to a shared string
-                    //       This will be handled in the ToProperty derive eventually, hopefully
                     Property::BinaryString(blob) => RawProperty::RawString(blob.clone()),
                     Property::TextString(str) => RawProperty::RawString(str.clone().into_bytes()),
+                    Property::SharedBinaryString(blob) => {
+                        let pos = shared_strs.iter().position(|data| data == &blob);
+
+                        match pos {
+                            Some(pos) => RawProperty::RawSharedString(pos as i32),
+                            None => {
+                                shared_strs.push(blob);
+                                RawProperty::RawSharedString((shared_strs.len() - 1) as i32)
+                            }
+                        }
+                    }
+                    Property::SharedTextString(str) => {
+                        let blob = str.into_bytes();
+                        let pos = shared_strs.iter().position(|data| data == &blob);
+
+                        match pos {
+                            Some(pos) => RawProperty::RawSharedString(pos as i32),
+                            None => {
+                                shared_strs.push(blob);
+                                RawProperty::RawSharedString((shared_strs.len() - 1) as i32)
+                            }
+                        }
+                    }
                     Property::InstanceRef(val) => {
                         RawProperty::InstanceRef(inst_to_id[&Rc::as_ptr(&val.upgrade().unwrap())])
                     }
@@ -590,7 +612,9 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
     let parent_ref = parents.values().copied().collect::<Vec<_>>();
 
     let mut out = vec![Block::Meta(model.meta.clone())];
-    // out.push(Block::SharedStr(Vec::new())); // TODO: Convert things to shared strings if needed
+    if !shared_strs.is_empty() {
+        out.push(Block::SharedStr(shared_strs))
+    }
     out.extend(inst_blocks.into_iter().map(|(_, block)| block));
     out.extend(prop_blocks.into_iter().map(|(_, block)| block));
     out.push(Block::Parent {
@@ -627,7 +651,7 @@ impl<W: Write> Serializer<W> {
             self.write_block(b)?;
         }
 
-        // Magic end value
+        // Magic end value, maybe part of END?
         self.writer
             .write_all(&[0x3C, 0x2F, 0x72, 0x6F, 0x62, 0x6C, 0x6F, 0x78, 0x3E])?;
 
@@ -792,7 +816,14 @@ impl<W: Write> Serializer<W> {
                 write_interleaved_i32_transformed(writer, &parent_referents)?;
                 b"PRNT"
             }
-            Block::End => b"END\0",
+            Block::End => {
+                // END is special
+                self.writer.write_all(b"END\0")?;
+                write_i32_raw(&mut self.writer, 0)?;
+                write_i32_raw(&mut self.writer, 9)?;
+                write_i32_raw(&mut self.writer, 0)?;
+                return Ok(())
+            },
         };
 
         let compressed_data = lz4::block::compress(&out_buffer, None, false).unwrap();
@@ -848,6 +879,9 @@ mod tests {
     fn test_reser() {
         let model = crate::serde::from_file("./examples/BrickBase.rbxm").unwrap();
 
-        to_file("./output/BrickBaseOut.rbxm", &model).unwrap();
+        let bytes = to_bytes(&model)
+            .unwrap();
+
+        assert_eq!(std::fs::read("./examples/BrickBase.rbxm").unwrap(), bytes);
     }
 }

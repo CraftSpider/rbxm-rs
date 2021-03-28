@@ -13,6 +13,10 @@ pub enum Property {
     BinaryString(Vec<u8>),
     /// A textual string, containing valid ASCII (Maybe UTF-8 or other encoding, help wanted)
     TextString(String),
+    /// A raw-byte string which is encoded as interned/shared data
+    SharedBinaryString(Vec<u8>),
+    /// A textual string which is encoded as interned/shared data
+    SharedTextString(String),
     /// A boolean value
     Bool(bool),
     /// A signed integral value, fitting in an i32

@@ -26,7 +26,7 @@ fn decode_i32(mut raw: u32) -> i32 {
 fn decode_f32(mut raw: u32) -> f32 {
     let sign = raw & 1;
     raw >>= 1;
-    raw ^= sign * 0b1000_0000_0000_0000;
+    raw ^= sign * (1 << 31);
     f32::from_ne_bytes(raw.to_ne_bytes())
 }
 
@@ -547,8 +547,8 @@ impl<'de, R: Read> Deserializer<R> {
                             RawProperty::RawSharedString(shared_id) => {
                                 let blob = &shared_strs[shared_id as usize];
                                 String::from_utf8(blob.clone())
-                                    .map(Property::TextString)
-                                    .unwrap_or_else(|err| Property::BinaryString(err.into_bytes()))
+                                    .map(Property::SharedTextString)
+                                    .unwrap_or_else(|err| Property::SharedBinaryString(err.into_bytes()))
                             }
                             RawProperty::InstanceRef(ref_id) => {
                                 let weak = Rc::downgrade(
@@ -884,6 +884,6 @@ mod tests {
 
     #[test]
     fn test_instances() {
-        dbg!(from_file("./examples/InstanceTest.rbxm").unwrap());
+        from_file("./examples/InstanceTest.rbxm").unwrap();
     }
 }
