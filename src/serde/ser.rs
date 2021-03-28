@@ -8,7 +8,7 @@ use crate::serde::internal::{break_kind, RawProperty};
 use crate::serde::Result;
 
 use std::cell::RefCell;
-use std::collections::{HashMap, BTreeMap};
+use std::collections::{BTreeMap, HashMap};
 use std::io::Write;
 use std::path::Path;
 use std::rc::Rc;
@@ -822,8 +822,8 @@ impl<W: Write> Serializer<W> {
                 write_i32_raw(&mut self.writer, 0)?;
                 write_i32_raw(&mut self.writer, 9)?;
                 write_i32_raw(&mut self.writer, 0)?;
-                return Ok(())
-            },
+                return Ok(());
+            }
         };
 
         let compressed_data = lz4::block::compress(&out_buffer, None, false).unwrap();
@@ -865,7 +865,10 @@ mod tests {
         assert_eq!(encode_i32(-1), 0b0000_0000_0000_0000_0000_0000_0000_0001);
         assert_eq!(encode_i32(2), 0b0000_0000_0000_0000_0000_0000_0000_0100);
         assert_eq!(encode_i32(16384), 0b0000_0000_0000_0000_1000_0000_0000_0000);
-        assert_eq!(encode_i32(-16385), 0b0000_0000_0000_0000_1000_0000_0000_0001);
+        assert_eq!(
+            encode_i32(-16385),
+            0b0000_0000_0000_0000_1000_0000_0000_0001
+        );
     }
 
     #[test]
@@ -886,8 +889,7 @@ mod tests {
     fn test_reser() {
         let model = crate::serde::from_file("./examples/BrickBase.rbxm").unwrap();
 
-        let bytes = to_bytes(&model)
-            .unwrap();
+        let bytes = to_bytes(&model).unwrap();
 
         assert_eq!(std::fs::read("./examples/BrickBase.rbxm").unwrap(), bytes);
     }

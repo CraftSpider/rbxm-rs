@@ -548,7 +548,9 @@ impl<'de, R: Read> Deserializer<R> {
                                 let blob = &shared_strs[shared_id as usize];
                                 String::from_utf8(blob.clone())
                                     .map(Property::SharedTextString)
-                                    .unwrap_or_else(|err| Property::SharedBinaryString(err.into_bytes()))
+                                    .unwrap_or_else(|err| {
+                                        Property::SharedBinaryString(err.into_bytes())
+                                    })
                             }
                             RawProperty::InstanceRef(ref_id) => {
                                 let weak = Rc::downgrade(
@@ -857,7 +859,10 @@ mod tests {
         assert_eq!(decode_i32(0b0000_0000_0000_0000_0000_0000_0000_0001), -1);
         assert_eq!(decode_i32(0b0000_0000_0000_0000_0000_0000_0000_0100), 2);
         assert_eq!(decode_i32(0b0000_0000_0000_0000_1000_0000_0000_0000), 16384);
-        assert_eq!(decode_i32(0b0000_0000_0000_0000_1000_0000_0000_0001), -16385);
+        assert_eq!(
+            decode_i32(0b0000_0000_0000_0000_1000_0000_0000_0001),
+            -16385
+        );
     }
 
     #[test]

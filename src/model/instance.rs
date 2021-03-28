@@ -7,7 +7,7 @@ use crate::model::data::*;
 use crate::model::enums::*;
 use crate::model::Property;
 use crate::serde::internal::{FromProperty, ToProperty};
-use rbxm_proc::{PropertyConvert, Inherits};
+use rbxm_proc::{Inherits, PropertyConvert};
 
 use crate::model::error::InstanceError;
 use std::cell::RefCell;
