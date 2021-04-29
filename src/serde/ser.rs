@@ -733,7 +733,7 @@ impl<W: Write> Serializer<W> {
 
     /// Serialize a model to the output stream
     pub fn serialize(mut self, model: &RbxModel) -> Result<()> {
-        let (num_classes, num_insts, blocks) = dbg!(break_model(model));
+        let (num_classes, num_insts, blocks) = break_model(model);
 
         // Magic start value
         self.writer.write_all(&[

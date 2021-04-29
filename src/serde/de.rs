@@ -562,8 +562,7 @@ pub(crate) fn chomp_mesh<R: Read>(reader: &mut R) -> Result<TriMesh> {
                 meshes,
             })
         }
-        // TODO: May be a better error for this
-        val => Err(Error::UnknownVariant(val))
+        val => Err(Error::UnknownMesh(val))
     }
 }
 

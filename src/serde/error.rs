@@ -26,6 +26,8 @@ pub enum Error {
     UnknownProperty(u8),
     /// An enum had an ID that wasn't recognized as a valid variant
     UnknownVariant(i32),
+    /// A Mesh kind ID (indicating mesh type) was unrecognized
+    UnknownMesh(i32),
 
     /// A property successfully parse, but was an unexpected type for the Instance it
     /// was attached to
@@ -53,6 +55,7 @@ impl fmt::Display for Error {
             Error::UnknownCFrame(id) => format!("Unknown CFrame type `{}`", id),
             Error::UnknownProperty(id) => format!("Unknown property type `{}`", id),
             Error::UnknownVariant(id) => format!("Unknown enum variant with ID `{}`", id),
+            Error::UnknownMesh(id) => format!("Unknown physics mesh kind with ID `{}`", id),
 
             Error::WrongPropertyType(prop_name) => {
                 format!("Property {} was the wrong type", prop_name)
