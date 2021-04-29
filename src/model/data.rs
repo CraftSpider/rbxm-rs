@@ -221,21 +221,34 @@ pub struct Color3Uint8 {
 }
 
 /// A full triangle mesh, used for collision or display
+#[cfg(feature = "mesh-format")]
 #[derive(Debug, Clone)]
 pub enum TriMesh {
+    /// A box mesh, no special collision
     Box,
+    /// A convex-hull based mesh
     Hull {
+        /// Total volume of the mesh
         volume: f32,
+        /// The center of gravity for the whole mesh
         center_of_gravity: Vector3,
+        /// The inertia tensor of the whole mesh
         inertia_tensor: [[f32; 3]; 3],
-        meshes: Vec<Mesh>,
+        /// The set of convex hulls that make up this mesh
+        meshes: Vec<ConvexHull>,
     },
 }
 
+/// A single convex hull, with relevant data
+#[cfg(feature = "mesh-format")]
 #[derive(Debug, Clone)]
-pub struct Mesh {
+pub struct ConvexHull {
+    /// Unknown, possibly triangle indices FIXME(CraftSpider)
     pub unknown_1: Vec<u8>,
+    /// Unknown, possibly transform offsets FIXME(CraftSpider)
     pub unknown_2: Vec<u8>,
+    /// Triangle vertices
     pub vertices: Vec<Vector3>,
+    /// Face indices into the vertex list
     pub faces: Vec<(usize, usize, usize)>,
 }

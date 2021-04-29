@@ -1,6 +1,8 @@
 //! The serialization implementation for an RBXM
 
-use crate::model::{Axes, Color3, Color3Uint8, ColorSequence, Faces, Instance, NumberRange, NumberSequence, Property, RbxModel, Vector2, Vector3, Vector3Int16, TriMesh, Mesh};
+use crate::model::{Axes, Color3, Color3Uint8, ColorSequence, Faces, Instance, NumberRange, NumberSequence, Property, RbxModel, Vector2, Vector3, Vector3Int16};
+#[cfg(feature = "mesh-format")]
+use crate::model::{TriMesh, ConvexHull};
 use crate::serde::internal::{break_kind, RawProperty};
 use crate::serde::Result;
 
@@ -514,8 +516,9 @@ fn write_color3_u8<W: Write>(writer: &mut W, val: &Color3Uint8) -> Result<()> {
     Ok(())
 }
 
-fn write_inner_mesh<W: Write>(writer: &mut W, val: &Mesh) -> Result<()> {
-    let Mesh {
+#[cfg(feature = "mesh-format")]
+fn write_inner_mesh<W: Write>(writer: &mut W, val: &ConvexHull) -> Result<()> {
+    let ConvexHull {
         unknown_1,
         unknown_2,
         vertices,
@@ -545,6 +548,7 @@ fn write_inner_mesh<W: Write>(writer: &mut W, val: &Mesh) -> Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "mesh-format")]
 pub(crate) fn write_mesh<W: Write>(writer: &mut W, val: &TriMesh) -> Result<()> {
     writer.write_all(b"CSGPHS")?;
     match val {

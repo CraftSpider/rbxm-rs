@@ -464,7 +464,8 @@ fn chomp_color3_u8<R: Read>(reader: &mut R) -> Result<Color3Uint8> {
     })
 }
 
-fn chomp_inner_mesh<R: Read>(reader: &mut R) -> Result<Mesh> {
+#[cfg(feature = "mesh-format")]
+fn chomp_inner_mesh<R: Read>(reader: &mut R) -> Result<ConvexHull> {
     let unknown_1_len = chomp_i32_raw(reader)?;
     let mut unknown_1 = vec![0; unknown_1_len as usize];
     reader.read_exact(&mut unknown_1)?;
@@ -495,7 +496,7 @@ fn chomp_inner_mesh<R: Read>(reader: &mut R) -> Result<Mesh> {
         ));
     }
 
-    Ok(Mesh {
+    Ok(ConvexHull {
         unknown_1,
         unknown_2,
         vertices,
@@ -503,6 +504,7 @@ fn chomp_inner_mesh<R: Read>(reader: &mut R) -> Result<Mesh> {
     })
 }
 
+#[cfg(feature = "mesh-format")]
 pub(crate) fn chomp_mesh<R: Read>(reader: &mut R) -> Result<TriMesh> {
     let magic = chomp_bytes::<_, 6>(reader)?;
     if &magic != b"CSGPHS" {
