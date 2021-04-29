@@ -21,26 +21,65 @@ macro_rules! chomp_prop {
     // A binary string could be valid text, allow that
     ($map:ident, $name:literal, BinaryString) => {
         match $map.remove($name) {
-            Some(Property::BinaryString(val)) => val,
-            Some(Property::TextString(str)) => str.into_bytes(),
-            Some(_) => return Err($crate::SerdeError::WrongPropertyType($name.to_string())),
-            None => return Err($crate::SerdeError::MissingProperty($name.to_string())),
+            Some(Property::BinaryString(val)) => Ok(val),
+            Some(Property::TextString(str)) => Ok(str.into_bytes()),
+            Some(_) => Err($crate::SerdeError::WrongPropertyType($name.to_string())),
+            None => Err($crate::SerdeError::MissingProperty($name.to_string())),
         }
     };
     ($map:ident, $name:literal, SharedBinaryString) => {
         match $map.remove($name) {
-            Some(Property::SharedBinaryString(val)) => val,
-            Some(Property::SharedTextString(str)) => str.into_bytes(),
-            Some(_) => return Err($crate::SerdeError::WrongPropertyType($name.to_string())),
-            None => return Err($crate::SerdeError::MissingProperty($name.to_string())),
+            Some(Property::SharedBinaryString(val)) => Ok(val),
+            Some(Property::SharedTextString(str)) => Ok(str.into_bytes()),
+            Some(_) => Err($crate::SerdeError::WrongPropertyType($name.to_string())),
+            None => Err($crate::SerdeError::MissingProperty($name.to_string())),
+        }
+    };
+    ($map:ident, $name:literal, TriMesh) => {
+        match chomp_prop!($map, $name, BinaryString) {
+            Ok(bytes) => $crate::serde::de::chomp_mesh(&mut &*bytes),
+            Err(e) => Err(e),
+        }
+    };
+    ($map:ident, $name:literal, SharedTriMesh) => {
+        match chomp_prop!($map, $name, SharedBinaryString) {
+            Ok(bytes) => {
+                let mut reader = &*bytes;
+                let out = $crate::serde::de::chomp_mesh(&mut reader);
+                assert_eq!(*reader, [], "TriMesh didn't consume whole physics buffer");
+                out
+            },
+            Err(e) => Err(e),
         }
     };
     ($map:ident, $name:literal, $prop:ident) => {
         match $map.remove($name) {
-            Some(Property::$prop(val)) => val,
-            Some(_) => return Err($crate::SerdeError::WrongPropertyType($name.to_string())),
-            None => return Err($crate::SerdeError::MissingProperty($name.to_string())),
-        };
+            Some(Property::$prop(val)) => Ok(val),
+            Some(_) => Err($crate::SerdeError::WrongPropertyType($name.to_string())),
+            None => Err($crate::SerdeError::MissingProperty($name.to_string())),
+        }
+    };
+}
+
+macro_rules! write_prop {
+    ($map:ident, $name:literal, $field:expr, TriMesh) => {
+        {
+            let mut out = Vec::new();
+            $crate::serde::ser::write_mesh(&mut out, &$field)
+                .unwrap();
+            write_prop!($map, $name, BinaryString)
+        }
+    };
+    ($map:ident, $name:literal, $field:expr, SharedTriMesh) => {
+        {
+            let mut out = Vec::new();
+            $crate::serde::ser::write_mesh(&mut out, &$field)
+                .unwrap();
+            write_prop!($map, $name, out, SharedBinaryString)
+        }
+    };
+    ($map:ident, $name:literal, $field:expr, $prop:ident) => {
+        $map.insert($name.to_string(), Property::$prop($field))
     };
 }
 
@@ -174,8 +213,8 @@ impl Instance {
 }
 
 /// Represent the kind of an [`Instance`]. This is not meant to be matched exhaustively, more often
-/// only checking if an Instance is of a certain specific kind, otherwise performing some default
-/// activity.
+/// only checking if an Instance is of a specific kind, otherwise performing some default activity
+/// or erroring out.
 #[non_exhaustive]
 #[derive(Debug, Clone)]
 pub enum InstanceKind {
@@ -2074,6 +2113,7 @@ pub struct MeshPart {
     pub render_fidelity: RenderFidelity,
     #[propname = "TextureID"]
     pub texture_id: String,
+    pub pivot_offset: Option<CFrame>,
 }
 
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
@@ -2090,6 +2130,10 @@ pub struct Model {
     #[isenum]
     pub level_of_detail: ModelLevelOfDetail,
     pub model_in_primary: CFrame,
+    #[cfg(feature = "mesh-format")]
+    #[shared]
+    pub model_mesh_data: TriMesh,
+    #[cfg(not(feature = "mesh-format"))]
     #[shared]
     pub model_mesh_data: Vec<u8>,
     pub model_mesh_size: Vector3,
@@ -3067,6 +3111,10 @@ pub struct TriangleMeshPart {
     pub base_part: BasePart,
     #[propname = "LODData"]
     pub lod_data: String,
+    #[cfg(feature = "mesh-format")]
+    #[shared]
+    pub physical_config_data: TriMesh,
+    #[cfg(not(feature = "mesh-format"))]
     #[shared]
     pub physical_config_data: Vec<u8>,
     pub physics_data: Vec<u8>,

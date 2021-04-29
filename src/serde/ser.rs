@@ -1,9 +1,6 @@
 //! The serialization implementation for an RBXM
 
-use crate::model::{
-    Axes, Color3, Color3Uint8, ColorSequence, Faces, Instance, NumberRange, NumberSequence,
-    Property, RbxModel, Vector2, Vector3, Vector3Int16,
-};
+use crate::model::{Axes, Color3, Color3Uint8, ColorSequence, Faces, Instance, NumberRange, NumberSequence, Property, RbxModel, Vector2, Vector3, Vector3Int16, TriMesh, Mesh};
 use crate::serde::internal::{break_kind, RawProperty};
 use crate::serde::Result;
 
@@ -156,7 +153,7 @@ fn write_f64<W: Write>(writer: &mut W, val: f64) -> Result<()> {
 
 fn write_string<W: Write>(writer: &mut W, val: String) -> Result<()> {
     write_i32_raw(writer, val.len() as i32)?;
-    writer.write_all(&val.into_bytes())?; // TODO: Should unicode be valid in this?
+    writer.write_all(&val.into_bytes())?;
     Ok(())
 }
 
@@ -517,6 +514,76 @@ fn write_color3_u8<W: Write>(writer: &mut W, val: &Color3Uint8) -> Result<()> {
     Ok(())
 }
 
+fn write_inner_mesh<W: Write>(writer: &mut W, val: &Mesh) -> Result<()> {
+    let Mesh {
+        unknown_1,
+        unknown_2,
+        vertices,
+        faces
+    } = val;
+
+    write_i32_raw(writer, unknown_1.len() as i32)?;
+    writer.write_all(&unknown_1)?;
+
+    write_i32_raw(writer, unknown_2.len() as i32)?;
+    writer.write_all(&unknown_2)?;
+
+    write_i32_raw(writer, (vertices.len() * 3) as i32)?;
+    write_i32_raw(writer, 4)?;
+    for vertex in vertices {
+        write_f32_raw(writer, vertex.x)?;
+        write_f32_raw(writer, vertex.y)?;
+        write_f32_raw(writer, vertex.z)?;
+    }
+
+    write_i32_raw(writer, (faces.len() * 3) as i32)?;
+    for face in faces {
+        write_i32_raw(writer, face.0 as i32)?;
+        write_i32_raw(writer, face.1 as i32)?;
+        write_i32_raw(writer, face.2 as i32)?;
+    }
+    Ok(())
+}
+
+pub(crate) fn write_mesh<W: Write>(writer: &mut W, val: &TriMesh) -> Result<()> {
+    writer.write_all(b"CSGPHS")?;
+    match val {
+        TriMesh::Box => {
+            // Kind
+            write_i32_raw(writer, 0)?;
+            // Magic content
+            writer.write_all(b"BLOCK")?;
+        }
+        TriMesh::Hull {
+            volume,
+            center_of_gravity,
+            inertia_tensor,
+            meshes,
+        } => {
+            // Kind
+            write_i32_raw(writer, 6)?;
+            // Content
+            write_f32_raw(writer, *volume)?;
+
+            write_f32_raw(writer, center_of_gravity.x)?;
+            write_f32_raw(writer, center_of_gravity.y)?;
+            write_f32_raw(writer, center_of_gravity.z)?;
+
+            write_f32_raw(writer, inertia_tensor[0][0])?;
+            write_f32_raw(writer, inertia_tensor[0][1])?;
+            write_f32_raw(writer, inertia_tensor[0][2])?;
+            write_f32_raw(writer, inertia_tensor[1][1])?;
+            write_f32_raw(writer, inertia_tensor[1][2])?;
+            write_f32_raw(writer, inertia_tensor[2][2])?;
+
+            for mesh in meshes {
+                write_inner_mesh(writer, mesh)?;
+            }
+        }
+    }
+    Ok(())
+}
+
 fn write_shared_strings<W: Write>(writer: &mut W, properties: &[RawProperty]) -> Result<()> {
     let mut indices = Vec::with_capacity(properties.len());
 
@@ -662,7 +729,7 @@ impl<W: Write> Serializer<W> {
 
     /// Serialize a model to the output stream
     pub fn serialize(mut self, model: &RbxModel) -> Result<()> {
-        let (num_classes, num_insts, blocks) = break_model(model);
+        let (num_classes, num_insts, blocks) = dbg!(break_model(model));
 
         // Magic start value
         self.writer.write_all(&[
@@ -922,5 +989,17 @@ mod tests {
         let bytes = to_bytes(&model).unwrap();
 
         assert_eq!(std::fs::read("./examples/BrickBase.rbxm").unwrap(), bytes);
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_reser_axe() {
+        let model = crate::serde::from_file("./examples/FireAxe.rbxm").unwrap();
+
+        let bytes = to_bytes(&model).unwrap();
+
+        std::fs::write("./examples/FireAxeOut.rbxm", &bytes).unwrap();
+
+        assert_eq!(std::fs::read("./examples/FireAxe.rbxm").unwrap(), bytes);
     }
 }

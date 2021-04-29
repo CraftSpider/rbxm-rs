@@ -219,3 +219,23 @@ pub struct Color3Uint8 {
     /// Blue component
     pub b: u8,
 }
+
+/// A full triangle mesh, used for collision or display
+#[derive(Debug, Clone)]
+pub enum TriMesh {
+    Box,
+    Hull {
+        volume: f32,
+        center_of_gravity: Vector3,
+        inertia_tensor: [[f32; 3]; 3],
+        meshes: Vec<Mesh>,
+    },
+}
+
+#[derive(Debug, Clone)]
+pub struct Mesh {
+    pub unknown_1: Vec<u8>,
+    pub unknown_2: Vec<u8>,
+    pub vertices: Vec<Vector3>,
+    pub faces: Vec<(usize, usize, usize)>,
+}

@@ -3,8 +3,6 @@ use proc_macro::{TokenStream, Span};
 use quote::quote;
 use syn::{parse_macro_input, DeriveInput, LitStr, Ident};
 
-// TODO: Merge FromProperty/ToProperty? Name would probably be like PropertyConvert or something
-
 fn match_path(path: &syn::Path, ident: &str) -> bool {
     path.is_ident(&Ident::new(ident, Span::call_site().into()))
 }
@@ -29,6 +27,30 @@ fn to_pascal_case(ident: &Ident) -> LitStr {
 
 fn has_attr(attrs: &Vec<syn::Attribute>, name: &str) -> bool {
     attrs.iter().any(|attr| match_path(&attr.path, name))
+}
+
+fn unwrap_option(ty: &syn::Type) -> (bool, &syn::Type) {
+    match ty {
+        syn::Type::Path(path) => {
+            let name = path_as_ident(&path.path);
+            if name == "Option" {
+                let args = &path.path.segments.last()
+                    .unwrap()
+                    .arguments;
+                let inner_ty = match args {
+                    syn::PathArguments::AngleBracketed(args) => match args.args.first().unwrap() {
+                        syn::GenericArgument::Type(ty) => ty,
+                        _ => unreachable!(),
+                    },
+                    _ => unreachable!(),
+                };
+                (true, inner_ty)
+            } else {
+                (false, ty)
+            }
+        }
+        _ => panic!()
+    }
 }
 
 #[proc_macro_derive(Inherits)]
@@ -115,30 +137,14 @@ pub fn property_convert(item: TokenStream) -> TokenStream {
             } else if is_enum {
                 (
                     quote!({
-                        let val = chomp_prop!(properties, #prop_name, Enum);
+                        let val = chomp_prop!(properties, #prop_name, Enum)?;
                         <i32 as core::convert::TryInto<_>>::try_into(val).map_err(|_| crate::SerdeError::UnknownVariant(val))?
                     }),
                     quote!(properties.insert(#prop_name.to_string(), Property::Enum(self.#field_name.clone().into()))),
                 )
-            } else if shared {
-                let prop_ty = match &field.ty {
-                    syn::Type::Path(path) => {
-                        let path = path_as_ident(&path.path);
-                        let name = match &*path {
-                            "String" => "SharedTextString",
-                            "Vec" => "SharedBinaryString",
-                            _ => panic!("Unsupported type for shared property")
-                        };
-                        syn::Ident::new(name, Span::call_site().into())
-                    }
-                    _ => panic!("Unsupported type for shared property")
-                };
-
-                (
-                    quote!(chomp_prop!(properties, #prop_name, #prop_ty)),
-                    quote!(properties.insert(#prop_name.to_string(), Property::#prop_ty(self.#field_name.clone()))),
-                )
             } else {
+                let (is_option, field_ty) = unwrap_option(&field.ty);
+
                 let prop_ty = field.attrs.iter().find(|attr| match_path(&attr.path, "propty")).map(|attr| {
                     let meta = if let syn::Meta::NameValue(value) = attr.parse_meta().unwrap() {
                         value
@@ -151,7 +157,7 @@ pub fn property_convert(item: TokenStream) -> TokenStream {
                         panic!()
                     }
                 }).unwrap_or_else(|| {
-                    match &field.ty {
+                    match &field_ty {
                         syn::Type::Path(path) => {
                             let path = path_as_ident(&path.path);
                             let name = match &*path {
@@ -160,21 +166,40 @@ pub fn property_convert(item: TokenStream) -> TokenStream {
                                 "i64" => "Int64",
                                 "f32" => "Float",
                                 "f64" => "Double",
+                                "String" if shared => "SharedTextString",
                                 "String" => "TextString",
+                                "Vec" if shared => "SharedBinaryString",
                                 "Vec" => "BinaryString",
                                 "Weak" => "InstanceRef",
+                                "TriMesh" if shared => "SharedTriMesh",
                                 ident => ident,
                             };
+
                             syn::Ident::new(name, Span::call_site().into())
                         },
                         _ => panic!("Unsupported type for property")
                     }
                 });
 
-                (
-                    quote!(chomp_prop!(properties, #prop_name, #prop_ty)),
-                    quote!(properties.insert(#prop_name.to_string(), Property::#prop_ty(self.#field_name.clone()))),
-                )
+                if is_option {
+                    (
+                        quote!(chomp_prop!(properties, #prop_name, #prop_ty)
+                            .map(Some)
+                            .or_else(|err| if let crate::SerdeError::MissingProperty(_) = err {
+                                Ok(None)
+                            } else {
+                                Err(err)
+                            })?),
+                        quote!(if let Some(#field_name) = &self.#field_name {
+                            write_prop!(properties, #prop_name, #field_name.clone(), #prop_ty);
+                        }),
+                    )
+                } else {
+                    (
+                        quote!(chomp_prop!(properties, #prop_name, #prop_ty)?),
+                        quote!(write_prop!(properties, #prop_name, self.#field_name.clone(), #prop_ty)),
+                    )
+                }
             };
 
             (quote!(#field_name: #getter), quote!(#setter))

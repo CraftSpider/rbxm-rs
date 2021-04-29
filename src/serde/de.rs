@@ -122,6 +122,13 @@ fn chomp_f64<R: Read>(reader: &mut R) -> Result<f64> {
     Ok(f64::from_le_bytes(data))
 }
 
+#[inline]
+fn chomp_bytes<R: Read, const LEN: usize>(reader: &mut R) -> Result<[u8; LEN]> {
+    let mut data = [0; LEN];
+    reader.read_exact(&mut data)?;
+    Ok(data)
+}
+
 fn chomp_string<R: Read>(reader: &mut R) -> Result<String> {
     let len = chomp_i32_raw(reader)?;
     let mut str = vec![0; len as usize];
@@ -457,6 +464,107 @@ fn chomp_color3_u8<R: Read>(reader: &mut R) -> Result<Color3Uint8> {
     })
 }
 
+fn chomp_inner_mesh<R: Read>(reader: &mut R) -> Result<Mesh> {
+    let unknown_1_len = chomp_i32_raw(reader)?;
+    let mut unknown_1 = vec![0; unknown_1_len as usize];
+    reader.read_exact(&mut unknown_1)?;
+
+    let unknown_2_len = chomp_i32_raw(reader)?;
+    let mut unknown_2 = vec![0; unknown_2_len as usize];
+    reader.read_exact(&mut unknown_2)?;
+
+    let vert_len = chomp_i32_raw(reader)? / 3;
+    let vert_width = chomp_i32_raw(reader)?;
+    assert_eq!(vert_width, 4, "Unexpected vertice width");
+    let mut vertices = Vec::with_capacity(vert_len as usize);
+    for _ in 0..vert_len {
+        vertices.push(Vector3 {
+            x: chomp_f32_raw(reader)?,
+            y: chomp_f32_raw(reader)?,
+            z: chomp_f32_raw(reader)?,
+        });
+    }
+
+    let faces_len = chomp_i32_raw(reader)? / 3;
+    let mut faces = Vec::with_capacity(faces_len as usize);
+    for _ in 0..faces_len {
+        faces.push((
+            chomp_i32_raw(reader)? as usize,
+            chomp_i32_raw(reader)? as usize,
+            chomp_i32_raw(reader)? as usize,
+        ));
+    }
+
+    Ok(Mesh {
+        unknown_1,
+        unknown_2,
+        vertices,
+        faces,
+    })
+}
+
+pub(crate) fn chomp_mesh<R: Read>(reader: &mut R) -> Result<TriMesh> {
+    let magic = chomp_bytes::<_, 6>(reader)?;
+    if &magic != b"CSGPHS" {
+        return Err(Error::BadMagic);
+    }
+
+    let kind = chomp_i32_raw(reader)?;
+
+    match kind {
+        0 => {
+            let magic = chomp_bytes::<_, 5>(reader)?;
+            if &magic != b"BLOCK" {
+                Err(Error::BadMagic)
+            } else {
+                Ok(TriMesh::Box)
+            }
+        }
+        6 => {
+            let volume = chomp_f32_raw(reader)?;
+            let center_of_gravity = Vector3 {
+                x: chomp_f32_raw(reader)?,
+                y: chomp_f32_raw(reader)?,
+                z: chomp_f32_raw(reader)?,
+            };
+
+            let inertia_tensor = {
+                let xx = chomp_f32_raw(reader)?;
+                let xy = chomp_f32_raw(reader)?;
+                let xz = chomp_f32_raw(reader)?;
+                let yy = chomp_f32_raw(reader)?;
+                let yz = chomp_f32_raw(reader)?;
+                let zz = chomp_f32_raw(reader)?;
+
+                [
+                    [ xx,  xy,  xz],
+                    [-xy,  yy,  yz],
+                    [-xz, -yz,  zz],
+                ]
+            };
+
+            let mut meshes = Vec::new();
+            // Read hulls till we run out of reader
+            loop {
+                match chomp_inner_mesh(reader) {
+                    Ok(mesh) => meshes.push(mesh),
+                    Err(Error::IoError(..)) => break,
+                    Err(e) => return Err(e),
+                }
+            }
+
+            Ok(TriMesh::Hull {
+                volume,
+                center_of_gravity,
+                inertia_tensor,
+                meshes,
+            })
+        }
+        // TODO: May be a better error for this
+        val => Err(Error::UnknownVariant(val))
+    }
+}
+
 #[derive(Default)]
 struct RawInfo {
     meta: BTreeMap<String, String>,
@@ -485,8 +593,7 @@ impl<'de, R: Read> Deserializer<R> {
 
     /// Deserialize a model from the input stream
     pub fn deserialize(mut self) -> Result<RbxModel> {
-        let mut magic = [0; 16];
-        self.reader.read_exact(&mut magic)?;
+        let magic = chomp_bytes::<_, 16>(&mut self.reader)?;
 
         if magic
             != [
@@ -508,8 +615,7 @@ impl<'de, R: Read> Deserializer<R> {
 
         while self.chomp_block()? {}
 
-        let mut magic_end = [0; 9];
-        self.reader.read_exact(&mut magic_end)?;
+        let magic_end = chomp_bytes::<_, 9>(&mut self.reader)?;
 
         if magic_end != [0x3C, 0x2F, 0x72, 0x6F, 0x62, 0x6C, 0x6F, 0x78, 0x3E] {
             return Err(Error::BadMagic);
@@ -621,8 +727,7 @@ impl<'de, R: Read> Deserializer<R> {
         let name = self.chomp_blockname()?;
 
         if name == "END" {
-            let mut end_data = [0; 12];
-            self.reader.read_exact(&mut end_data)?;
+            let end_data = chomp_bytes::<_, 12>(&mut self.reader)?;
             assert_eq!(end_data, [0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0]);
             return Ok(false);
         }
@@ -834,8 +939,7 @@ impl<'de, R: Read> Deserializer<R> {
     }
 
     fn chomp_blockname(&mut self) -> Result<String> {
-        let mut data = [0; 4];
-        self.reader.read_exact(&mut data)?;
+        let data = chomp_bytes::<_, 4>(&mut self.reader)?;
 
         let first_zero = data.iter().copied().position(|b| b == 0).unwrap_or(4) as usize;
 
@@ -910,25 +1014,7 @@ mod tests {
 
     #[cfg(feature = "std")]
     #[test]
-    fn test_brick() {
-        from_file("./examples/BrickBase.rbxm").unwrap();
-    }
-
-    #[cfg(feature = "std")]
-    #[test]
-    fn test_terrain() {
-        from_file("./examples/TerrainBase.rbxm").unwrap();
-    }
-
-    #[cfg(feature = "std")]
-    #[test]
-    fn test_cframes() {
-        from_file("./examples/CFrameTest.rbxm").unwrap();
-    }
-
-    #[cfg(feature = "std")]
-    #[test]
-    fn test_instances() {
-        from_file("./examples/InstanceTest.rbxm").unwrap();
+    fn test_fire_axe() {
+        dbg!(from_file("./examples/FireAxe.rbxm").unwrap());
     }
 }

@@ -8,12 +8,13 @@ documentation = "https://docs.rs/rbxm"
 readme = "README.md"
 repository = "https://github.com/CraftSpider/rbxm-rs"
 license = "MIT/Apache-2.0"
-keywords = ["roblox", "rbxm", "no_std"]
+keywords = ["roblox", "rbxm"]
 categories = ["data-structures", "encoding"]
 
 [features]
 default = ["std"]
 std = []
+mesh-format = []
 
 [dependencies]
 rbxm-proc = { version = "0.1.0", path = "./rbxm-proc" }

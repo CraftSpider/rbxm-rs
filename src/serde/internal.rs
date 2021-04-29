@@ -8,7 +8,7 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 #[derive(Debug, Clone)]
-pub enum RawProperty {
+pub(crate) enum RawProperty {
     RawString(Vec<u8>), // This may or may not be a 'real' string, it can also be just a data blob
     Bool(bool),
     Int32(i32),
@@ -115,7 +115,7 @@ pub(crate) trait ToProperty: Sized {
     fn to_properties(&self, properties: &mut BTreeMap<String, Property>);
 }
 
-pub fn make_kind(kind: &str, mut properties: BTreeMap<String, Property>) -> Result<InstanceKind> {
+pub(crate) fn make_kind(kind: &str, mut properties: BTreeMap<String, Property>) -> Result<InstanceKind> {
     let out = match kind {
         "Accoutrement" => {
             InstanceKind::Accoutrement(Accoutrement::from_properties(&mut properties)?)
@@ -557,7 +557,7 @@ pub fn make_kind(kind: &str, mut properties: BTreeMap<String, Property>) -> Resu
     }
 }
 
-pub fn break_kind(kind: &InstanceKind) -> BTreeMap<String, Property> {
+pub(crate) fn break_kind(kind: &InstanceKind) -> BTreeMap<String, Property> {
     let mut properties = BTreeMap::new();
 
     match kind {
