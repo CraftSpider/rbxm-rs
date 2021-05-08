@@ -40,7 +40,7 @@ pub enum Error {
     /// The input experienced an underlying IO error
     IoError(
         #[cfg(feature = "std")] std::io::Error,
-        #[cfg(not(feature = "std"))] &'static str
+        #[cfg(not(feature = "std"))] &'static str,
     ),
     /// A string value contained invalid bytes
     InvalidString,
