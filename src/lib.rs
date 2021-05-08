@@ -11,7 +11,7 @@
 //!
 //! Parse a model from a file, find an [`Instance`] by path, and print the instance's class.
 //!
-//! ```
+//! ```no_run
 //! use rbxm::{SerdeError, ModelError, from_file};
 //!
 //! let model = match rbxm::from_file("./examples/BrickBase.rbxm") {
