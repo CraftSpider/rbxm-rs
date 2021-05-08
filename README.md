@@ -1,5 +1,7 @@
 # rbxm-rs
 
+[![crates.io](https://img.shields.io/crates/v/nanowrimo.svg)](https://crates.io/crates/rbxm)
+[![Documentation](https://docs.rs/nanowrimo/badge.svg)](https://docs.rs/rbxm)
 [![MIT/Apache-2 licensed](https://img.shields.io/crates/l/nanowrimo.svg)](./LICENSE-APACHE)
 
 A reader for Roblox model files, implemented in Rust.
