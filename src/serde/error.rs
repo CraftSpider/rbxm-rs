@@ -38,7 +38,10 @@ pub enum Error {
     UnconsumedProperties(String, Vec<String>),
 
     /// The input experienced an underlying IO error
-    IoError(#[cfg(feature = "std")] std::io::Error, #[cfg(not(feature = "std"))] &'static str),
+    IoError(
+        #[cfg(feature = "std")] std::io::Error,
+        #[cfg(not(feature = "std"))] &'static str
+    ),
     /// A string value contained invalid bytes
     InvalidString,
     /// An LZ4 block contained invalid bytes
