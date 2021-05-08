@@ -925,7 +925,7 @@ impl<W: Write> Serializer<W> {
             }
         };
 
-        let compressed_data = lz4::block::compress(&out_buffer, None, false).unwrap();
+        let compressed_data = lz4_flex::block::compress::compress(&out_buffer);
 
         self.writer.write_all(block_name)?;
         write_i32_raw(&mut self.writer, compressed_data.len() as i32)?;
@@ -983,27 +983,5 @@ mod tests {
         let mut array = [0, 1, 2, 7];
         make_cumulative(&mut array);
         assert_eq!(array, [0, 1, 1, 5]);
-    }
-
-    #[cfg(feature = "std")]
-    #[test]
-    fn test_reser() {
-        let model = crate::serde::from_file("./examples/BrickBase.rbxm").unwrap();
-
-        let bytes = to_bytes(&model).unwrap();
-
-        assert_eq!(std::fs::read("./examples/BrickBase.rbxm").unwrap(), bytes);
-    }
-
-    #[cfg(feature = "std")]
-    #[test]
-    fn test_reser_axe() {
-        let model = crate::serde::from_file("./examples/FireAxe.rbxm").unwrap();
-
-        let bytes = to_bytes(&model).unwrap();
-
-        std::fs::write("./examples/FireAxeOut.rbxm", &bytes).unwrap();
-
-        assert_eq!(std::fs::read("./examples/FireAxe.rbxm").unwrap(), bytes);
     }
 }
