@@ -3,6 +3,10 @@ name = "rbxm-proc"
 version = "0.1.0"
 authors = ["Rune Tynan <runetynan@gmail.com>"]
 edition = "2018"
+license = "MIT/Apache-2.0"
+description = "Internal proc macros for the `rbxm` crate"
+documentation = "https://docs.rs/rbxm-proc"
+repository = "https://github.com/CraftSpider/rbxm-rs"
 
 [lib]
 proc-macro = true
