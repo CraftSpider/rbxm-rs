@@ -33,7 +33,7 @@ impl Read for &[u8] {
             *self = &self[buf.len()..];
             Ok(())
         } else {
-            Err(Error::IoError())
+            Err(Error::IoError("Input too small to fill buffer"))
         }
     }
 }
@@ -538,11 +538,7 @@ pub(crate) fn chomp_mesh<R: Read>(reader: &mut R) -> Result<TriMesh> {
                 let yz = chomp_f32_raw(reader)?;
                 let zz = chomp_f32_raw(reader)?;
 
-                [
-                    [ xx,  xy,  xz],
-                    [-xy,  yy,  yz],
-                    [-xz, -yz,  zz],
-                ]
+                [[xx, xy, xz], [-xy, yy, yz], [-xz, -yz, zz]]
             };
 
             let mut meshes = Vec::new();
@@ -550,7 +546,7 @@ pub(crate) fn chomp_mesh<R: Read>(reader: &mut R) -> Result<TriMesh> {
             loop {
                 match chomp_inner_mesh(reader) {
                     Ok(mesh) => meshes.push(mesh),
-                    Err(Error::IoError(..)) => break,
+                    Err(Error::IoError(_)) => break,
                     Err(e) => return Err(e),
                 }
             }
@@ -562,7 +558,7 @@ pub(crate) fn chomp_mesh<R: Read>(reader: &mut R) -> Result<TriMesh> {
                 meshes,
             })
         }
-        val => Err(Error::UnknownMesh(val))
+        val => Err(Error::UnknownMesh(val)),
     }
 }
 
@@ -958,8 +954,8 @@ impl<'de, R: Read> Deserializer<R> {
         let mut data = vec![0; compressed as usize];
         self.reader.read_exact(&mut data)?;
 
-        let out =
-            lz4_flex::block::decompress::decompress(&data, uncompressed).map_err(|_| Error::InvalidLz4)?;
+        let out = lz4_flex::block::decompress::decompress(&data, uncompressed)
+            .map_err(|_| Error::InvalidLz4)?;
 
         assert_eq!(out.len(), uncompressed);
 

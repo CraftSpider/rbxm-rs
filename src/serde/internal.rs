@@ -115,7 +115,10 @@ pub(crate) trait ToProperty: Sized {
     fn to_properties(&self, properties: &mut BTreeMap<String, Property>);
 }
 
-pub(crate) fn make_kind(kind: &str, mut properties: BTreeMap<String, Property>) -> Result<InstanceKind> {
+pub(crate) fn make_kind(
+    kind: &str,
+    mut properties: BTreeMap<String, Property>,
+) -> Result<InstanceKind> {
     let out = match kind {
         "Accoutrement" => {
             InstanceKind::Accoutrement(Accoutrement::from_properties(&mut properties)?)

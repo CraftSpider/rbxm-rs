@@ -11,7 +11,7 @@
 //!
 //! Parse a model from a file, find an [`Instance`] by path, and print the instance's class.
 //!
-//! ```
+//! ```ignore
 //! use rbxm::{SerdeError, ModelError, from_file};
 //!
 //! let model = match rbxm::from_file("./examples/BrickBase.rbxm") {
@@ -33,6 +33,7 @@
 
 #![deny(clippy::all)]
 #![warn(missing_docs)]
+#![cfg_attr(docsrs, features(doc_cfg))]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[macro_use]

@@ -1,7 +1,6 @@
-
-use proc_macro::{TokenStream, Span};
+use proc_macro::{Span, TokenStream};
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput, LitStr, Ident};
+use syn::{parse_macro_input, DeriveInput, Ident, LitStr};
 
 fn match_path(path: &syn::Path, ident: &str) -> bool {
     path.is_ident(&Ident::new(ident, Span::call_site().into()))
@@ -34,9 +33,7 @@ fn unwrap_option(ty: &syn::Type) -> (bool, &syn::Type) {
         syn::Type::Path(path) => {
             let name = path_as_ident(&path.path);
             if name == "Option" {
-                let args = &path.path.segments.last()
-                    .unwrap()
-                    .arguments;
+                let args = &path.path.segments.last().unwrap().arguments;
                 let inner_ty = match args {
                     syn::PathArguments::AngleBracketed(args) => match args.args.first().unwrap() {
                         syn::GenericArgument::Type(ty) => ty,
@@ -49,7 +46,7 @@ fn unwrap_option(ty: &syn::Type) -> (bool, &syn::Type) {
                 (false, ty)
             }
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
@@ -67,10 +64,7 @@ pub fn inherits(item: TokenStream) -> TokenStream {
         _ => panic!("Inherits requires named fields"),
     };
 
-    let field = named_fields
-        .named
-        .first()
-        .unwrap();
+    let field = named_fields.named.first().unwrap();
 
     let (target_ty, target_name) = (&field.ty, field.ident.as_ref().unwrap());
 
@@ -93,7 +87,10 @@ pub fn inherits(item: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-#[proc_macro_derive(PropertyConvert, attributes(delegate, isenum, shared, propname, propty))]
+#[proc_macro_derive(
+    PropertyConvert,
+    attributes(delegate, isenum, shared, propname, propty)
+)]
 pub fn property_convert(item: TokenStream) -> TokenStream {
     let item = parse_macro_input!(item as DeriveInput);
     let item_name = &item.ident;
@@ -241,16 +238,20 @@ pub fn enum_convert(item: TokenStream) -> TokenStream {
         .iter()
         .map(|var| {
             let var_name = &var.ident;
-            let discrim: i32 = var.discriminant.as_ref().map(|(_, expr)| match expr {
-                syn::Expr::Lit(expr_lit) => if let syn::Lit::Int(val) = &expr_lit.lit {
-                    val.base10_parse().unwrap()
-                } else {
-                    panic!("Discriminant wasn't an integer literal")
-                }
-                _ => panic!("Discriminant wasn't a literal value")
-            }).unwrap_or_else(|| {
-                last_discrim + 1
-            });
+            let discrim: i32 = var
+                .discriminant
+                .as_ref()
+                .map(|(_, expr)| match expr {
+                    syn::Expr::Lit(expr_lit) => {
+                        if let syn::Lit::Int(val) = &expr_lit.lit {
+                            val.base10_parse().unwrap()
+                        } else {
+                            panic!("Discriminant wasn't an integer literal")
+                        }
+                    }
+                    _ => panic!("Discriminant wasn't a literal value"),
+                })
+                .unwrap_or_else(|| last_discrim + 1);
 
             last_discrim = discrim;
 

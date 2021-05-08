@@ -48,7 +48,7 @@ macro_rules! chomp_prop {
                 let out = $crate::serde::de::chomp_mesh(&mut reader);
                 assert_eq!(*reader, [], "TriMesh didn't consume whole physics buffer");
                 out
-            },
+            }
             Err(e) => Err(e),
         }
     };
@@ -62,22 +62,16 @@ macro_rules! chomp_prop {
 }
 
 macro_rules! write_prop {
-    ($map:ident, $name:literal, $field:expr, TriMesh) => {
-        {
-            let mut out = Vec::new();
-            $crate::serde::ser::write_mesh(&mut out, &$field)
-                .unwrap();
-            write_prop!($map, $name, BinaryString)
-        }
-    };
-    ($map:ident, $name:literal, $field:expr, SharedTriMesh) => {
-        {
-            let mut out = Vec::new();
-            $crate::serde::ser::write_mesh(&mut out, &$field)
-                .unwrap();
-            write_prop!($map, $name, out, SharedBinaryString)
-        }
-    };
+    ($map:ident, $name:literal, $field:expr, TriMesh) => {{
+        let mut out = Vec::new();
+        $crate::serde::ser::write_mesh(&mut out, &$field).unwrap();
+        write_prop!($map, $name, BinaryString)
+    }};
+    ($map:ident, $name:literal, $field:expr, SharedTriMesh) => {{
+        let mut out = Vec::new();
+        $crate::serde::ser::write_mesh(&mut out, &$field).unwrap();
+        write_prop!($map, $name, out, SharedBinaryString)
+    }};
     ($map:ident, $name:literal, $field:expr, $prop:ident) => {
         $map.insert($name.to_string(), Property::$prop($field))
     };
