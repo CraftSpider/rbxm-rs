@@ -38,7 +38,7 @@ pub enum Error {
     UnconsumedProperties(String, Vec<String>),
 
     /// The input experienced an underlying IO error
-    IoError(#[cfg(feature = "std")] std::io::Error),
+    IoError(#[cfg(feature = "std")] std::io::Error, #[cfg(not(feature = "std"))] &'static str),
     /// A string value contained invalid bytes
     InvalidString,
     /// An LZ4 block contained invalid bytes
@@ -66,10 +66,7 @@ impl fmt::Display for Error {
                 class_name, prop_names
             ),
 
-            #[cfg(feature = "std")]
             Error::IoError(err) => format!("Error in IO: {}", err),
-            #[cfg(not(feature = "std"))]
-            Error::IoError() => format!("Error in IO"),
             Error::InvalidString => "String contained invalid UTF data".to_string(),
             Error::InvalidLz4 => "LZ4 block couldn't be deserialized".to_string(),
         };
@@ -82,7 +79,7 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            Error::IoError(e) => Some(e),
+            Error::IoError(err) => Some(err),
             _ => None,
         }
     }

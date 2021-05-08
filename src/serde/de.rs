@@ -33,7 +33,7 @@ impl Read for &[u8] {
             *self = &self[buf.len()..];
             Ok(())
         } else {
-            Err(Error::IoError())
+            Err(Error::IoError("Input too small to fill buffer"))
         }
     }
 }
@@ -546,7 +546,7 @@ pub(crate) fn chomp_mesh<R: Read>(reader: &mut R) -> Result<TriMesh> {
             loop {
                 match chomp_inner_mesh(reader) {
                     Ok(mesh) => meshes.push(mesh),
-                    Err(Error::IoError(..)) => break,
+                    Err(Error::IoError(_)) => break,
                     Err(e) => return Err(e),
                 }
             }
