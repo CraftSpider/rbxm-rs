@@ -3408,7 +3408,7 @@ mod tests {
     fn test_instance_new_without_parent() {
         let inst = Instance::new(dummy_kind(), None).unwrap();
 
-        assert_eq!(inst.borrow().children.len(), 0);
+        assert_eq!(inst.borrow().children().len(), 0);
     }
 
     #[test]
@@ -3416,8 +3416,8 @@ mod tests {
         let parent = Instance::new(dummy_kind(), None).unwrap();
         let child = Instance::new(dummy_kind(), Some(&parent)).unwrap();
 
-        assert_eq!(parent.borrow().children.len(), 1);
-        match child.borrow().parent.upgrade() {
+        assert_eq!(parent.borrow().children().len(), 1);
+        match child.borrow().parent() {
             Some(inst) if Rc::ptr_eq(&inst, &parent) => (),
             _ => panic!("Child parent was wrong"),
         };
@@ -3430,8 +3430,8 @@ mod tests {
 
         Instance::add_child(&parent, child.clone()).expect("Couldn't add child to parent");
 
-        assert_eq!(parent.borrow().children.len(), 1);
-        match child.borrow().parent.upgrade() {
+        assert_eq!(parent.borrow().children().len(), 1);
+        match child.borrow().parent() {
             Some(inst) if Rc::ptr_eq(&inst, &parent) => (),
             other => panic!("Child parent was wrong: {:?}", other),
         };
@@ -3444,8 +3444,8 @@ mod tests {
 
         Instance::remove_child(&parent, &child).expect("Couldn't remove child from parent");
 
-        assert_eq!(parent.borrow().children.len(), 0);
-        match child.borrow().parent.upgrade() {
+        assert_eq!(parent.borrow().children().len(), 0);
+        match child.borrow().parent() {
             None => (),
             _ => panic!("Child still had a parent"),
         };

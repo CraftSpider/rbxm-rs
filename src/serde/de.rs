@@ -951,7 +951,7 @@ impl<'de, R: Read> Deserializer<R> {
 
     fn chomp_lz4(&mut self) -> Result<Vec<u8>> {
         let compressed = chomp_i32_raw(&mut self.reader)?;
-        let uncompressed = chomp_i32_raw(&mut self.reader)?;
+        let uncompressed = chomp_i32_raw(&mut self.reader)? as usize;
 
         assert_eq!(chomp_i32_raw(&mut self.reader)?, 0i32);
 
@@ -959,9 +959,9 @@ impl<'de, R: Read> Deserializer<R> {
         self.reader.read_exact(&mut data)?;
 
         let out =
-            lz4::block::decompress(&data, Some(uncompressed)).map_err(|_| Error::InvalidLz4)?;
+            lz4_flex::block::decompress::decompress(&data, uncompressed).map_err(|_| Error::InvalidLz4)?;
 
-        assert_eq!(out.len(), uncompressed as usize);
+        assert_eq!(out.len(), uncompressed);
 
         Ok(out)
     }
@@ -1012,11 +1012,5 @@ mod tests {
         let mut array = [0, 1, 1, 5];
         make_cumulative(&mut array);
         assert_eq!(array, [0, 1, 2, 7]);
-    }
-
-    #[cfg(feature = "std")]
-    #[test]
-    fn test_fire_axe() {
-        dbg!(from_file("./examples/FireAxe.rbxm").unwrap());
     }
 }
