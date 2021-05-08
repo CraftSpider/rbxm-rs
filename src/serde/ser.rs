@@ -1,8 +1,11 @@
 //! The serialization implementation for an RBXM
 
-use crate::model::{Axes, Color3, Color3Uint8, ColorSequence, Faces, Instance, NumberRange, NumberSequence, Property, RbxModel, Vector2, Vector3, Vector3Int16};
+use crate::model::{
+    Axes, Color3, Color3Uint8, ColorSequence, Faces, Instance, NumberRange, NumberSequence,
+    Property, RbxModel, Vector2, Vector3, Vector3Int16,
+};
 #[cfg(feature = "mesh-format")]
-use crate::model::{TriMesh, ConvexHull};
+use crate::model::{ConvexHull, TriMesh};
 use crate::serde::internal::{break_kind, RawProperty};
 use crate::serde::Result;
 
@@ -522,7 +525,7 @@ fn write_inner_mesh<W: Write>(writer: &mut W, val: &ConvexHull) -> Result<()> {
         unknown_1,
         unknown_2,
         vertices,
-        faces
+        faces,
     } = val;
 
     write_i32_raw(writer, unknown_1.len() as i32)?;
