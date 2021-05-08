@@ -33,6 +33,7 @@
 
 #![deny(clippy::all)]
 #![warn(missing_docs)]
+#![cfg_attr(docsrs, features(doc_cfg))]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[macro_use]
