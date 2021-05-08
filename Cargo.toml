@@ -13,9 +13,9 @@ categories = ["data-structures", "encoding"]
 
 [features]
 default = ["std"]
-std = []
+std = ["lz4_flex/std"]
 mesh-format = []
 
 [dependencies]
 rbxm-proc = { version = "0.1.0", path = "./rbxm-proc" }
-lz4 = "1.23"
+lz4_flex = { version = "0.7", default-features = false, features = ["safe-decode", "safe-encode"] }
