@@ -873,11 +873,11 @@ impl InstanceKind {
 pub struct Base {
     /// The name of this instance
     pub name: String,
-    /// TODO: Unknown
+    // TODO: Unknown
     pub tags: String,
-    /// TODO: Unknown
+    // TODO: Unknown
     pub source_asset_id: i64,
-    /// TODO: Unknown
+    // TODO: Unknown
     pub attributes_serialize: String,
 }
 
