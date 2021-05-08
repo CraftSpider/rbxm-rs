@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   test:
-    name: RBXM Tests
+    name: Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -34,7 +34,7 @@ jobs:
           args: --no-default-features
 
   lints:
-    name: RBXM Lints
+    name: Lints
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
