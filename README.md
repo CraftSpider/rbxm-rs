@@ -42,6 +42,7 @@ fn main() {
 
 - Better tree implementation, EG slotmap backed
 - Complete instance info documentation
+- RBXMX and RBXL file support
 
 ## License
 Licensed under either of

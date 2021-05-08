@@ -1,2 +1,12 @@
+
+# Cargo output
 /target
 Cargo.lock
+
+# Project files
+.idea
+
+# Roblox models
+*.rbxm
+*.rbxl
+*.rbxmx
