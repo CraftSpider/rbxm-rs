@@ -221,6 +221,7 @@ pub struct Color3Uint8 {
 }
 
 /// A full triangle mesh, used for collision or display
+#[cfg_attr(docsrs, doc(cfg(feature = "mesh-format")))]
 #[cfg(feature = "mesh-format")]
 #[derive(Debug, Clone)]
 pub enum TriMesh {
@@ -240,12 +241,15 @@ pub enum TriMesh {
 }
 
 /// A single convex hull, with relevant data
+#[cfg_attr(docsrs, doc(cfg(feature = "mesh-format")))]
 #[cfg(feature = "mesh-format")]
 #[derive(Debug, Clone)]
 pub struct ConvexHull {
-    /// Unknown, possibly triangle indices FIXME(CraftSpider)
+    /// Unknown, possibly triangle indices
+    // FIXME(CraftSpider)
     pub unknown_1: Vec<u8>,
-    /// Unknown, possibly transform offsets FIXME(CraftSpider)
+    /// Unknown, possibly transform offsets
+    // FIXME(CraftSpider)
     pub unknown_2: Vec<u8>,
     /// Triangle vertices
     pub vertices: Vec<Vector3>,

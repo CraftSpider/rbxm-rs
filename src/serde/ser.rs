@@ -943,6 +943,7 @@ pub fn to_writer<W: Write>(writer: W, model: &RbxModel) -> Result<()> {
 }
 
 /// Write a model out to a file, creating it if necessary
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 #[cfg(feature = "std")]
 pub fn to_file<P: AsRef<std::path::Path>>(path: P, model: &RbxModel) -> Result<()> {
     to_writer(std::fs::File::create(path)?, model)

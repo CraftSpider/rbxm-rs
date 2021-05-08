@@ -973,6 +973,7 @@ pub fn from_reader<R: Read>(reader: R) -> Result<RbxModel> {
 }
 
 /// Read a model from an existing file
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 #[cfg(feature = "std")]
 pub fn from_file<P: AsRef<std::path::Path>>(path: P) -> Result<RbxModel> {
     from_reader(std::fs::File::open(path)?)

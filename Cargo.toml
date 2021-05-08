@@ -11,6 +11,9 @@ license = "MIT/Apache-2.0"
 keywords = ["roblox", "rbxm"]
 categories = ["data-structures", "encoding"]
 
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
+
 [features]
 default = ["std"]
 std = []
