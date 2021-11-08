@@ -2,20 +2,17 @@
 
 #![allow(missing_docs)]
 
-use super::{InstanceRef, OwnedInstance};
+use super::InstanceRef;
 use crate::model::data::*;
 use crate::model::enums::*;
-use crate::model::error::InstanceError;
 use crate::model::Property;
 use crate::serde::internal::{FromProperty, ToProperty};
 use rbxm_proc::{Inherits, PropertyConvert};
 
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
-use alloc::rc::{Rc, Weak};
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use core::cell::RefCell;
 
 macro_rules! chomp_prop {
     // A binary string could be valid text, allow that
@@ -77,6 +74,7 @@ macro_rules! write_prop {
     };
 }
 
+/*
 /// Represents a Roblox [Instance][rbx-instances],
 /// the base component which all models are made up of.
 ///
@@ -205,6 +203,7 @@ impl Instance {
         self.kind.name()
     }
 }
+*/
 
 /// Represent the kind of an [`Instance`]. This is not meant to be matched exhaustively, more often
 /// only checking if an Instance is of a specific kind, otherwise performing some default activity
@@ -3388,7 +3387,7 @@ pub struct WorldModel {
     pub model: Model,
 }
 
-#[cfg(test)]
+/*#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -3444,4 +3443,4 @@ mod tests {
             _ => panic!("Child still had a parent"),
         };
     }
-}
+}*/

@@ -1,10 +1,10 @@
 //! An enum for an unrecognized Instance property, which could be any of the valid property types.
 
-use super::InstanceRef;
 use crate::model::data::*;
 
 use alloc::string::String;
 use alloc::vec::Vec;
+use crate::tree::TreeKey;
 
 /// This represents a property with an unknown type, handling any of the possible types.
 /// Should generally only be used if working with an [`Instance`][crate::model::Instance] not
@@ -55,7 +55,7 @@ pub enum Property {
     /// provided and must be known ahead of time.
     Enum(i32),
     /// A reference to an instance
-    InstanceRef(InstanceRef),
+    InstanceRef(TreeKey),
     /// See [`Vector3Int16`]
     Vector3Int16(Vector3Int16),
     /// See [`NumberSequence`]

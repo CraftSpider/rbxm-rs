@@ -3,12 +3,11 @@
 use crate::model::*;
 use crate::serde::internal::{make_kind, RawProperty};
 use crate::serde::{Error, Result};
+use crate::tree::Tree;
 
 use alloc::collections::BTreeMap;
-use alloc::rc::{Rc, Weak};
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use core::cell::RefCell;
 
 /// A no_std minimal implementation of [`std::io::Read`]
 pub trait Read {
@@ -567,7 +566,7 @@ struct RawInfo {
     meta: BTreeMap<String, String>,
     shared_strs: Vec<Vec<u8>>,
     class_ids: BTreeMap<i32, Vec<i32>>,
-    instances: BTreeMap<i32, (String, Rc<RefCell<Instance>>)>,
+    instances: BTreeMap<i32, String>, // BTreeMap<i32, (String, Rc<RefCell<Instance>>)>,
     raw_props: BTreeMap<i32, BTreeMap<String, RawProperty>>,
     parent_info: BTreeMap<i32, i32>,
     child_info: BTreeMap<i32, Vec<i32>>,
@@ -631,41 +630,17 @@ impl<'de, R: Read> Deserializer<R> {
             class_ids: _,
             instances,
             mut raw_props,
-            mut parent_info,
-            mut child_info,
+            parent_info,
+            child_info,
         } = self.raw_info;
 
+        let mut id_key = BTreeMap::new();
+        let tree = Tree::new();
+
         // Do reference resolution, and populate information
-        let instances = instances
+        instances
             .iter()
-            .map(|(id, (class_name, inst))| {
-                let parent_id = parent_info.remove(id).ok_or(Error::UnknownInstance(*id))?;
-
-                let parent = if parent_id != -1 {
-                    Rc::downgrade(
-                        &instances
-                            .get(&parent_id)
-                            .ok_or(Error::UnknownInstance(parent_id))?
-                            .1,
-                    )
-                } else {
-                    Weak::default()
-                };
-
-                let children = child_info
-                    .remove(id)
-                    .unwrap_or_default()
-                    .into_iter()
-                    .map(|child_id| {
-                        Ok(Rc::clone(
-                            &instances
-                                .get(&child_id)
-                                .ok_or(Error::UnknownInstance(child_id))?
-                                .1,
-                        ))
-                    })
-                    .collect::<Result<Vec<_>>>()?;
-
+            .try_for_each::<_, Result<()>>(|(id, class_name)| {
                 let raw_props = raw_props.remove(id).ok_or(Error::UnknownInstance(*id))?;
 
                 let props = raw_props
@@ -684,13 +659,10 @@ impl<'de, R: Read> Deserializer<R> {
                                     })
                             }
                             RawProperty::InstanceRef(ref_id) => {
-                                let weak = Rc::downgrade(
-                                    &instances
-                                        .get(&ref_id)
-                                        .ok_or(Error::UnknownInstance(ref_id))?
-                                        .1,
-                                );
-                                Property::InstanceRef(weak)
+                                let key = id_key.get(&ref_id)
+                                    .ok_or(Error::UnknownInstance(ref_id))?;
+
+                                Property::InstanceRef(*key)
                             }
                             prop => prop.into_real(),
                         };
@@ -699,25 +671,40 @@ impl<'de, R: Read> Deserializer<R> {
                     })
                     .collect::<Result<_>>()?;
 
-                {
+                let new_key = tree.add_root(make_kind(class_name, props)?);
+                id_key.insert(id, new_key);
+
+                /*{
                     let mut mut_inst = inst.borrow_mut();
                     mut_inst.parent = parent;
                     mut_inst.children = children;
                     mut_inst.kind = make_kind(class_name, props)?;
-                }
+                }*/
 
-                Ok(inst)
-            })
-            .collect::<Result<Vec<_>>>()?;
+                Ok(())
+            })?;
+            //.collect::<Result<Vec<_>>>()?;
+
+        // TODO: Verify child info
+        for (&parent, &child) in &parent_info {
+            let mut parent = tree
+                .try_get_mut(*id_key.get(&parent).unwrap())
+                .unwrap();
+            let mut child = tree
+                .try_get_mut(*id_key.get(&child).unwrap())
+                .unwrap();
+
+            parent.add_child(&mut child);
+        }
 
         // Figure out our root instances
-        let roots = instances
+        /*let roots = instances
             .into_iter()
             .filter(|inst| inst.borrow().parent.ptr_eq(&Weak::default()))
             .map(|inst| Rc::clone(inst))
-            .collect::<Vec<_>>();
+            .collect::<Vec<_>>();*/
 
-        Ok(RbxModel { meta, roots })
+        Ok(RbxModel { meta, nodes: tree })
     }
 
     fn chomp_block(&mut self) -> Result<bool> {
@@ -774,7 +761,7 @@ impl<'de, R: Read> Deserializer<R> {
                 for id in &instance_ids {
                     self.raw_info
                         .instances
-                        .insert(*id, (class_name.clone(), Instance::uninit()));
+                        .insert(*id, class_name.clone());
                 }
 
                 self.raw_info.class_ids.insert(index, instance_ids);
@@ -954,7 +941,7 @@ impl<'de, R: Read> Deserializer<R> {
         let mut data = vec![0; compressed as usize];
         self.reader.read_exact(&mut data)?;
 
-        let out = lz4_flex::block::decompress::decompress(&data, uncompressed)
+        let out = lz4_flex::block::decompress(&data, uncompressed)
             .map_err(|_| Error::InvalidLz4)?;
 
         assert_eq!(out.len(), uncompressed);

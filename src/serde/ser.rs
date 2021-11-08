@@ -1,19 +1,14 @@
 //! The serialization implementation for an RBXM
 
-use crate::model::{
-    Axes, Color3, Color3Uint8, ColorSequence, Faces, Instance, NumberRange, NumberSequence,
-    Property, RbxModel, Vector2, Vector3, Vector3Int16,
-};
+use crate::model::{Axes, Color3, Color3Uint8, ColorSequence, Faces, NumberRange, NumberSequence, Property, RbxModel, Vector2, Vector3, Vector3Int16};
 #[cfg(feature = "mesh-format")]
 use crate::model::{ConvexHull, TriMesh};
 use crate::serde::internal::{break_kind, RawProperty};
 use crate::serde::Result;
 
 use alloc::collections::BTreeMap;
-use alloc::rc::Rc;
 use alloc::string::String;
 use alloc::vec::Vec;
-use core::cell::RefCell;
 
 /// A no_std minimal implementation of [`std::io::Write`]
 pub trait Write {
@@ -51,7 +46,7 @@ macro_rules! float_match {
         })*
         else {
             0
-        };
+        }
     }
 }
 
@@ -606,32 +601,25 @@ fn write_shared_strings<W: Write>(writer: &mut W, properties: &[RawProperty]) ->
     Ok(())
 }
 
-fn walk_children(collection: &mut Vec<Rc<RefCell<Instance>>>, todo: &[Rc<RefCell<Instance>>]) {
-    for i in todo {
-        collection.push(i.clone());
-        walk_children(collection, &i.borrow().children)
-    }
-}
-
 fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
-    let mut insts = Vec::new();
     #[allow(clippy::mutable_key_type)]
-    let mut inst_to_id = BTreeMap::new();
-
-    walk_children(&mut insts, &model.roots);
-
-    for (index, inst) in insts.iter().enumerate() {
-        inst_to_id.insert(Rc::as_ptr(inst), index as i32);
-    }
+    let key_to_id: BTreeMap<_, _> = model.nodes.unordered_keys()
+        .enumerate()
+        .map(|(idx, key)| {
+            (key, idx)
+        })
+        .collect();
 
     let mut inst_blocks = BTreeMap::new();
     let mut prop_blocks = BTreeMap::new();
     let mut parents = BTreeMap::new();
     let mut shared_strs = Vec::new();
 
-    for (index, inst) in insts.iter().enumerate() {
+    for node in model.nodes.unordered_iter() {
+        let index = key_to_id[&node.key()];
+        let inst = &**node;
         let next_index = inst_blocks.len();
-        let class_name = inst.borrow().kind.class_name();
+        let class_name = inst.class_name();
 
         let inst_block = inst_blocks
             .entry(class_name.clone())
@@ -654,7 +642,7 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
             unreachable!()
         };
 
-        for (prop_name, prop_value) in break_kind(&inst.borrow().kind) {
+        for (prop_name, prop_value) in break_kind(inst) {
             let prop_block = prop_blocks
                 .entry((class_index, prop_name.clone()))
                 .or_insert(Block::Property {
@@ -690,7 +678,7 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
                         }
                     }
                     Property::InstanceRef(val) => {
-                        RawProperty::InstanceRef(inst_to_id[&Rc::as_ptr(&val.upgrade().unwrap())])
+                        RawProperty::InstanceRef(key_to_id[&val] as i32)
                     }
                     prop => RawProperty::from_real(prop.clone()),
                 };
@@ -700,15 +688,15 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
             }
         }
 
-        let parent_index = match inst.borrow().parent.upgrade() {
-            Some(parent) => inst_to_id[&Rc::as_ptr(&parent)],
+        let parent_index = match node.parent() {
+            Some(parent) => key_to_id[&parent.key()] as i32,
             None => -1,
         };
         parents.insert(index as i32, parent_index);
     }
 
     let num_classes = inst_blocks.len();
-    let num_insts = insts.len();
+    let num_insts = model.nodes.len();
 
     let child_ref = parents.keys().copied().collect::<Vec<_>>();
     let parent_ref = parents.values().copied().collect::<Vec<_>>();
@@ -928,7 +916,7 @@ impl<W: Write> Serializer<W> {
             }
         };
 
-        let compressed_data = lz4_flex::block::compress::compress(&out_buffer);
+        let compressed_data = lz4_flex::block::compress(&out_buffer);
 
         self.writer.write_all(block_name)?;
         write_i32_raw(&mut self.writer, compressed_data.len() as i32)?;

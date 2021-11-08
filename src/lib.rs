@@ -43,8 +43,9 @@ mod __external {}
 
 pub mod model;
 pub mod serde;
+mod tree;
 
-pub use model::{Instance, InstanceError, ModelError, RbxModel};
+pub use model::{InstanceError, ModelError, RbxModel};
 pub use serde::Error as SerdeError;
 #[cfg(feature = "std")]
 pub use serde::{from_file, to_file};
