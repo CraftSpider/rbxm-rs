@@ -56,7 +56,8 @@ impl RbxModel {
     pub fn get_path(&self, path: &str) -> Result<NodeRef<'_, '_, InstanceKind>, ModelError> {
         let parts = split_path(path)?;
 
-        let mut nodes = self.nodes
+        let mut nodes = self
+            .nodes
             .roots()
             .into_iter()
             .collect::<Result<Vec<_>, _>>();
@@ -65,10 +66,9 @@ impl RbxModel {
 
         for segment in parts {
             let new_next = match segment {
-                PathSegment::Index(index) => nodes?
-                    .into_iter()
-                    .nth(index)
-                    .ok_or(ModelError::NotFound)?,
+                PathSegment::Index(index) => {
+                    nodes?.into_iter().nth(index).ok_or(ModelError::NotFound)?
+                }
                 PathSegment::Name(name) => {
                     let mut results = nodes?
                         .into_iter()

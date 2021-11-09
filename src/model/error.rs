@@ -32,7 +32,9 @@ impl fmt::Display for ModelError {
             ModelError::InvalidPath => write!(fmt, "Invalid path syntax"),
             ModelError::AmbiguousPath => write!(fmt, "Path matched multiple items"),
             ModelError::NotFound => write!(fmt, "Path didn't match any items"),
-            ModelError::CantBorrow => write!(fmt, "Path attempted to reference node already borrowed")
+            ModelError::CantBorrow => {
+                write!(fmt, "Path attempted to reference node already borrowed")
+            }
         }
     }
 }

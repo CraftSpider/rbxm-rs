@@ -151,8 +151,7 @@ impl<T> Tree<T> {
     }
 
     pub fn unordered_iter(&self) -> impl Iterator<Item = NodeRef<'_, '_, T>> + '_ {
-        self
-            .inner
+        self.inner
             .borrow()
             .nodes
             .iter()
@@ -166,8 +165,7 @@ impl<T> Tree<T> {
     }
 
     pub fn unordered_keys(&self) -> impl Iterator<Item = TreeKey> + '_ {
-        self
-            .inner
+        self.inner
             .borrow()
             .nodes
             .keys()
@@ -181,11 +179,12 @@ impl<T> Tree<T> {
     {
         let rc = self.inner.borrow();
 
-        rc
-            .roots
+        rc.roots
             .iter()
             .map(|key| {
-                let node = unsafe { rc.nodes.get(*key).ok_or(Error::Missing)?.as_ref() }.try_borrow().map_err(|_| Error::CantBorrow)?;
+                let node = unsafe { rc.nodes.get(*key).ok_or(Error::Missing)?.as_ref() }
+                    .try_borrow()
+                    .map_err(|_| Error::CantBorrow)?;
                 Ok(NodeRef {
                     tree: self,
                     mykey: *key,
@@ -202,8 +201,7 @@ impl<T> Tree<T> {
     {
         let rc = self.inner.borrow();
 
-        rc
-            .roots
+        rc.roots
             .iter()
             .map(|key| NodeRefMut {
                 tree: self,
@@ -242,7 +240,7 @@ fn recurse_tree<T: fmt::Debug>(
             for child in node.children() {
                 recurse_tree(f, indent + 4, child)?;
             }
-        },
+        }
         Err(_) => writeln!(f, "{}Node {{ (Borrowed) }}", " ".repeat(indent))?,
     }
     Ok(())
