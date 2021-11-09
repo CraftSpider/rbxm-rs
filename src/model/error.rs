@@ -1,5 +1,7 @@
 //! Error types for Roblox model related activities
 
+use crate::tree;
+
 use core::fmt;
 
 /// The error type returned by model operations that may fail
@@ -11,6 +13,17 @@ pub enum ModelError {
     AmbiguousPath,
     /// Model path matches no instances
     NotFound,
+    /// The model node is already borrowed incompatibly with the operation
+    CantBorrow,
+}
+
+impl From<tree::Error> for ModelError {
+    fn from(e: tree::Error) -> Self {
+        match e {
+            tree::Error::Missing => ModelError::NotFound,
+            tree::Error::CantBorrow => ModelError::CantBorrow,
+        }
+    }
 }
 
 impl fmt::Display for ModelError {
@@ -19,6 +32,7 @@ impl fmt::Display for ModelError {
             ModelError::InvalidPath => write!(fmt, "Invalid path syntax"),
             ModelError::AmbiguousPath => write!(fmt, "Path matched multiple items"),
             ModelError::NotFound => write!(fmt, "Path didn't match any items"),
+            ModelError::CantBorrow => write!(fmt, "Path attempted to reference node already borrowed")
         }
     }
 }

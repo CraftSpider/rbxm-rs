@@ -641,6 +641,10 @@ impl InstanceKind {
     }
 
     /// Get the name of this kind
+    ///
+    /// # Panics
+    ///
+    /// If the instance is of an unrecognized type which doesn't have a name.
     pub fn name(&self) -> &str {
         match self {
             InstanceKind::Accessory(data) => &data.name,

@@ -49,7 +49,7 @@ pub enum Error {
 }
 
 impl fmt::Display for Error {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         let msg = match self {
             Error::BadMagic => "Invalid File Magic".to_string(),
             Error::UnknownBlock(block) => format!("Unrecognized data-block type `{}`", block),

@@ -9,7 +9,7 @@ use alloc::collections::BTreeMap;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
-/// A no_std minimal implementation of [`std::io::Read`]
+/// A `no_std` minimal implementation of [`std::io::Read`]
 pub trait Read {
     /// Read an exact buffer size
     fn read_exact(&mut self, buf: &mut [u8]) -> Result<()>;
@@ -258,12 +258,12 @@ fn chomp_rays<R: Read>(reader: &mut R, len: usize) -> Result<Vec<Ray>> {
 fn chomp_face<R: Read>(reader: &mut R) -> Result<Faces> {
     let data = chomp_u8(reader)?;
     Ok(Faces {
-        front: data & 0b00000001 > 0,
-        bottom: data & 0b00000010 > 0,
-        left: data & 0b00000100 > 0,
-        back: data & 0b00001000 > 0,
-        top: data & 0b00010000 > 0,
-        right: data & 0b00100000 > 0,
+        front: data & 0b0000_0001 > 0,
+        bottom: data & 0b0000_0010 > 0,
+        left: data & 0b0000_0100 > 0,
+        back: data & 0b0000_1000 > 0,
+        top: data & 0b0001_0000 > 0,
+        right: data & 0b0010_0000 > 0,
     })
 }
 
@@ -600,7 +600,7 @@ pub struct Deserializer<R> {
     raw_info: RawInfo,
 }
 
-impl<'de, R: Read> Deserializer<R> {
+impl<R: Read> Deserializer<R> {
     /// Create a new deserializer from a reader and if necessary any other state
     pub fn new(reader: R) -> Deserializer<R> {
         Deserializer {
@@ -629,7 +629,8 @@ impl<'de, R: Read> Deserializer<R> {
             chomp_i32_raw(&mut self.reader)?,
             chomp_i32_raw(&mut self.reader)?,
         );
-        assert_eq!(unknown, (0, 0));
+
+        debug_assert_eq!(unknown, (0, 0));
 
         while self.chomp_block()? {}
 
@@ -639,8 +640,8 @@ impl<'de, R: Read> Deserializer<R> {
             return Err(Error::BadMagic);
         }
 
-        assert_eq!(self.raw_info.class_ids.len(), num_classes as usize);
-        assert_eq!(self.raw_info.instances.len(), num_instances as usize);
+        debug_assert_eq!(self.raw_info.class_ids.len(), num_classes as usize);
+        debug_assert_eq!(self.raw_info.instances.len(), num_instances as usize);
 
         self.make_model()
     }
@@ -660,7 +661,7 @@ impl<'de, R: Read> Deserializer<R> {
 
         let tree = Tree::new();
 
-        for (&id, _) in &instances {
+        for &id in instances.keys() {
             id_key.insert(
                 id,
                 tree.add_root(InstanceKind::Other(String::new(), BTreeMap::new())),

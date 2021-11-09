@@ -10,7 +10,7 @@ enum PathSegment<'a> {
     Name(&'a str),
 }
 
-fn split_path(path: &str) -> Result<Vec<PathSegment>, ModelError> {
+fn split_path(path: &str) -> Result<Vec<PathSegment<'_>>, ModelError> {
     if path.is_empty() {
         return Err(ModelError::InvalidPath);
     }
@@ -56,58 +56,43 @@ impl RbxModel {
     pub fn get_path(&self, path: &str) -> Result<NodeRef<'_, '_, InstanceKind>, ModelError> {
         let parts = split_path(path)?;
 
-        let mut nodes = self.nodes.roots();
+        let mut nodes = self.nodes
+            .roots()
+            .into_iter()
+            .collect::<Result<Vec<_>, _>>();
 
-        let mut cur = match &parts[0] {
-            PathSegment::Index(index) => nodes.nth(*index).ok_or(ModelError::NotFound)?,
-            PathSegment::Name(name) => {
-                let mut results = self
-                    .nodes
-                    .roots()
-                    .filter(|inst| inst.name() == *name)
-                    .collect::<Vec<_>>();
-                if results.len() > 1 {
-                    return Err(ModelError::AmbiguousPath);
-                } else if results.len() == 0 {
-                    return Err(ModelError::NotFound);
-                } else {
-                    results.remove(0)
-                }
-            }
-        };
+        let mut out = None;
 
-        for segment in &parts[1..] {
-            let new_cur = {
-                let children = cur
-                    .children()
+        for segment in parts {
+            let new_next = match segment {
+                PathSegment::Index(index) => nodes?
                     .into_iter()
-                    .collect::<Result<Vec<_>, _>>()
-                    .unwrap();
-                match segment {
-                    PathSegment::Index(index) => children
+                    .nth(index)
+                    .ok_or(ModelError::NotFound)?,
+                PathSegment::Name(name) => {
+                    let mut results = nodes?
                         .into_iter()
-                        .nth(*index)
-                        .ok_or(ModelError::NotFound)?,
-                    PathSegment::Name(name) => {
-                        let mut results = children
-                            .into_iter()
-                            .filter(|inst| inst.name() == *name)
-                            .collect::<Vec<_>>();
-                        if results.len() > 1 {
-                            return Err(ModelError::AmbiguousPath);
-                        } else if results.len() == 0 {
-                            return Err(ModelError::NotFound);
-                        } else {
-                            results.remove(0)
-                        }
+                        .filter(|inst| inst.name() == name)
+                        .collect::<Vec<_>>();
+                    if results.len() > 1 {
+                        return Err(ModelError::AmbiguousPath);
+                    } else if results.is_empty() {
+                        return Err(ModelError::NotFound);
+                    } else {
+                        results.remove(0)
                     }
                 }
             };
 
-            cur = new_cur;
+            nodes = new_next
+                .children()
+                .into_iter()
+                .collect::<Result<Vec<_>, _>>();
+
+            out = Some(new_next);
         }
 
-        Ok(cur)
+        out.ok_or(ModelError::InvalidPath)
     }
 
     /// Get a reference to the set of meta values for this model
@@ -124,16 +109,6 @@ impl RbxModel {
     pub fn tree(&self) -> &Tree<InstanceKind> {
         &self.nodes
     }
-
-    // /// Add a root instance to this model
-    // pub fn add_root(&mut self, inst: OwnedInstance) {
-    //     self.roots.push(inst)
-    // }
-    //
-    // /// Remove a root instance from this model
-    // pub fn remove_root(&mut self, inst: &OwnedInstance) {
-    //     self.roots.retain(|item| !Rc::ptr_eq(item, inst));
-    // }
 }
 
 impl Default for RbxModel {

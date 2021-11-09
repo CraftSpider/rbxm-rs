@@ -63,9 +63,7 @@ pub struct Tree<T> {
 
 impl<T> Tree<T> {
     pub fn new() -> Tree<T> {
-        Tree {
-            inner: RefCell::new(InnerTree::new()),
-        }
+        Tree::default()
     }
 
     fn inner_new_child(&self, item: T, parent: TreeKey) -> TreeKey {
@@ -153,7 +151,7 @@ impl<T> Tree<T> {
     }
 
     pub fn unordered_iter(&self) -> impl Iterator<Item = NodeRef<'_, '_, T>> + '_ {
-        let refs = self
+        self
             .inner
             .borrow()
             .nodes
@@ -163,34 +161,39 @@ impl<T> Tree<T> {
                 mykey: key,
                 node: unsafe { item.as_ref() }.borrow(),
             })
-            .collect::<Vec<_>>();
-
-        refs.into_iter()
+            .collect::<Vec<_>>()
+            .into_iter()
     }
 
     pub fn unordered_keys(&self) -> impl Iterator<Item = TreeKey> + '_ {
-        let keys = self.inner.borrow().nodes.keys().collect::<Vec<_>>();
-
-        keys.into_iter()
+        self
+            .inner
+            .borrow()
+            .nodes
+            .keys()
+            .collect::<Vec<_>>()
+            .into_iter()
     }
 
-    pub fn roots<'a, 'b>(&'a self) -> impl Iterator<Item = NodeRef<'a, 'b, T>>
+    pub fn roots<'a, 'b>(&'a self) -> impl Iterator<Item = Result<NodeRef<'a, 'b, T>, Error>>
     where
         T: 'b,
     {
         let rc = self.inner.borrow();
 
-        let refs = rc
+        rc
             .roots
             .iter()
-            .map(|key| NodeRef {
-                tree: self,
-                mykey: *key,
-                node: unsafe { rc.nodes.get(*key).unwrap().as_ref() }.borrow(),
+            .map(|key| {
+                let node = unsafe { rc.nodes.get(*key).ok_or(Error::Missing)?.as_ref() }.try_borrow().map_err(|_| Error::CantBorrow)?;
+                Ok(NodeRef {
+                    tree: self,
+                    mykey: *key,
+                    node,
+                })
             })
-            .collect::<Vec<_>>();
-
-        refs.into_iter()
+            .collect::<Vec<_>>()
+            .into_iter()
     }
 
     pub fn roots_mut<'a, 'b>(&'a self) -> impl Iterator<Item = NodeRefMut<'a, 'b, T>>
@@ -199,7 +202,7 @@ impl<T> Tree<T> {
     {
         let rc = self.inner.borrow();
 
-        let refs = rc
+        rc
             .roots
             .iter()
             .map(|key| NodeRefMut {
@@ -207,9 +210,8 @@ impl<T> Tree<T> {
                 mykey: *key,
                 node: unsafe { rc.nodes.get(*key).unwrap().as_ref() }.borrow_mut(),
             })
-            .collect::<Vec<_>>();
-
-        refs.into_iter()
+            .collect::<Vec<_>>()
+            .into_iter()
     }
 
     pub fn add_root(&self, item: T) -> TreeKey {
@@ -232,14 +234,16 @@ impl<T> Tree<T> {
 fn recurse_tree<T: fmt::Debug>(
     f: &mut fmt::Formatter<'_>,
     indent: usize,
-    node: NodeRef<'_, '_, T>,
+    node: Result<NodeRef<'_, '_, T>, Error>,
 ) -> fmt::Result {
-    writeln!(f, "{}Node {{ {:?} }}", " ".repeat(indent), **node)?;
-    for child in node.children() {
-        match child {
-            Ok(child) => recurse_tree(f, indent + 4, child)?,
-            Err(_) => writeln!(f, "{}Node {{ {} }}", " ".repeat(indent + 4), "(Borrowed)")?,
-        }
+    match node {
+        Ok(node) => {
+            writeln!(f, "{}Node {{ {:?} }}", " ".repeat(indent), **node)?;
+            for child in node.children() {
+                recurse_tree(f, indent + 4, child)?;
+            }
+        },
+        Err(_) => writeln!(f, "{}Node {{ (Borrowed) }}", " ".repeat(indent))?,
     }
     Ok(())
 }
@@ -250,6 +254,14 @@ impl<T: fmt::Debug> fmt::Debug for Tree<T> {
             recurse_tree(f, 0, node)?;
         }
         Ok(())
+    }
+}
+
+impl<T> Default for Tree<T> {
+    fn default() -> Self {
+        Tree {
+            inner: RefCell::new(InnerTree::new()),
+        }
     }
 }
 
@@ -290,7 +302,7 @@ impl<T> DerefMut for Node<T> {
     }
 }
 
-pub struct NodeRef<'a, 'b, T: 'b> {
+pub struct NodeRef<'a, 'b, T> {
     tree: &'a Tree<T>,
     mykey: TreeKey,
     node: Ref<'b, Node<T>>,
@@ -306,7 +318,7 @@ impl<T> Deref for NodeRef<'_, '_, T> {
     }
 }
 
-pub struct NodeRefMut<'a, 'b, T: 'b> {
+pub struct NodeRefMut<'a, 'b, T> {
     tree: &'a Tree<T>,
     mykey: TreeKey,
     node: RefMut<'b, Node<T>>,

@@ -13,7 +13,7 @@ use alloc::collections::BTreeMap;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-/// A no_std minimal implementation of [`std::io::Write`]
+/// A `no_std` minimal implementation of [`std::io::Write`]
 pub trait Write {
     /// Write an exact buffer size
     fn write_all(&mut self, buf: &[u8]) -> Result<()>;
@@ -284,22 +284,22 @@ fn write_face<W: Write>(writer: &mut W, val: &Faces) -> Result<()> {
     let mut data = 0;
 
     if val.front {
-        data |= 0b00000001;
+        data |= 0b0000_0001;
     }
     if val.bottom {
-        data |= 0b00000010;
+        data |= 0b0000_0010;
     }
     if val.left {
-        data |= 0b00000100;
+        data |= 0b0000_0100;
     }
     if val.back {
-        data |= 0b00001000;
+        data |= 0b0000_1000;
     }
     if val.top {
-        data |= 0b00010000;
+        data |= 0b0001_0000;
     }
     if val.right {
-        data |= 0b00100000;
+        data |= 0b0010_0000;
     }
 
     write_u8(writer, data)?;
