@@ -59,9 +59,7 @@ impl RbxModel {
         let mut nodes = self.nodes.roots();
 
         let mut cur = match &parts[0] {
-            PathSegment::Index(index) => {
-                nodes.nth(*index).ok_or(ModelError::NotFound)?
-            }
+            PathSegment::Index(index) => nodes.nth(*index).ok_or(ModelError::NotFound)?,
             PathSegment::Name(name) => {
                 let mut results = self
                     .nodes
@@ -80,11 +78,16 @@ impl RbxModel {
 
         for segment in &parts[1..] {
             let new_cur = {
-                let children = cur.children();
+                let children = cur
+                    .children()
+                    .into_iter()
+                    .collect::<Result<Vec<_>, _>>()
+                    .unwrap();
                 match segment {
-                    PathSegment::Index(index) => {
-                        children.into_iter().nth(*index).ok_or(ModelError::NotFound)?
-                    }
+                    PathSegment::Index(index) => children
+                        .into_iter()
+                        .nth(*index)
+                        .ok_or(ModelError::NotFound)?,
                     PathSegment::Name(name) => {
                         let mut results = children
                             .into_iter()
@@ -142,5 +145,14 @@ impl Default for RbxModel {
         out.meta
             .insert("ExplicitAutoJoints".to_string(), "true".to_string());
         out
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_whiteboard() {
+        let model = crate::serde::from_file("whiteboard.rbxm");
+        dbg!(model).unwrap();
     }
 }

@@ -220,6 +220,15 @@ pub struct Color3Uint8 {
     pub b: u8,
 }
 
+/// A pivot-point representing the 'center of mass' of a model, which it rotates around
+#[derive(Debug, Clone)]
+pub struct Pivot {
+    /// The position and orientation of the pivot in space
+    pub cframe: CFrame,
+    /// TODO
+    pub unknown: u8,
+}
+
 /// A full triangle mesh, used for collision or display
 #[cfg_attr(docsrs, doc(cfg(feature = "mesh-format")))]
 #[cfg(feature = "mesh-format")]

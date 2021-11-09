@@ -37,6 +37,7 @@ pub(crate) enum RawProperty {
     CustomPhysicalProperties(bool),
     Color3Uint8(Color3Uint8),
     RawSharedString(i32),
+    Pivot(Pivot),
 }
 
 impl RawProperty {
@@ -69,6 +70,7 @@ impl RawProperty {
             RawProperty::Color3Uint8(val) => Property::Color3Uint8(val),
             RawProperty::Int64(val) => Property::Int64(val),
             RawProperty::RawSharedString(..) => unreachable!(),
+            RawProperty::Pivot(val) => Property::Pivot(val),
         }
     }
 
@@ -103,6 +105,7 @@ impl RawProperty {
             Property::CustomPhysicalProperties(val) => RawProperty::CustomPhysicalProperties(val),
             Property::Color3Uint8(val) => RawProperty::Color3Uint8(val),
             Property::Int64(val) => RawProperty::Int64(val),
+            Property::Pivot(val) => RawProperty::Pivot(val),
         }
     }
 }

@@ -1008,12 +1008,14 @@ pub struct BasePart {
     pub can_touch: bool,
     pub can_collide: bool,
     pub cast_shadow: bool,
+    pub can_query: bool,
 
     #[propname = "size"]
     pub size: Vector3,
     pub c_frame: CFrame,
     pub velocity: Vector3,
     pub rot_velocity: Vector3,
+    pub pivot_offset: CFrame,
 
     #[isenum]
     pub material: Material,
@@ -2122,7 +2124,7 @@ pub struct Model {
     pub base: Base,
     #[isenum]
     pub level_of_detail: ModelLevelOfDetail,
-    pub model_in_primary: CFrame,
+    pub model_in_primary: Option<CFrame>,
     #[cfg(feature = "mesh-format")]
     #[shared]
     pub model_mesh_data: TriMesh,
@@ -2132,6 +2134,8 @@ pub struct Model {
     pub model_mesh_size: Vector3,
     pub model_mesh_c_frame: CFrame,
     pub primary_part: InstanceRef,
+    pub needs_pivot_migration: bool,
+    pub world_pivot_data: Pivot,
 }
 
 #[derive(Debug, Clone, Inherits, PropertyConvert)]

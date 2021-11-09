@@ -463,6 +463,28 @@ fn chomp_color3_u8<R: Read>(reader: &mut R) -> Result<Color3Uint8> {
     })
 }
 
+fn chomp_pivots<R: Read>(reader: &mut R, len: usize) -> Result<Vec<Pivot>> {
+    let _first = chomp_u8(reader)?;
+
+    let cframes = chomp_cframes(reader, len)?;
+
+    let _second = chomp_u8(reader)?;
+
+    let mut unknown = Vec::new();
+
+    for _ in 0..len {
+        unknown.push(chomp_u8(reader)?);
+    }
+
+    let mut out = Vec::new();
+
+    for (cframe, unknown) in cframes.into_iter().zip(unknown.into_iter()) {
+        out.push(Pivot { cframe, unknown })
+    }
+
+    Ok(out)
+}
+
 #[cfg(feature = "mesh-format")]
 fn chomp_inner_mesh<R: Read>(reader: &mut R) -> Result<ConvexHull> {
     let unknown_1_len = chomp_i32_raw(reader)?;
@@ -631,17 +653,25 @@ impl<'de, R: Read> Deserializer<R> {
             instances,
             mut raw_props,
             parent_info,
-            child_info,
+            child_info: _,
         } = self.raw_info;
 
         let mut id_key = BTreeMap::new();
+
         let tree = Tree::new();
+
+        for (&id, _) in &instances {
+            id_key.insert(
+                id,
+                tree.add_root(InstanceKind::Other(String::new(), BTreeMap::new())),
+            );
+        }
 
         // Do reference resolution, and populate information
         instances
             .iter()
-            .try_for_each::<_, Result<()>>(|(id, class_name)| {
-                let raw_props = raw_props.remove(id).ok_or(Error::UnknownInstance(*id))?;
+            .try_for_each::<_, Result<()>>(|(&id, class_name)| {
+                let raw_props = raw_props.remove(&id).ok_or(Error::UnknownInstance(id))?;
 
                 let props = raw_props
                     .into_iter()
@@ -659,8 +689,8 @@ impl<'de, R: Read> Deserializer<R> {
                                     })
                             }
                             RawProperty::InstanceRef(ref_id) => {
-                                let key = id_key.get(&ref_id)
-                                    .ok_or(Error::UnknownInstance(ref_id))?;
+                                let key =
+                                    id_key.get(&ref_id).ok_or(Error::UnknownInstance(ref_id))?;
 
                                 Property::InstanceRef(*key)
                             }
@@ -671,38 +701,18 @@ impl<'de, R: Read> Deserializer<R> {
                     })
                     .collect::<Result<_>>()?;
 
-                let new_key = tree.add_root(make_kind(class_name, props)?);
-                id_key.insert(id, new_key);
-
-                /*{
-                    let mut mut_inst = inst.borrow_mut();
-                    mut_inst.parent = parent;
-                    mut_inst.children = children;
-                    mut_inst.kind = make_kind(class_name, props)?;
-                }*/
+                **tree.try_get_mut(id_key[&id]).unwrap() = make_kind(class_name, props)?;
 
                 Ok(())
             })?;
-            //.collect::<Result<Vec<_>>>()?;
 
-        // TODO: Verify child info
-        for (&parent, &child) in &parent_info {
-            let mut parent = tree
-                .try_get_mut(*id_key.get(&parent).unwrap())
-                .unwrap();
-            let mut child = tree
-                .try_get_mut(*id_key.get(&child).unwrap())
-                .unwrap();
+        // TODO: Verify child info matches
+        for (&child, &parent) in parent_info.iter().filter(|(_, &parent)| parent != -1) {
+            let mut parent = tree.try_get_mut(*id_key.get(&parent).unwrap()).unwrap();
+            let mut child = tree.try_get_mut(*id_key.get(&child).unwrap()).unwrap();
 
             parent.add_child(&mut child);
         }
-
-        // Figure out our root instances
-        /*let roots = instances
-            .into_iter()
-            .filter(|inst| inst.borrow().parent.ptr_eq(&Weak::default()))
-            .map(|inst| Rc::clone(inst))
-            .collect::<Vec<_>>();*/
 
         Ok(RbxModel { meta, nodes: tree })
     }
@@ -759,9 +769,7 @@ impl<'de, R: Read> Deserializer<R> {
                 make_cumulative(&mut instance_ids);
 
                 for id in &instance_ids {
-                    self.raw_info
-                        .instances
-                        .insert(*id, class_name.clone());
+                    self.raw_info.instances.insert(*id, class_name.clone());
                 }
 
                 self.raw_info.class_ids.insert(index, instance_ids);
@@ -870,6 +878,14 @@ impl<'de, R: Read> Deserializer<R> {
                             );
                             break;
                         }
+                        30 => {
+                            properties.extend(
+                                chomp_pivots(block_reader, num_props)?
+                                    .into_iter()
+                                    .map(RawProperty::Pivot),
+                            );
+                            break;
+                        }
                         _ => {
                             return Err(Error::UnknownProperty(prop_ty));
                         }
@@ -941,8 +957,8 @@ impl<'de, R: Read> Deserializer<R> {
         let mut data = vec![0; compressed as usize];
         self.reader.read_exact(&mut data)?;
 
-        let out = lz4_flex::block::decompress(&data, uncompressed)
-            .map_err(|_| Error::InvalidLz4)?;
+        let out =
+            lz4_flex::block::decompress(&data, uncompressed).map_err(|_| Error::InvalidLz4)?;
 
         assert_eq!(out.len(), uncompressed);
 

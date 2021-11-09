@@ -1,6 +1,9 @@
 //! The serialization implementation for an RBXM
 
-use crate::model::{Axes, Color3, Color3Uint8, ColorSequence, Faces, NumberRange, NumberSequence, Property, RbxModel, Vector2, Vector3, Vector3Int16};
+use crate::model::{
+    Axes, Color3, Color3Uint8, ColorSequence, Faces, NumberRange, NumberSequence, Property,
+    RbxModel, Vector2, Vector3, Vector3Int16,
+};
 #[cfg(feature = "mesh-format")]
 use crate::model::{ConvexHull, TriMesh};
 use crate::serde::internal::{break_kind, RawProperty};
@@ -603,11 +606,11 @@ fn write_shared_strings<W: Write>(writer: &mut W, properties: &[RawProperty]) ->
 
 fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
     #[allow(clippy::mutable_key_type)]
-    let key_to_id: BTreeMap<_, _> = model.nodes.unordered_keys()
+    let key_to_id: BTreeMap<_, _> = model
+        .nodes
+        .unordered_keys()
         .enumerate()
-        .map(|(idx, key)| {
-            (key, idx)
-        })
+        .map(|(idx, key)| (key, idx))
         .collect();
 
     let mut inst_blocks = BTreeMap::new();
@@ -677,9 +680,7 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
                             }
                         }
                     }
-                    Property::InstanceRef(val) => {
-                        RawProperty::InstanceRef(key_to_id[&val] as i32)
-                    }
+                    Property::InstanceRef(val) => RawProperty::InstanceRef(key_to_id[&val] as i32),
                     prop => RawProperty::from_real(prop.clone()),
                 };
                 properties.push(raw)
@@ -689,9 +690,11 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
         }
 
         let parent_index = match node.parent() {
-            Some(parent) => key_to_id[&parent.key()] as i32,
-            None => -1,
+            Ok(Some(parent)) => key_to_id[&parent.key()] as i32,
+            Ok(None) => -1,
+            Err(e) => panic!("Failed to get expected node parent: {}", e),
         };
+
         parents.insert(index as i32, parent_index);
     }
 
@@ -828,6 +831,7 @@ impl<W: Write> Serializer<W> {
                     RawProperty::Color3Uint8(..) => 26,
                     RawProperty::Int64(..) => 27,
                     RawProperty::RawSharedString(..) => 28,
+                    RawProperty::Pivot(..) => 30,
                 };
 
                 write_u8(writer, prop_ty)?;
@@ -886,6 +890,10 @@ impl<W: Write> Serializer<W> {
                         RawProperty::Int64(val) => write_i64(writer, *val)?,
                         RawProperty::RawSharedString(..) => {
                             write_shared_strings(writer, &properties)?;
+                            break;
+                        }
+                        RawProperty::Pivot(..) => {
+                            write_cframes(writer, &properties)?;
                             break;
                         }
                     }
