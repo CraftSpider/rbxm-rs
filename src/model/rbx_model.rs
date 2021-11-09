@@ -122,12 +122,3 @@ impl Default for RbxModel {
         out
     }
 }
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn test_whiteboard() {
-        let model = crate::serde::from_file("whiteboard.rbxm");
-        dbg!(model).unwrap();
-    }
-}
