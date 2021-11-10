@@ -3,583 +3,20 @@
 use crate::model::*;
 use crate::serde::internal::{make_kind, RawProperty};
 use crate::serde::{Error, Result};
+use crate::serde::io::Read;
+use crate::serde::encoding::{Chomp, ChompTransform, ChompInterleaved, ChompInterleavedTransform};
 use crate::tree::Tree;
 
 use alloc::collections::BTreeMap;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-
-/// A `no_std` minimal implementation of [`std::io::Read`]
-pub trait Read {
-    /// Read an exact buffer size
-    fn read_exact(&mut self, buf: &mut [u8]) -> Result<()>;
-}
-
-#[cfg(feature = "std")]
-impl<T: std::io::Read> Read for T {
-    fn read_exact(&mut self, buf: &mut [u8]) -> Result<()> {
-        <Self as std::io::Read>::read_exact(self, buf).map_err(Error::IoError)
-    }
-}
-
-#[cfg(not(feature = "std"))]
-impl Read for &[u8] {
-    fn read_exact(&mut self, buf: &mut [u8]) -> Result<()> {
-        if buf.len() < self.len() {
-            for i in 0..buf.len() {
-                buf[i] = self[i];
-            }
-            *self = &self[buf.len()..];
-            Ok(())
-        } else {
-            Err(Error::IoError("Input too small to fill buffer"))
-        }
-    }
-}
-
-// Decode the special formats used to store some values
-
-fn decode_i32(mut raw: u32) -> i32 {
-    let sign = raw & 1;
-    raw >>= 1;
-    let mut out = i32::from_ne_bytes(raw.to_ne_bytes());
-    if sign == 1 {
-        out += 1;
-        out = -out;
-    }
-    out
-}
-
-fn decode_f32(mut raw: u32) -> f32 {
-    let sign = raw & 1;
-    raw >>= 1;
-    raw ^= sign * (1 << 31);
-    f32::from_ne_bytes(raw.to_ne_bytes())
-}
+use std::collections::BTreeSet;
 
 fn make_cumulative(mut slice: &mut [i32]) {
     for _ in 1..slice.len() {
         let (first, second) = slice.split_at_mut(1);
         second[0] += first[0];
         slice = second;
-    }
-}
-
-// Consume ('chomp') some data from an input
-
-fn chomp_bool<R: Read>(reader: &mut R) -> Result<bool> {
-    let mut data = [0; 1];
-    reader.read_exact(&mut data)?;
-    Ok(data[0] != 0)
-}
-
-fn chomp_u8<R: Read>(reader: &mut R) -> Result<u8> {
-    let mut data = [0; 1];
-    reader.read_exact(&mut data)?;
-    Ok(data[0])
-}
-
-fn chomp_i16<R: Read>(reader: &mut R) -> Result<i16> {
-    let mut data = [0; 2];
-    reader.read_exact(&mut data)?;
-    Ok(i16::from_le_bytes(data))
-}
-
-fn chomp_i32_raw<R: Read>(reader: &mut R) -> Result<i32> {
-    let mut data = [0; 4];
-    reader.read_exact(&mut data)?;
-    Ok(i32::from_le_bytes(data))
-}
-
-fn chomp_i32_transformed<R: Read>(reader: &mut R) -> Result<i32> {
-    let mut data = [0; 4];
-    reader.read_exact(&mut data)?;
-    Ok(decode_i32(u32::from_be_bytes(data)))
-}
-
-fn chomp_i64<R: Read>(reader: &mut R) -> Result<i64> {
-    let mut data = [0; 8];
-    reader.read_exact(&mut data)?;
-    Ok(i64::from_le_bytes(data))
-}
-
-fn chomp_f32_raw<R: Read>(reader: &mut R) -> Result<f32> {
-    let mut data = [0; 4];
-    reader.read_exact(&mut data)?;
-    Ok(f32::from_le_bytes(data))
-}
-
-fn chomp_f32_transformed<R: Read>(reader: &mut R) -> Result<f32> {
-    let mut data = [0; 4];
-    reader.read_exact(&mut data)?;
-    Ok(decode_f32(u32::from_be_bytes(data)))
-}
-
-fn chomp_f64<R: Read>(reader: &mut R) -> Result<f64> {
-    let mut data = [0; 8];
-    reader.read_exact(&mut data)?;
-    Ok(f64::from_le_bytes(data))
-}
-
-#[inline]
-fn chomp_bytes<R: Read, const LEN: usize>(reader: &mut R) -> Result<[u8; LEN]> {
-    let mut data = [0; LEN];
-    reader.read_exact(&mut data)?;
-    Ok(data)
-}
-
-fn chomp_string<R: Read>(reader: &mut R) -> Result<String> {
-    let len = chomp_i32_raw(reader)?;
-    let mut str = vec![0; len as usize];
-    reader.read_exact(&mut str)?;
-    String::from_utf8(str).map_err(|_| Error::InvalidString)
-}
-
-fn chomp_binary_string<R: Read>(reader: &mut R) -> Result<Vec<u8>> {
-    let len = chomp_i32_raw(reader)?;
-    let mut str = vec![0; len as usize];
-    reader.read_exact(&mut str)?;
-    Ok(str)
-}
-
-fn chomp_interleaved_i32_raw<R: Read>(reader: &mut R, len: usize) -> Result<Vec<i32>> {
-    let mut data = vec![0; len * 4];
-    reader.read_exact(&mut data)?;
-
-    let mut out = vec![0; len];
-    for i in 0..len {
-        let mut bytes = [0; 4];
-        for j in 0..4 {
-            bytes[j] = data[i + j * len];
-        }
-        out[i] = i32::from_be_bytes(bytes);
-    }
-
-    Ok(out)
-}
-
-fn chomp_interleaved_i32_transformed<R: Read>(reader: &mut R, len: usize) -> Result<Vec<i32>> {
-    let mut data = vec![0; len * 4];
-    reader.read_exact(&mut data)?;
-
-    let mut out = vec![0; len];
-    for i in 0..len {
-        let mut bytes = [0; 4];
-        for j in 0..4 {
-            bytes[j] = data[i + j * len];
-        }
-        out[i] = decode_i32(u32::from_be_bytes(bytes));
-    }
-    Ok(out)
-}
-
-fn chomp_interleaved_f32<R: Read>(reader: &mut R, len: usize) -> Result<Vec<f32>> {
-    let mut data = vec![0; len * 4];
-    reader.read_exact(&mut data)?;
-
-    let mut out = vec![0f32; len];
-    for i in 0..len {
-        let mut bytes = [0; 4];
-        for j in 0..4 {
-            bytes[j] = data[i + j * len];
-        }
-        out[i] = decode_f32(u32::from_be_bytes(bytes));
-    }
-
-    Ok(out)
-}
-
-fn chomp_udims<R: Read>(reader: &mut R, len: usize) -> Result<Vec<UDim>> {
-    let scales = chomp_interleaved_f32(reader, len)?;
-    let offsets = chomp_interleaved_i32_raw(reader, len)?;
-
-    let mut out = Vec::with_capacity(len);
-    for (scale, offset) in scales.into_iter().zip(offsets.into_iter()) {
-        out.push(UDim { scale, offset })
-    }
-
-    Ok(out)
-}
-
-fn chomp_udim2s<R: Read>(reader: &mut R, len: usize) -> Result<Vec<UDim2>> {
-    let x_scales = chomp_interleaved_f32(reader, len)?;
-    let y_scales = chomp_interleaved_f32(reader, len)?;
-    let x_offsets = chomp_interleaved_i32_raw(reader, len)?;
-    let y_offsets = chomp_interleaved_i32_raw(reader, len)?;
-
-    let mut out = Vec::with_capacity(len);
-    for (((x_scale, y_scale), x_offset), y_offset) in x_scales
-        .into_iter()
-        .zip(y_scales.into_iter())
-        .zip(x_offsets.into_iter())
-        .zip(y_offsets.into_iter())
-    {
-        out.push(UDim2 {
-            x: UDim {
-                scale: x_scale,
-                offset: x_offset,
-            },
-            y: UDim {
-                scale: y_scale,
-                offset: y_offset,
-            },
-        })
-    }
-    Ok(out)
-}
-
-fn chomp_rays<R: Read>(reader: &mut R, len: usize) -> Result<Vec<Ray>> {
-    let x_origs = chomp_interleaved_f32(reader, len)?;
-    let y_origs = chomp_interleaved_f32(reader, len)?;
-    let z_origs = chomp_interleaved_f32(reader, len)?;
-    let x_dir = chomp_interleaved_f32(reader, len)?;
-    let y_dir = chomp_interleaved_f32(reader, len)?;
-    let z_dir = chomp_interleaved_f32(reader, len)?;
-
-    let mut out = Vec::with_capacity(len);
-    for i in 0..len {
-        out.push(Ray {
-            origin: Vector3 {
-                x: x_origs[i],
-                y: y_origs[i],
-                z: z_origs[i],
-            },
-            direction: Vector3 {
-                x: x_dir[i],
-                y: y_dir[i],
-                z: z_dir[i],
-            },
-        })
-    }
-
-    Ok(out)
-}
-
-fn chomp_face<R: Read>(reader: &mut R) -> Result<Faces> {
-    let data = chomp_u8(reader)?;
-    Ok(Faces {
-        front: data & 0b0000_0001 > 0,
-        bottom: data & 0b0000_0010 > 0,
-        left: data & 0b0000_0100 > 0,
-        back: data & 0b0000_1000 > 0,
-        top: data & 0b0001_0000 > 0,
-        right: data & 0b0010_0000 > 0,
-    })
-}
-
-fn chomp_axis<R: Read>(reader: &mut R) -> Result<Axes> {
-    let data = chomp_u8(reader)?;
-    Ok(Axes {
-        x: data & 0b100 != 0,
-        y: data & 0b010 != 0,
-        z: data & 0b001 != 0,
-    })
-}
-
-fn chomp_brick_colors<R: Read>(reader: &mut R, len: usize) -> Result<Vec<BrickColor>> {
-    let mut colors = Vec::with_capacity(len);
-    let indices = chomp_interleaved_i32_raw(reader, len)?;
-    for index in indices {
-        colors.push(BrickColor { index })
-    }
-    Ok(colors)
-}
-
-fn chomp_color3_raw<R: Read>(reader: &mut R) -> Result<Color3> {
-    Ok(Color3 {
-        r: chomp_f32_raw(reader)?,
-        g: chomp_f32_raw(reader)?,
-        b: chomp_f32_raw(reader)?,
-    })
-}
-
-fn chomp_color3<R: Read>(reader: &mut R) -> Result<Color3> {
-    Ok(Color3 {
-        r: chomp_f32_transformed(reader)?,
-        g: chomp_f32_transformed(reader)?,
-        b: chomp_f32_transformed(reader)?,
-    })
-}
-
-fn chomp_vector2<R: Read>(reader: &mut R) -> Result<Vector2> {
-    Ok(Vector2 {
-        x: chomp_f32_transformed(reader)?,
-        y: chomp_f32_transformed(reader)?,
-    })
-}
-
-fn chomp_vector3<R: Read>(reader: &mut R) -> Result<Vector3> {
-    Ok(Vector3 {
-        x: chomp_f32_transformed(reader)?,
-        y: chomp_f32_transformed(reader)?,
-        z: chomp_f32_transformed(reader)?,
-    })
-}
-
-fn chomp_cframes<R: Read>(reader: &mut R, len: usize) -> Result<Vec<CFrame>> {
-    let mut angles = Vec::with_capacity(len);
-    for _ in 0..len {
-        let angle_type = chomp_u8(reader)?;
-        let angle: [[f32; 3]; 3] = match angle_type {
-            0 => {
-                let mut data = [[0f32; 3]; 3];
-                for i in &mut data {
-                    for j in i {
-                        *j = chomp_f32_raw(reader)?;
-                    }
-                }
-                data
-            }
-            2 => [[1f32, 0f32, 0f32], [0f32, 1f32, 0f32], [0f32, 0f32, 1f32]],
-            3 => [[1f32, 0f32, 0f32], [0f32, 0f32, -1f32], [0f32, 1f32, 0f32]],
-            5 => [[1f32, 0f32, 0f32], [0f32, -1f32, 0f32], [0f32, 0f32, -1f32]],
-            6 => [[1f32, 0f32, 0f32], [0f32, 0f32, 1f32], [0f32, -1f32, 0f32]],
-            7 => [[0f32, 1f32, 0f32], [1f32, 0f32, 0f32], [0f32, 0f32, -1f32]],
-            9 => [[0f32, 0f32, 1f32], [1f32, 0f32, 0f32], [0f32, 1f32, 0f32]],
-            10 => [[0f32, -1f32, 0f32], [1f32, 0f32, 0f32], [0f32, 0f32, 1f32]],
-            12 => [[0f32, 0f32, -1f32], [1f32, 0f32, 0f32], [0f32, -1f32, 0f32]],
-            13 => [[0f32, 1f32, 0f32], [0f32, 0f32, 1f32], [1f32, 0f32, 0f32]],
-            14 => [[0f32, 0f32, -1f32], [0f32, 1f32, 0f32], [1f32, 0f32, 0f32]],
-            16 => [[0f32, -1f32, 0f32], [0f32, 0f32, -1f32], [1f32, 0f32, 0f32]],
-            17 => [[0f32, 0f32, 1f32], [0f32, -1f32, 0f32], [1f32, 0f32, 0f32]],
-            20 => [[-1f32, 0f32, 0f32], [0f32, 1f32, 0f32], [0f32, 0f32, -1f32]],
-            21 => [[-1f32, 0f32, 0f32], [0f32, 0f32, 1f32], [0f32, 1f32, 0f32]],
-            23 => [[-1f32, 0f32, 0f32], [0f32, -1f32, 0f32], [0f32, 0f32, 1f32]],
-            24 => [
-                [-1f32, 0f32, 0f32],
-                [0f32, 0f32, -1f32],
-                [0f32, -1f32, 0f32],
-            ],
-            25 => [[0f32, 1f32, 0f32], [-1f32, 0f32, 0f32], [0f32, 0f32, 1f32]],
-            27 => [[0f32, 0f32, -1f32], [-1f32, 0f32, 0f32], [0f32, 1f32, 0f32]],
-            28 => [
-                [0f32, -1f32, 0f32],
-                [-1f32, 0f32, 0f32],
-                [0f32, 0f32, -1f32],
-            ],
-            30 => [[0f32, 0f32, 1f32], [-1f32, 0f32, 0f32], [0f32, -1f32, 0f32]],
-            31 => [[0f32, 1f32, 0f32], [0f32, 0f32, -1f32], [-1f32, 0f32, 0f32]],
-            32 => [[0f32, 0f32, 1f32], [0f32, 1f32, 0f32], [-1f32, 0f32, 0f32]],
-            34 => [[0f32, -1f32, 0f32], [0f32, 0f32, 1f32], [-1f32, 0f32, 0f32]],
-            35 => [
-                [0f32, 0f32, -1f32],
-                [0f32, -1f32, 0f32],
-                [-1f32, 0f32, 0f32],
-            ],
-            _ => return Err(Error::UnknownCFrame(angle_type)),
-        };
-
-        angles.push(angle);
-    }
-    let mut positions = Vec::with_capacity(len);
-    for _ in 0..len {
-        positions.push(chomp_vector3(reader)?);
-    }
-
-    let mut out = Vec::with_capacity(len);
-    for (position, angle) in positions.into_iter().zip(angles.into_iter()) {
-        out.push(CFrame { position, angle })
-    }
-
-    Ok(out)
-}
-
-fn chomp_vector3_i16<R: Read>(reader: &mut R) -> Result<Vector3Int16> {
-    Ok(Vector3Int16 {
-        x: chomp_i16(reader)?,
-        y: chomp_i16(reader)?,
-        z: chomp_i16(reader)?,
-    })
-}
-
-fn chomp_number_sequence<R: Read>(reader: &mut R) -> Result<NumberSequence> {
-    let num_keypoints = chomp_i32_raw(reader)?;
-    let mut keypoints = Vec::with_capacity(num_keypoints as usize);
-    for _ in 0..num_keypoints {
-        let time = chomp_f32_raw(reader)?;
-        let value = chomp_f32_raw(reader)?;
-        let envelope = chomp_f32_raw(reader)?;
-        keypoints.push(NumberKeypoint {
-            time,
-            value,
-            envelope,
-        })
-    }
-
-    Ok(NumberSequence { keypoints })
-}
-
-fn chomp_color_sequence<R: Read>(reader: &mut R) -> Result<ColorSequence> {
-    let num_keypoints = chomp_i32_raw(reader)?;
-    let mut keypoints = Vec::with_capacity(num_keypoints as usize);
-    for _ in 0..num_keypoints {
-        let time = chomp_f32_raw(reader)?;
-        let color = chomp_color3_raw(reader)?;
-        let envelope = chomp_f32_raw(reader)?;
-        keypoints.push(ColorKeypoint {
-            time,
-            color,
-            envelope,
-        })
-    }
-
-    Ok(ColorSequence { keypoints })
-}
-
-fn chomp_number_range<R: Read>(reader: &mut R) -> Result<NumberRange> {
-    Ok(NumberRange {
-        low: chomp_f32_raw(reader)?,
-        high: chomp_f32_raw(reader)?,
-    })
-}
-
-fn chomp_rects<R: Read>(reader: &mut R, len: usize) -> Result<Vec<Rect>> {
-    let min_x = chomp_interleaved_f32(reader, len)?;
-    let min_y = chomp_interleaved_f32(reader, len)?;
-    let max_x = chomp_interleaved_f32(reader, len)?;
-    let max_y = chomp_interleaved_f32(reader, len)?;
-
-    let mut out = Vec::with_capacity(len);
-    for i in 0..len {
-        out.push(Rect {
-            top_left: Vector2 {
-                x: min_x[i],
-                y: min_y[i],
-            },
-            bottom_right: Vector2 {
-                x: max_x[i],
-                y: max_y[i],
-            },
-        })
-    }
-    Ok(out)
-}
-
-fn chomp_color3_u8<R: Read>(reader: &mut R) -> Result<Color3Uint8> {
-    Ok(Color3Uint8 {
-        r: chomp_u8(reader)?,
-        g: chomp_u8(reader)?,
-        b: chomp_u8(reader)?,
-    })
-}
-
-fn chomp_pivots<R: Read>(reader: &mut R, len: usize) -> Result<Vec<Pivot>> {
-    let _first = chomp_u8(reader)?;
-
-    let cframes = chomp_cframes(reader, len)?;
-
-    let _second = chomp_u8(reader)?;
-
-    let mut unknown = Vec::new();
-
-    for _ in 0..len {
-        unknown.push(chomp_u8(reader)?);
-    }
-
-    let mut out = Vec::new();
-
-    for (cframe, unknown) in cframes.into_iter().zip(unknown.into_iter()) {
-        out.push(Pivot { cframe, unknown })
-    }
-
-    Ok(out)
-}
-
-#[cfg(feature = "mesh-format")]
-fn chomp_inner_mesh<R: Read>(reader: &mut R) -> Result<ConvexHull> {
-    let unknown_1_len = chomp_i32_raw(reader)?;
-    let mut unknown_1 = vec![0; unknown_1_len as usize];
-    reader.read_exact(&mut unknown_1)?;
-
-    let unknown_2_len = chomp_i32_raw(reader)?;
-    let mut unknown_2 = vec![0; unknown_2_len as usize];
-    reader.read_exact(&mut unknown_2)?;
-
-    let vert_len = chomp_i32_raw(reader)? / 3;
-    let vert_width = chomp_i32_raw(reader)?;
-    assert_eq!(vert_width, 4, "Unexpected vertice width");
-    let mut vertices = Vec::with_capacity(vert_len as usize);
-    for _ in 0..vert_len {
-        vertices.push(Vector3 {
-            x: chomp_f32_raw(reader)?,
-            y: chomp_f32_raw(reader)?,
-            z: chomp_f32_raw(reader)?,
-        });
-    }
-
-    let faces_len = chomp_i32_raw(reader)? / 3;
-    let mut faces = Vec::with_capacity(faces_len as usize);
-    for _ in 0..faces_len {
-        faces.push((
-            chomp_i32_raw(reader)? as usize,
-            chomp_i32_raw(reader)? as usize,
-            chomp_i32_raw(reader)? as usize,
-        ));
-    }
-
-    Ok(ConvexHull {
-        unknown_1,
-        unknown_2,
-        vertices,
-        faces,
-    })
-}
-
-#[cfg(feature = "mesh-format")]
-pub(crate) fn chomp_mesh<R: Read>(reader: &mut R) -> Result<TriMesh> {
-    let magic = chomp_bytes::<_, 6>(reader)?;
-    if &magic != b"CSGPHS" {
-        return Err(Error::BadMagic);
-    }
-
-    let kind = chomp_i32_raw(reader)?;
-
-    match kind {
-        0 => {
-            let magic = chomp_bytes::<_, 5>(reader)?;
-            if &magic != b"BLOCK" {
-                Err(Error::BadMagic)
-            } else {
-                Ok(TriMesh::Box)
-            }
-        }
-        6 => {
-            let volume = chomp_f32_raw(reader)?;
-            let center_of_gravity = Vector3 {
-                x: chomp_f32_raw(reader)?,
-                y: chomp_f32_raw(reader)?,
-                z: chomp_f32_raw(reader)?,
-            };
-
-            let inertia_tensor = {
-                let xx = chomp_f32_raw(reader)?;
-                let xy = chomp_f32_raw(reader)?;
-                let xz = chomp_f32_raw(reader)?;
-                let yy = chomp_f32_raw(reader)?;
-                let yz = chomp_f32_raw(reader)?;
-                let zz = chomp_f32_raw(reader)?;
-
-                [[xx, xy, xz], [-xy, yy, yz], [-xz, -yz, zz]]
-            };
-
-            let mut meshes = Vec::new();
-            // Read hulls till we run out of reader
-            loop {
-                match chomp_inner_mesh(reader) {
-                    Ok(mesh) => meshes.push(mesh),
-                    Err(Error::IoError(_)) => break,
-                    Err(e) => return Err(e),
-                }
-            }
-
-            Ok(TriMesh::Hull {
-                volume,
-                center_of_gravity,
-                inertia_tensor,
-                meshes,
-            })
-        }
-        val => Err(Error::UnknownMesh(val)),
     }
 }
 
@@ -611,7 +48,7 @@ impl<R: Read> Deserializer<R> {
 
     /// Deserialize a model from the input stream
     pub fn deserialize(mut self) -> Result<RbxModel> {
-        let magic = chomp_bytes::<_, 16>(&mut self.reader)?;
+        let magic = <[u8; 16]>::chomp(&mut self.reader)?;
 
         if magic
             != [
@@ -622,19 +59,19 @@ impl<R: Read> Deserializer<R> {
             return Err(Error::BadMagic);
         }
 
-        let num_classes = chomp_i32_raw(&mut self.reader)?;
-        let num_instances = chomp_i32_raw(&mut self.reader)?;
+        let num_classes = i32::chomp(&mut self.reader)?;
+        let num_instances = i32::chomp(&mut self.reader)?;
 
         let unknown = (
-            chomp_i32_raw(&mut self.reader)?,
-            chomp_i32_raw(&mut self.reader)?,
+            i32::chomp(&mut self.reader)?,
+            i32::chomp(&mut self.reader)?,
         );
 
         debug_assert_eq!(unknown, (0, 0));
 
         while self.chomp_block()? {}
 
-        let magic_end = chomp_bytes::<_, 9>(&mut self.reader)?;
+        let magic_end = <[u8; 9]>::chomp(&mut self.reader)?;
 
         if magic_end != [0x3C, 0x2F, 0x72, 0x6F, 0x62, 0x6C, 0x6F, 0x78, 0x3E] {
             return Err(Error::BadMagic);
@@ -654,7 +91,7 @@ impl<R: Read> Deserializer<R> {
             instances,
             mut raw_props,
             parent_info,
-            child_info: _,
+            child_info,
         } = self.raw_info;
 
         let mut id_key = BTreeMap::new();
@@ -708,11 +145,35 @@ impl<R: Read> Deserializer<R> {
             })?;
 
         // TODO: Verify child info matches
-        for (&child, &parent) in parent_info.iter().filter(|(_, &parent)| parent != -1) {
-            let mut parent = tree.try_get_mut(*id_key.get(&parent).unwrap()).unwrap();
-            let mut child = tree.try_get_mut(*id_key.get(&child).unwrap()).unwrap();
+        for (child, parent) in parent_info.into_iter().filter(|&(_, parent)| parent != -1) {
+            let parent_key = *id_key.get(&parent).ok_or(Error::UnknownInstance(parent))?;
+            let child_key = *id_key.get(&child).ok_or(Error::UnknownInstance(child))?;
+            let mut parent = tree.try_get_mut(parent_key).unwrap();
+            let mut child = tree.try_get_mut(child_key).unwrap();
 
             parent.add_child(&mut child);
+        }
+
+        for (parent, children) in child_info {
+            let parent_key = *id_key.get(&parent).ok_or(Error::UnknownInstance(parent))?;
+            let parent = tree.try_get(parent_key).unwrap();
+
+            let expected_children = children
+                .into_iter()
+                .map(|i| id_key.get(&i).copied().ok_or(Error::UnknownInstance(i)))
+                .collect::<Result<BTreeSet<_>>>()?;
+
+            let real_children = parent.children()
+                .into_iter()
+                .map(|r| {
+                    r.map(|r| r.key())
+                })
+                .collect::<core::result::Result<BTreeSet<_>, _>>()
+                .unwrap();
+
+            if expected_children != real_children {
+                return Err(Error::InconsistentTree)
+            }
         }
 
         Ok(RbxModel { meta, nodes: tree })
@@ -722,7 +183,7 @@ impl<R: Read> Deserializer<R> {
         let name = self.chomp_blockname()?;
 
         if name == "END" {
-            let end_data = chomp_bytes::<_, 12>(&mut self.reader)?;
+            let end_data = <[u8; 12]>::chomp(&mut self.reader)?;
             assert_eq!(end_data, [0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0]);
             return Ok(false);
         }
@@ -732,15 +193,15 @@ impl<R: Read> Deserializer<R> {
 
         match &*name {
             "SSTR" => {
-                let unknown = chomp_i32_raw(block_reader)?;
+                let unknown = i32::chomp(block_reader)?;
                 assert_eq!(unknown, 0);
-                let num_strs = chomp_i32_raw(block_reader)?;
+                let num_strs = i32::chomp(block_reader)?;
 
                 for _ in 0..num_strs {
-                    let unknown1 = chomp_i32_raw(block_reader)?;
-                    let unknown2 = chomp_i32_raw(block_reader)?;
-                    let unknown3 = chomp_i32_raw(block_reader)?;
-                    let unknown4 = chomp_i32_raw(block_reader)?;
+                    let unknown1 = i32::chomp(block_reader)?;
+                    let unknown2 = i32::chomp(block_reader)?;
+                    let unknown3 = i32::chomp(block_reader)?;
+                    let unknown4 = i32::chomp(block_reader)?;
                     assert_eq!(unknown1, 0);
                     assert_eq!(unknown2, 0);
                     assert_eq!(unknown3, 0);
@@ -748,24 +209,24 @@ impl<R: Read> Deserializer<R> {
 
                     self.raw_info
                         .shared_strs
-                        .push(chomp_binary_string(block_reader)?);
+                        .push(<Vec<u8>>::chomp(block_reader)?);
                 }
             }
             "META" => {
-                let num_pairs = chomp_i32_raw(block_reader)?;
+                let num_pairs = i32::chomp(block_reader)?;
                 for _ in 0..num_pairs {
-                    let key = chomp_string(block_reader)?;
-                    let value = chomp_string(block_reader)?;
+                    let key = String::chomp(block_reader)?;
+                    let value = String::chomp(block_reader)?;
                     self.raw_info.meta.insert(key, value);
                 }
             }
             "INST" => {
-                let index = chomp_i32_raw(block_reader)?;
-                let class_name = chomp_string(block_reader)?;
-                let _is_service = chomp_bool(block_reader)?;
-                let instance_count = chomp_i32_raw(block_reader)?;
+                let index = i32::chomp(block_reader)?;
+                let class_name = String::chomp(block_reader)?;
+                let _is_service = bool::chomp(block_reader)?;
+                let instance_count = i32::chomp(block_reader)?;
                 let mut instance_ids =
-                    chomp_interleaved_i32_transformed(block_reader, instance_count as usize)?;
+                    i32::chomp_interleaved_transformed(block_reader, instance_count as usize)?;
 
                 make_cumulative(&mut instance_ids);
 
@@ -776,9 +237,9 @@ impl<R: Read> Deserializer<R> {
                 self.raw_info.class_ids.insert(index, instance_ids);
             }
             "PROP" => {
-                let class_index = chomp_i32_raw(block_reader)?;
-                let property_name = chomp_string(block_reader)?;
-                let prop_ty = chomp_u8(block_reader)?;
+                let class_index = i32::chomp(block_reader)?;
+                let property_name = String::chomp(block_reader)?;
+                let prop_ty = u8::chomp(block_reader)?;
 
                 let class_ids = self
                     .raw_info
@@ -791,14 +252,14 @@ impl<R: Read> Deserializer<R> {
                 let mut properties = Vec::with_capacity(num_props);
                 for _ in 0..num_props {
                     let prop = match prop_ty {
-                        1 => RawProperty::RawString(chomp_binary_string(block_reader)?),
-                        2 => RawProperty::Bool(chomp_bool(block_reader)?),
-                        3 => RawProperty::Int32(chomp_i32_transformed(block_reader)?),
-                        4 => RawProperty::Float(chomp_f32_transformed(block_reader)?),
-                        5 => RawProperty::Double(chomp_f64(block_reader)?),
+                        1 => RawProperty::RawString(<Vec<u8>>::chomp(block_reader)?),
+                        2 => RawProperty::Bool(bool::chomp(block_reader)?),
+                        3 => RawProperty::Int32(i32::chomp_transformed(block_reader)?),
+                        4 => RawProperty::Float(f32::chomp_transformed(block_reader)?),
+                        5 => RawProperty::Double(f64::chomp(block_reader)?),
                         6 => {
                             properties.extend(
-                                chomp_udims(block_reader, num_props)?
+                                UDim::chomp_interleaved(block_reader, num_props)?
                                     .into_iter()
                                     .map(RawProperty::UDim),
                             );
@@ -806,7 +267,7 @@ impl<R: Read> Deserializer<R> {
                         }
                         7 => {
                             properties.extend(
-                                chomp_udim2s(block_reader, num_props)?
+                                UDim2::chomp_interleaved(block_reader, num_props)?
                                     .into_iter()
                                     .map(RawProperty::UDim2),
                             );
@@ -814,28 +275,28 @@ impl<R: Read> Deserializer<R> {
                         }
                         8 => {
                             properties.extend(
-                                chomp_rays(block_reader, num_props)?
+                                Ray::chomp_interleaved(block_reader, num_props)?
                                     .into_iter()
                                     .map(RawProperty::Ray),
                             );
                             break;
                         }
-                        9 => RawProperty::Face(chomp_face(block_reader)?),
-                        10 => RawProperty::Axis(chomp_axis(block_reader)?),
+                        9 => RawProperty::Face(Faces::chomp(block_reader)?),
+                        10 => RawProperty::Axis(Axes::chomp(block_reader)?),
                         11 => {
                             properties.extend(
-                                chomp_brick_colors(block_reader, num_props)?
+                                BrickColor::chomp_interleaved(block_reader, num_props)?
                                     .into_iter()
                                     .map(RawProperty::BrickColor),
                             );
                             break;
                         }
-                        12 => RawProperty::Color3(chomp_color3(block_reader)?),
-                        13 => RawProperty::Vector2(chomp_vector2(block_reader)?),
-                        14 => RawProperty::Vector3(chomp_vector3(block_reader)?),
+                        12 => RawProperty::Color3(Color3::chomp_transformed(block_reader)?),
+                        13 => RawProperty::Vector2(Vector2::chomp(block_reader)?),
+                        14 => RawProperty::Vector3(Vector3::chomp(block_reader)?),
                         16 => {
                             properties.extend(
-                                chomp_cframes(block_reader, num_props)?
+                                CFrame::chomp_interleaved(block_reader, num_props)?
                                     .into_iter()
                                     .map(RawProperty::CFrame),
                             );
@@ -844,36 +305,36 @@ impl<R: Read> Deserializer<R> {
                         17 => todo!("Quaternions not yet supported"),
                         18 => {
                             properties.extend(
-                                chomp_interleaved_i32_raw(block_reader, num_props)?
+                                i32::chomp_interleaved(block_reader, num_props)?
                                     .into_iter()
                                     .map(RawProperty::Enum),
                             );
                             break;
                         }
                         19 => {
-                            let mut ids = chomp_interleaved_i32_raw(block_reader, num_props)?;
+                            let mut ids = i32::chomp_interleaved(block_reader, num_props)?;
                             make_cumulative(&mut ids);
                             properties.extend(ids.into_iter().map(RawProperty::InstanceRef));
                             break;
                         }
-                        20 => RawProperty::Vector3Int16(chomp_vector3_i16(block_reader)?),
-                        21 => RawProperty::NumberSequence(chomp_number_sequence(block_reader)?),
-                        22 => RawProperty::ColorSequence(chomp_color_sequence(block_reader)?),
-                        23 => RawProperty::NumberRange(chomp_number_range(block_reader)?),
+                        20 => RawProperty::Vector3Int16(Vector3Int16::chomp(block_reader)?),
+                        21 => RawProperty::NumberSequence(NumberSequence::chomp(block_reader)?),
+                        22 => RawProperty::ColorSequence(ColorSequence::chomp(block_reader)?),
+                        23 => RawProperty::NumberRange(NumberRange::chomp(block_reader)?),
                         24 => {
                             properties.extend(
-                                chomp_rects(block_reader, num_props)?
+                                Rect::chomp_interleaved(block_reader, num_props)?
                                     .into_iter()
                                     .map(RawProperty::Rect),
                             );
                             break;
                         }
-                        25 => RawProperty::CustomPhysicalProperties(chomp_bool(block_reader)?),
-                        26 => RawProperty::Color3Uint8(chomp_color3_u8(block_reader)?),
-                        27 => RawProperty::Int64(chomp_i64(block_reader)?),
+                        25 => RawProperty::CustomPhysicalProperties(bool::chomp(block_reader)?),
+                        26 => RawProperty::Color3Uint8(Color3Uint8::chomp(block_reader)?),
+                        27 => RawProperty::Int64(i64::chomp(block_reader)?),
                         28 => {
                             properties.extend(
-                                chomp_interleaved_i32_raw(block_reader, num_props)?
+                                i32::chomp_interleaved(block_reader, num_props)?
                                     .into_iter()
                                     .map(RawProperty::RawSharedString),
                             );
@@ -881,7 +342,7 @@ impl<R: Read> Deserializer<R> {
                         }
                         30 => {
                             properties.extend(
-                                chomp_pivots(block_reader, num_props)?
+                                Pivot::chomp_interleaved(block_reader, num_props)?
                                     .into_iter()
                                     .map(RawProperty::Pivot),
                             );
@@ -911,13 +372,13 @@ impl<R: Read> Deserializer<R> {
                 }
             }
             "PRNT" => {
-                let unknown = chomp_u8(block_reader)?;
+                let unknown = u8::chomp(block_reader)?;
                 assert_eq!(unknown, 0);
-                let len = chomp_i32_raw(block_reader)?;
+                let len = i32::chomp(block_reader)?;
                 let mut instance_referents =
-                    chomp_interleaved_i32_transformed(block_reader, len as usize)?;
+                    i32::chomp_interleaved_transformed(block_reader, len as usize)?;
                 let mut parent_referents =
-                    chomp_interleaved_i32_transformed(block_reader, len as usize)?;
+                    i32::chomp_interleaved_transformed(block_reader, len as usize)?;
 
                 make_cumulative(&mut instance_referents);
                 make_cumulative(&mut parent_referents);
@@ -940,7 +401,7 @@ impl<R: Read> Deserializer<R> {
     }
 
     fn chomp_blockname(&mut self) -> Result<String> {
-        let data = chomp_bytes::<_, 4>(&mut self.reader)?;
+        let data = <[u8; 4]>::chomp(&mut self.reader)?;
 
         let first_zero = data.iter().copied().position(|b| b == 0).unwrap_or(4) as usize;
 
@@ -950,10 +411,10 @@ impl<R: Read> Deserializer<R> {
     }
 
     fn chomp_lz4(&mut self) -> Result<Vec<u8>> {
-        let compressed = chomp_i32_raw(&mut self.reader)?;
-        let uncompressed = chomp_i32_raw(&mut self.reader)? as usize;
+        let compressed = i32::chomp(&mut self.reader)?;
+        let uncompressed = i32::chomp(&mut self.reader)? as usize;
 
-        assert_eq!(chomp_i32_raw(&mut self.reader)?, 0i32);
+        assert_eq!(i32::chomp(&mut self.reader)?, 0i32);
 
         let mut data = vec![0; compressed as usize];
         self.reader.read_exact(&mut data)?;
@@ -987,25 +448,6 @@ pub fn from_bytes(bytes: &[u8]) -> Result<RbxModel> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_decode_i32() {
-        assert_eq!(decode_i32(0b0000_0000_0000_0000_0000_0000_0000_0000), 0);
-        assert_eq!(decode_i32(0b0000_0000_0000_0000_0000_0000_0000_0001), -1);
-        assert_eq!(decode_i32(0b0000_0000_0000_0000_0000_0000_0000_0100), 2);
-        assert_eq!(decode_i32(0b0000_0000_0000_0000_1000_0000_0000_0000), 16384);
-        assert_eq!(
-            decode_i32(0b0000_0000_0000_0000_1000_0000_0000_0001),
-            -16385
-        );
-    }
-
-    #[test]
-    fn test_decode_f32() {
-        assert_eq!(decode_f32(0b0000_0000_0000_0000_0000_0000_0000_0000), 0f32);
-        assert_eq!(decode_f32(0b0111_1111_0000_0000_0000_0000_0000_0001), -1f32);
-        assert_eq!(decode_f32(0b1000_0000_0000_0000_0000_0000_0000_0000), 2f32);
-    }
 
     #[test]
     fn test_make_cumulative() {

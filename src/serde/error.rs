@@ -36,6 +36,8 @@ pub enum Error {
     MissingProperty(String),
     /// An instance successfully parsed, but contained more properties than expected
     UnconsumedProperties(String, Vec<String>),
+    /// A parent->child relationship was encoded in the RBXM incorrectly
+    InconsistentTree,
 
     /// The input experienced an underlying IO error
     IoError(
@@ -68,6 +70,7 @@ impl fmt::Display for Error {
                 "Instance type {} had unexpected properties with names {:?}",
                 class_name, prop_names
             ),
+            Error::InconsistentTree => format!("RBXM parent->child relationships were inconsistent"),
 
             Error::IoError(err) => format!("Error in IO: {}", err),
             Error::InvalidString => "String contained invalid UTF data".to_string(),
