@@ -1,10 +1,12 @@
 //! The serialization implementation for an RBXM
 
 use crate::model::*;
+use crate::serde::encoding::{
+    encode_cumulative, Print, PrintInterleaved, PrintInterleavedTransform, PrintTransform,
+};
 use crate::serde::internal::{break_kind, RawProperty};
-use crate::serde::Result;
 use crate::serde::io::Write;
-use crate::serde::encoding::{encode_cumulative, Print, PrintTransform, PrintInterleaved, PrintInterleavedTransform};
+use crate::serde::Result;
 
 use alloc::collections::BTreeMap;
 use alloc::string::String;
@@ -53,7 +55,7 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
 
     for node in model.nodes.unordered_iter() {
         let index = key_to_id[&node.key()];
-        let inst = &**node;
+        let inst = &*node;
         let next_index = inst_blocks.len();
         let class_name = inst.class_name();
 
@@ -279,33 +281,51 @@ impl<W: Write> Serializer<W> {
                         RawProperty::UDim(..) => {
                             UDim::print_interleaved(
                                 writer,
-                                &properties.iter().cloned().map(|i| if let RawProperty::UDim(u) = i {
-                                    u
-                                } else {
-                                    unreachable!()
-                                }).collect::<Vec<_>>()
+                                &properties
+                                    .iter()
+                                    .cloned()
+                                    .map(|i| {
+                                        if let RawProperty::UDim(u) = i {
+                                            u
+                                        } else {
+                                            unreachable!()
+                                        }
+                                    })
+                                    .collect::<Vec<_>>(),
                             )?;
                             break;
                         }
                         RawProperty::UDim2(..) => {
                             UDim2::print_interleaved(
                                 writer,
-                                &properties.iter().cloned().map(|i| if let RawProperty::UDim2(u) = i {
-                                    u
-                                } else {
-                                    unreachable!()
-                                }).collect::<Vec<_>>()
+                                &properties
+                                    .iter()
+                                    .cloned()
+                                    .map(|i| {
+                                        if let RawProperty::UDim2(u) = i {
+                                            u
+                                        } else {
+                                            unreachable!()
+                                        }
+                                    })
+                                    .collect::<Vec<_>>(),
                             )?;
                             break;
                         }
                         RawProperty::Ray(..) => {
                             Ray::print_interleaved(
                                 writer,
-                                &properties.iter().cloned().map(|i| if let RawProperty::Ray(r) = i {
-                                    r
-                                } else {
-                                    unreachable!()
-                                }).collect::<Vec<_>>()
+                                &properties
+                                    .iter()
+                                    .cloned()
+                                    .map(|i| {
+                                        if let RawProperty::Ray(r) = i {
+                                            r
+                                        } else {
+                                            unreachable!()
+                                        }
+                                    })
+                                    .collect::<Vec<_>>(),
                             )?;
                             break;
                         }
@@ -314,11 +334,17 @@ impl<W: Write> Serializer<W> {
                         RawProperty::BrickColor(..) => {
                             BrickColor::print_interleaved(
                                 writer,
-                                &properties.iter().cloned().map(|i| if let RawProperty::BrickColor(bc) = i {
-                                    bc
-                                } else {
-                                    unreachable!()
-                                }).collect::<Vec<_>>()
+                                &properties
+                                    .iter()
+                                    .cloned()
+                                    .map(|i| {
+                                        if let RawProperty::BrickColor(bc) = i {
+                                            bc
+                                        } else {
+                                            unreachable!()
+                                        }
+                                    })
+                                    .collect::<Vec<_>>(),
                             )?;
                             break;
                         }
@@ -328,11 +354,17 @@ impl<W: Write> Serializer<W> {
                         RawProperty::CFrame(..) => {
                             CFrame::print_interleaved(
                                 writer,
-                                &properties.iter().cloned().map(|i| if let RawProperty::CFrame(c) = i {
-                                        c
-                                    } else {
-                                        unreachable!()
-                                    }).collect::<Vec<_>>()
+                                &properties
+                                    .iter()
+                                    .cloned()
+                                    .map(|i| {
+                                        if let RawProperty::CFrame(c) = i {
+                                            c
+                                        } else {
+                                            unreachable!()
+                                        }
+                                    })
+                                    .collect::<Vec<_>>(),
                             )?;
                             break;
                         }
@@ -340,37 +372,59 @@ impl<W: Write> Serializer<W> {
                         RawProperty::Enum(..) => {
                             i32::print_interleaved(
                                 writer,
-                                &properties.iter().cloned().map(|i| if let RawProperty::Enum(e) = i {
-                                    e
-                                } else {
-                                    unreachable!()
-                                }).collect::<Vec<_>>()
+                                &properties
+                                    .iter()
+                                    .cloned()
+                                    .map(|i| {
+                                        if let RawProperty::Enum(e) = i {
+                                            e
+                                        } else {
+                                            unreachable!()
+                                        }
+                                    })
+                                    .collect::<Vec<_>>(),
                             )?;
                             break;
                         }
                         RawProperty::InstanceRef(..) => {
                             i32::print_interleaved(
                                 writer,
-                                &properties.iter().cloned().map(|i| if let RawProperty::InstanceRef(e) = i {
-                                    e
-                                } else {
-                                    unreachable!()
-                                }).collect::<Vec<_>>()
+                                &properties
+                                    .iter()
+                                    .cloned()
+                                    .map(|i| {
+                                        if let RawProperty::InstanceRef(e) = i {
+                                            e
+                                        } else {
+                                            unreachable!()
+                                        }
+                                    })
+                                    .collect::<Vec<_>>(),
                             )?;
                             break;
                         }
                         RawProperty::Vector3Int16(val) => Vector3Int16::print(writer, val.clone())?,
-                        RawProperty::NumberSequence(val) => NumberSequence::print(writer, val.clone())?,
-                        RawProperty::ColorSequence(val) => ColorSequence::print(writer, val.clone())?,
+                        RawProperty::NumberSequence(val) => {
+                            NumberSequence::print(writer, val.clone())?
+                        }
+                        RawProperty::ColorSequence(val) => {
+                            ColorSequence::print(writer, val.clone())?
+                        }
                         RawProperty::NumberRange(val) => NumberRange::print(writer, val.clone())?,
                         RawProperty::Rect(..) => {
                             Rect::print_interleaved(
                                 writer,
-                                &properties.iter().cloned().map(|i| if let RawProperty::Rect(c) = i {
-                                    c
-                                } else {
-                                    unreachable!()
-                                }).collect::<Vec<_>>()
+                                &properties
+                                    .iter()
+                                    .cloned()
+                                    .map(|i| {
+                                        if let RawProperty::Rect(c) = i {
+                                            c
+                                        } else {
+                                            unreachable!()
+                                        }
+                                    })
+                                    .collect::<Vec<_>>(),
                             )?;
                             break;
                         }
@@ -380,22 +434,34 @@ impl<W: Write> Serializer<W> {
                         RawProperty::RawSharedString(..) => {
                             i32::print_interleaved(
                                 writer,
-                                &properties.iter().cloned().map(|i| if let RawProperty::InstanceRef(e) = i {
-                                    e
-                                } else {
-                                    unreachable!()
-                                }).collect::<Vec<_>>()
+                                &properties
+                                    .iter()
+                                    .cloned()
+                                    .map(|i| {
+                                        if let RawProperty::InstanceRef(e) = i {
+                                            e
+                                        } else {
+                                            unreachable!()
+                                        }
+                                    })
+                                    .collect::<Vec<_>>(),
                             )?;
                             break;
                         }
                         RawProperty::Pivot(..) => {
                             CFrame::print_interleaved(
                                 writer,
-                                &properties.iter().cloned().map(|i| if let RawProperty::CFrame(c) = i {
-                                    c
-                                } else {
-                                    unreachable!()
-                                }).collect::<Vec<_>>()
+                                &properties
+                                    .iter()
+                                    .cloned()
+                                    .map(|i| {
+                                        if let RawProperty::CFrame(c) = i {
+                                            c
+                                        } else {
+                                            unreachable!()
+                                        }
+                                    })
+                                    .collect::<Vec<_>>(),
                             )?;
                             break;
                         }

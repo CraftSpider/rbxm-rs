@@ -1,10 +1,12 @@
 //! The deserialization implementation for an RBXM
 
 use crate::model::*;
+use crate::serde::encoding::{
+    decode_cumulative, Chomp, ChompInterleaved, ChompInterleavedTransform, ChompTransform,
+};
 use crate::serde::internal::{make_kind, RawProperty};
-use crate::serde::{Error, Result};
 use crate::serde::io::Read;
-use crate::serde::encoding::{decode_cumulative, Chomp, ChompTransform, ChompInterleaved, ChompInterleavedTransform};
+use crate::serde::{Error, Result};
 use crate::tree::Tree;
 
 use alloc::collections::BTreeMap;
@@ -54,10 +56,7 @@ impl<R: Read> Deserializer<R> {
         let num_classes = i32::chomp(&mut self.reader)?;
         let num_instances = i32::chomp(&mut self.reader)?;
 
-        let unknown = (
-            i32::chomp(&mut self.reader)?,
-            i32::chomp(&mut self.reader)?,
-        );
+        let unknown = (i32::chomp(&mut self.reader)?, i32::chomp(&mut self.reader)?);
 
         debug_assert_eq!(unknown, (0, 0));
 
@@ -131,7 +130,7 @@ impl<R: Read> Deserializer<R> {
                     })
                     .collect::<Result<_>>()?;
 
-                **tree.try_get_mut(id_key[&id]).unwrap() = make_kind(class_name, props)?;
+                *tree.try_get_mut(id_key[&id]).unwrap() = make_kind(class_name, props)?;
 
                 Ok(())
             })?;
@@ -155,16 +154,15 @@ impl<R: Read> Deserializer<R> {
                 .map(|i| id_key.get(&i).copied().ok_or(Error::UnknownInstance(i)))
                 .collect::<Result<BTreeSet<_>>>()?;
 
-            let real_children = parent.children()
+            let real_children = parent
+                .children()
                 .into_iter()
-                .map(|r| {
-                    r.map(|r| r.key())
-                })
+                .map(|r| r.map(|r| r.key()))
                 .collect::<core::result::Result<BTreeSet<_>, _>>()
                 .unwrap();
 
             if expected_children != real_children {
-                return Err(Error::InconsistentTree)
+                return Err(Error::InconsistentTree);
             }
         }
 

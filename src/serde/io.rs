@@ -1,4 +1,4 @@
-//! Implementations of `Read` and `Write` for a no_std context
+//! Implementations of `Read` and `Write` for a `no_std` context
 
 use crate::serde::{Error, Result};
 

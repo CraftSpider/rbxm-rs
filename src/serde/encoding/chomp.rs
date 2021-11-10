@@ -1,10 +1,9 @@
-
 // Consume ('chomp') some data from an input
 
 use crate::model::*;
-use crate::serde::encoding::{decode_i32, decode_f32};
-use crate::serde::{Result, Error};
+use crate::serde::encoding::{decode_f32, decode_i32};
 use crate::serde::io::Read;
+use crate::serde::{Error, Result};
 
 /// Types that can be read from a stream that is assumed to match the RBXM encoding format
 pub trait Chomp<R: Read>: Sized {

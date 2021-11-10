@@ -1,11 +1,11 @@
 //! The ability to serialize/deserialize an RBXM file
 
 pub mod de;
+pub mod encoding;
 pub mod error;
 pub(crate) mod internal;
-pub mod ser;
 pub mod io;
-pub mod encoding;
+pub mod ser;
 
 #[cfg(feature = "std")]
 pub use de::from_file;

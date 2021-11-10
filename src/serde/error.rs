@@ -70,7 +70,9 @@ impl fmt::Display for Error {
                 "Instance type {} had unexpected properties with names {:?}",
                 class_name, prop_names
             ),
-            Error::InconsistentTree => format!("RBXM parent->child relationships were inconsistent"),
+            Error::InconsistentTree => {
+                String::from("RBXM parent->child relationships were inconsistent")
+            }
 
             Error::IoError(err) => format!("Error in IO: {}", err),
             Error::InvalidString => "String contained invalid UTF data".to_string(),

@@ -4,8 +4,8 @@
 mod chomp;
 mod print;
 
-pub use chomp::{Chomp, ChompTransform, ChompInterleaved, ChompInterleavedTransform};
-pub use print::{Print, PrintTransform, PrintInterleaved, PrintInterleavedTransform};
+pub use chomp::{Chomp, ChompInterleaved, ChompInterleavedTransform, ChompTransform};
+pub use print::{Print, PrintInterleaved, PrintInterleavedTransform, PrintTransform};
 
 // Decode the special formats used to store some values
 
@@ -56,7 +56,8 @@ pub fn encode_f32(val: f32) -> u32 {
 /// values, effectively.
 pub fn decode_cumulative(mut slice: &mut [i32]) {
     for _ in 1..slice.len() {
-        let (first, second) = slice.split_first_mut()
+        let (first, second) = slice
+            .split_first_mut()
             .expect("Can't happen: we range from 1 to len");
         second[0] += *first;
         slice = second;
@@ -67,8 +68,10 @@ pub fn decode_cumulative(mut slice: &mut [i32]) {
 /// previous value.
 pub fn encode_cumulative(mut slice: &mut [i32]) {
     for _ in (1..slice.len()).rev() {
-        let (previous, last) = slice.split_at_mut(slice.len() - 1);
-        last[0] -= previous.last().unwrap();
+        let (last, previous) = slice
+            .split_last_mut()
+            .expect("Can't happen: we range from len to 1");
+        *last -= previous.last().expect("Can't happen");
         slice = previous;
     }
 }

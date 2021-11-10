@@ -1,7 +1,7 @@
 use crate::model::*;
 use crate::serde::encoding::{encode_f32, encode_i32};
-use crate::serde::Result;
 use crate::serde::io::Write;
+use crate::serde::Result;
 
 macro_rules! float_match {
     ($var:expr, $($array:expr; $num:literal),+) => {
@@ -161,7 +161,7 @@ impl<W: Write> Print<W> for String {
 impl<W: Write> Print<W> for &[u8] {
     fn print(writer: &mut W, val: Self) -> Result<()> {
         i32::print(writer, val.len() as i32)?;
-        writer.write_all(&val)?;
+        writer.write_all(val)?;
         Ok(())
     }
 }
