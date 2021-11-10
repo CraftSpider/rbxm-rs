@@ -1,11 +1,10 @@
 //! The serialization implementation for an RBXM
 
 use crate::model::*;
-#[cfg(feature = "mesh-format")]
 use crate::serde::internal::{break_kind, RawProperty};
 use crate::serde::Result;
 use crate::serde::io::Write;
-use crate::serde::encoding::{Print, PrintTransform, PrintInterleaved, PrintInterleavedTransform};
+use crate::serde::encoding::{encode_cumulative, Print, PrintTransform, PrintInterleaved, PrintInterleavedTransform};
 
 use alloc::collections::BTreeMap;
 use alloc::string::String;
@@ -36,14 +35,6 @@ pub(crate) enum Block {
 /// Necessary state for serializing a value
 pub struct Serializer<W> {
     writer: W,
-}
-
-fn make_cumulative(mut slice: &mut [i32]) {
-    for _ in (1..slice.len()).rev() {
-        let (previous, last) = slice.split_at_mut(slice.len() - 1);
-        last[0] -= previous.last().unwrap();
-        slice = previous;
-    }
 }
 
 fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
@@ -232,7 +223,7 @@ impl<W: Write> Serializer<W> {
                 bool::print(writer, is_service)?;
                 i32::print(writer, instance_ids.len() as i32)?;
 
-                make_cumulative(&mut instance_ids);
+                encode_cumulative(&mut instance_ids);
                 i32::print_interleaved_transformed(writer, &instance_ids)?;
 
                 b"INST"
@@ -417,8 +408,8 @@ impl<W: Write> Serializer<W> {
                 mut instance_referents,
                 mut parent_referents,
             } => {
-                make_cumulative(&mut instance_referents);
-                make_cumulative(&mut parent_referents);
+                encode_cumulative(&mut instance_referents);
+                encode_cumulative(&mut parent_referents);
 
                 u8::print(writer, 0)?;
                 i32::print(writer, instance_referents.len() as i32)?;
@@ -465,16 +456,4 @@ pub fn to_bytes(model: &RbxModel) -> Result<Vec<u8>> {
     let mut out = Vec::new();
     to_writer(&mut out, model)?;
     Ok(out)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_make_cumulative() {
-        let mut array = [0, 1, 2, 7];
-        make_cumulative(&mut array);
-        assert_eq!(array, [0, 1, 1, 5]);
-    }
 }

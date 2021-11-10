@@ -52,6 +52,27 @@ pub fn encode_f32(val: f32) -> u32 {
     raw
 }
 
+/// Decode a slice of integers as 'cumulative'. Each value should be the sum of all previous
+/// values, effectively.
+pub fn decode_cumulative(mut slice: &mut [i32]) {
+    for _ in 1..slice.len() {
+        let (first, second) = slice.split_first_mut()
+            .expect("Can't happen: we range from 1 to len");
+        second[0] += *first;
+        slice = second;
+    }
+}
+
+/// Encode a slice of integers as 'cumulative'. Each value is replaced with its difference from the
+/// previous value.
+pub fn encode_cumulative(mut slice: &mut [i32]) {
+    for _ in (1..slice.len()).rev() {
+        let (previous, last) = slice.split_at_mut(slice.len() - 1);
+        last[0] -= previous.last().unwrap();
+        slice = previous;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -92,5 +113,19 @@ mod tests {
         assert_eq!(encode_f32(0f32), 0b0000_0000_0000_0000_0000_0000_0000_0000);
         assert_eq!(encode_f32(-1f32), 0b0111_1111_0000_0000_0000_0000_0000_0001);
         assert_eq!(encode_f32(2f32), 0b1000_0000_0000_0000_0000_0000_0000_0000);
+    }
+
+    #[test]
+    fn test_decode_cumulative() {
+        let mut array = [0, 1, 1, 5];
+        decode_cumulative(&mut array);
+        assert_eq!(array, [0, 1, 2, 7]);
+    }
+
+    #[test]
+    fn test_encode_cumulative() {
+        let mut array = [0, 1, 2, 7];
+        encode_cumulative(&mut array);
+        assert_eq!(array, [0, 1, 1, 5]);
     }
 }

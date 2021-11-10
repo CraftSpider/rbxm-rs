@@ -4,21 +4,13 @@ use crate::model::*;
 use crate::serde::internal::{make_kind, RawProperty};
 use crate::serde::{Error, Result};
 use crate::serde::io::Read;
-use crate::serde::encoding::{Chomp, ChompTransform, ChompInterleaved, ChompInterleavedTransform};
+use crate::serde::encoding::{decode_cumulative, Chomp, ChompTransform, ChompInterleaved, ChompInterleavedTransform};
 use crate::tree::Tree;
 
 use alloc::collections::BTreeMap;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use std::collections::BTreeSet;
-
-fn make_cumulative(mut slice: &mut [i32]) {
-    for _ in 1..slice.len() {
-        let (first, second) = slice.split_at_mut(1);
-        second[0] += first[0];
-        slice = second;
-    }
-}
 
 #[derive(Default)]
 struct RawInfo {
@@ -228,7 +220,7 @@ impl<R: Read> Deserializer<R> {
                 let mut instance_ids =
                     i32::chomp_interleaved_transformed(block_reader, instance_count as usize)?;
 
-                make_cumulative(&mut instance_ids);
+                decode_cumulative(&mut instance_ids);
 
                 for id in &instance_ids {
                     self.raw_info.instances.insert(*id, class_name.clone());
@@ -313,7 +305,7 @@ impl<R: Read> Deserializer<R> {
                         }
                         19 => {
                             let mut ids = i32::chomp_interleaved(block_reader, num_props)?;
-                            make_cumulative(&mut ids);
+                            decode_cumulative(&mut ids);
                             properties.extend(ids.into_iter().map(RawProperty::InstanceRef));
                             break;
                         }
@@ -380,8 +372,8 @@ impl<R: Read> Deserializer<R> {
                 let mut parent_referents =
                     i32::chomp_interleaved_transformed(block_reader, len as usize)?;
 
-                make_cumulative(&mut instance_referents);
-                make_cumulative(&mut parent_referents);
+                decode_cumulative(&mut instance_referents);
+                decode_cumulative(&mut parent_referents);
 
                 for (child_id, parent_id) in instance_referents
                     .into_iter()
@@ -443,16 +435,4 @@ pub fn from_file<P: AsRef<std::path::Path>>(path: P) -> Result<RbxModel> {
 /// Read a model from a raw byte slice
 pub fn from_bytes(bytes: &[u8]) -> Result<RbxModel> {
     from_reader(bytes)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_make_cumulative() {
-        let mut array = [0, 1, 1, 5];
-        make_cumulative(&mut array);
-        assert_eq!(array, [0, 1, 2, 7]);
-    }
 }
