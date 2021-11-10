@@ -118,430 +118,400 @@ pub(crate) trait ToProperty: Sized {
     fn to_properties(&self, properties: &mut BTreeMap<String, Property>);
 }
 
-pub(crate) fn make_kind(
+pub(crate) fn make_instance(
     kind: &str,
     mut properties: BTreeMap<String, Property>,
-) -> Result<InstanceKind> {
+) -> Result<Instance> {
     let out = match kind {
-        "Accoutrement" => {
-            InstanceKind::Accoutrement(Accoutrement::from_properties(&mut properties)?)
-        }
-        "Accessory" => InstanceKind::Accessory(Accessory::from_properties(&mut properties)?),
-        "Actor" => InstanceKind::Actor(Actor::from_properties(&mut properties)?),
+        "Accoutrement" => Instance::Accoutrement(Accoutrement::from_properties(&mut properties)?),
+        "Accessory" => Instance::Accessory(Accessory::from_properties(&mut properties)?),
+        "Actor" => Instance::Actor(Actor::from_properties(&mut properties)?),
         "AlignOrientation" => {
-            InstanceKind::AlignOrientation(AlignOrientation::from_properties(&mut properties)?)
+            Instance::AlignOrientation(AlignOrientation::from_properties(&mut properties)?)
         }
         "AlignPosition" => {
-            InstanceKind::AlignPosition(AlignPosition::from_properties(&mut properties)?)
+            Instance::AlignPosition(AlignPosition::from_properties(&mut properties)?)
         }
         "AngularVelocity" => {
-            InstanceKind::AngularVelocity(AngularVelocity::from_properties(&mut properties)?)
+            Instance::AngularVelocity(AngularVelocity::from_properties(&mut properties)?)
         }
-        "Animation" => InstanceKind::Animation(Animation::from_properties(&mut properties)?),
-        "AnimationController" => InstanceKind::AnimationController(
-            AnimationController::from_properties(&mut properties)?,
-        ),
-        "ArcHandles" => InstanceKind::ArcHandles(ArcHandles::from_properties(&mut properties)?),
-        "Atmosphere" => InstanceKind::Atmosphere(Atmosphere::from_properties(&mut properties)?),
-        "Backpack" => InstanceKind::Backpack(Backpack::from_properties(&mut properties)?),
-        "BallSocketConstraint" => InstanceKind::BallSocketConstraint(
-            BallSocketConstraint::from_properties(&mut properties)?,
-        ),
-        "Beam" => InstanceKind::Beam(Beam::from_properties(&mut properties)?),
-        "BillboardGui" => {
-            InstanceKind::BillboardGui(BillboardGui::from_properties(&mut properties)?)
+        "Animation" => Instance::Animation(Animation::from_properties(&mut properties)?),
+        "AnimationController" => {
+            Instance::AnimationController(AnimationController::from_properties(&mut properties)?)
         }
+        "ArcHandles" => Instance::ArcHandles(ArcHandles::from_properties(&mut properties)?),
+        "Atmosphere" => Instance::Atmosphere(Atmosphere::from_properties(&mut properties)?),
+        "Backpack" => Instance::Backpack(Backpack::from_properties(&mut properties)?),
+        "BallSocketConstraint" => {
+            Instance::BallSocketConstraint(BallSocketConstraint::from_properties(&mut properties)?)
+        }
+        "Beam" => Instance::Beam(Beam::from_properties(&mut properties)?),
+        "BillboardGui" => Instance::BillboardGui(BillboardGui::from_properties(&mut properties)?),
         "BinaryStringValue" => {
-            InstanceKind::BinaryStringValue(BinaryStringValue::from_properties(&mut properties)?)
+            Instance::BinaryStringValue(BinaryStringValue::from_properties(&mut properties)?)
         }
         "BindableEvent" => {
-            InstanceKind::BindableEvent(BindableEvent::from_properties(&mut properties)?)
+            Instance::BindableEvent(BindableEvent::from_properties(&mut properties)?)
         }
         "BindableFunction" => {
-            InstanceKind::BindableFunction(BindableFunction::from_properties(&mut properties)?)
+            Instance::BindableFunction(BindableFunction::from_properties(&mut properties)?)
         }
-        "BlockMesh" => InstanceKind::BlockMesh(BlockMesh::from_properties(&mut properties)?),
-        "BloomEffect" => InstanceKind::BloomEffect(BloomEffect::from_properties(&mut properties)?),
-        "BlurEffect" => InstanceKind::BlurEffect(BlurEffect::from_properties(&mut properties)?),
-        "BodyAngularVelocity" => InstanceKind::BodyAngularVelocity(
-            BodyAngularVelocity::from_properties(&mut properties)?,
-        ),
-        "BodyColors" => InstanceKind::BodyColors(BodyColors::from_properties(&mut properties)?),
-        "BodyForce" => InstanceKind::BodyForce(BodyForce::from_properties(&mut properties)?),
-        "BodyGyro" => InstanceKind::BodyGyro(BodyGyro::from_properties(&mut properties)?),
-        "BodyPosition" => {
-            InstanceKind::BodyPosition(BodyPosition::from_properties(&mut properties)?)
+        "BlockMesh" => Instance::BlockMesh(BlockMesh::from_properties(&mut properties)?),
+        "BloomEffect" => Instance::BloomEffect(BloomEffect::from_properties(&mut properties)?),
+        "BlurEffect" => Instance::BlurEffect(BlurEffect::from_properties(&mut properties)?),
+        "BodyAngularVelocity" => {
+            Instance::BodyAngularVelocity(BodyAngularVelocity::from_properties(&mut properties)?)
         }
-        "BodyThrust" => InstanceKind::BodyThrust(BodyThrust::from_properties(&mut properties)?),
-        "BodyVelocity" => {
-            InstanceKind::BodyVelocity(BodyVelocity::from_properties(&mut properties)?)
-        }
-        "BoolValue" => InstanceKind::BoolValue(BoolValue::from_properties(&mut properties)?),
+        "BodyColors" => Instance::BodyColors(BodyColors::from_properties(&mut properties)?),
+        "BodyForce" => Instance::BodyForce(BodyForce::from_properties(&mut properties)?),
+        "BodyGyro" => Instance::BodyGyro(BodyGyro::from_properties(&mut properties)?),
+        "BodyPosition" => Instance::BodyPosition(BodyPosition::from_properties(&mut properties)?),
+        "BodyThrust" => Instance::BodyThrust(BodyThrust::from_properties(&mut properties)?),
+        "BodyVelocity" => Instance::BodyVelocity(BodyVelocity::from_properties(&mut properties)?),
+        "BoolValue" => Instance::BoolValue(BoolValue::from_properties(&mut properties)?),
         "BoxHandleAdornment" => {
-            InstanceKind::BoxHandleAdornment(BoxHandleAdornment::from_properties(&mut properties)?)
+            Instance::BoxHandleAdornment(BoxHandleAdornment::from_properties(&mut properties)?)
         }
         "BrickColorValue" => {
-            InstanceKind::BrickColorValue(BrickColorValue::from_properties(&mut properties)?)
+            Instance::BrickColorValue(BrickColorValue::from_properties(&mut properties)?)
         }
-        "Camera" => InstanceKind::Camera(Camera::from_properties(&mut properties)?),
-        "CFrameValue" => InstanceKind::CFrameValue(CFrameValue::from_properties(&mut properties)?),
+        "Camera" => Instance::Camera(Camera::from_properties(&mut properties)?),
+        "CFrameValue" => Instance::CFrameValue(CFrameValue::from_properties(&mut properties)?),
         "CharacterMesh" => {
-            InstanceKind::CharacterMesh(CharacterMesh::from_properties(&mut properties)?)
+            Instance::CharacterMesh(CharacterMesh::from_properties(&mut properties)?)
         }
         "ChorusSoundEffect" => {
-            InstanceKind::ChorusSoundEffect(ChorusSoundEffect::from_properties(&mut properties)?)
+            Instance::ChorusSoundEffect(ChorusSoundEffect::from_properties(&mut properties)?)
         }
         "ClickDetector" => {
-            InstanceKind::ClickDetector(ClickDetector::from_properties(&mut properties)?)
+            Instance::ClickDetector(ClickDetector::from_properties(&mut properties)?)
         }
-        "Clouds" => InstanceKind::Clouds(Clouds::from_properties(&mut properties)?),
-        "Color3Value" => InstanceKind::Color3Value(Color3Value::from_properties(&mut properties)?),
-        "ColorCorrectionEffect" => InstanceKind::ColorCorrectionEffect(
+        "Clouds" => Instance::Clouds(Clouds::from_properties(&mut properties)?),
+        "Color3Value" => Instance::Color3Value(Color3Value::from_properties(&mut properties)?),
+        "ColorCorrectionEffect" => Instance::ColorCorrectionEffect(
             ColorCorrectionEffect::from_properties(&mut properties)?,
         ),
-        "CompressorSoundEffect" => InstanceKind::CompressorSoundEffect(
+        "CompressorSoundEffect" => Instance::CompressorSoundEffect(
             CompressorSoundEffect::from_properties(&mut properties)?,
         ),
-        "ConeHandleAdornment" => InstanceKind::ConeHandleAdornment(
-            ConeHandleAdornment::from_properties(&mut properties)?,
-        ),
+        "ConeHandleAdornment" => {
+            Instance::ConeHandleAdornment(ConeHandleAdornment::from_properties(&mut properties)?)
+        }
         "Configuration" => {
-            InstanceKind::Configuration(Configuration::from_properties(&mut properties)?)
+            Instance::Configuration(Configuration::from_properties(&mut properties)?)
         }
         "CornerWedgePart" => {
-            InstanceKind::CornerWedgePart(CornerWedgePart::from_properties(&mut properties)?)
+            Instance::CornerWedgePart(CornerWedgePart::from_properties(&mut properties)?)
         }
-        "CustomEvent" => InstanceKind::CustomEvent(CustomEvent::from_properties(&mut properties)?),
-        "CustomEventReceiver" => InstanceKind::CustomEventReceiver(
-            CustomEventReceiver::from_properties(&mut properties)?,
-        ),
-        "CylinderHandleAdornment" => InstanceKind::CylinderHandleAdornment(
+        "CustomEvent" => Instance::CustomEvent(CustomEvent::from_properties(&mut properties)?),
+        "CustomEventReceiver" => {
+            Instance::CustomEventReceiver(CustomEventReceiver::from_properties(&mut properties)?)
+        }
+        "CylinderHandleAdornment" => Instance::CylinderHandleAdornment(
             CylinderHandleAdornment::from_properties(&mut properties)?,
         ),
-        "CylinderMesh" => {
-            InstanceKind::CylinderMesh(CylinderMesh::from_properties(&mut properties)?)
-        }
-        "CylindricalConstraint" => InstanceKind::CylindricalConstraint(
+        "CylinderMesh" => Instance::CylinderMesh(CylinderMesh::from_properties(&mut properties)?),
+        "CylindricalConstraint" => Instance::CylindricalConstraint(
             CylindricalConstraint::from_properties(&mut properties)?,
         ),
-        "Decal" => InstanceKind::Decal(Decal::from_properties(&mut properties)?),
+        "Decal" => Instance::Decal(Decal::from_properties(&mut properties)?),
         "DepthOfFieldEffect" => {
-            InstanceKind::DepthOfFieldEffect(DepthOfFieldEffect::from_properties(&mut properties)?)
+            Instance::DepthOfFieldEffect(DepthOfFieldEffect::from_properties(&mut properties)?)
         }
-        "Dialog" => InstanceKind::Dialog(Dialog::from_properties(&mut properties)?),
-        "DialogChoice" => {
-            InstanceKind::DialogChoice(DialogChoice::from_properties(&mut properties)?)
-        }
-        "DistortionSoundEffect" => InstanceKind::DistortionSoundEffect(
+        "Dialog" => Instance::Dialog(Dialog::from_properties(&mut properties)?),
+        "DialogChoice" => Instance::DialogChoice(DialogChoice::from_properties(&mut properties)?),
+        "DistortionSoundEffect" => Instance::DistortionSoundEffect(
             DistortionSoundEffect::from_properties(&mut properties)?,
         ),
-        "DoubleConstrainedValue" => InstanceKind::DoubleConstrainedValue(
+        "DoubleConstrainedValue" => Instance::DoubleConstrainedValue(
             DoubleConstrainedValue::from_properties(&mut properties)?,
         ),
         "EchoSoundEffect" => {
-            InstanceKind::EchoSoundEffect(EchoSoundEffect::from_properties(&mut properties)?)
+            Instance::EchoSoundEffect(EchoSoundEffect::from_properties(&mut properties)?)
         }
-        "EqualizerSoundEffect" => InstanceKind::EqualizerSoundEffect(
-            EqualizerSoundEffect::from_properties(&mut properties)?,
-        ),
-        "Explosion" => InstanceKind::Explosion(Explosion::from_properties(&mut properties)?),
-        "FileMesh" => InstanceKind::FileMesh(FileMesh::from_properties(&mut properties)?),
-        "Fire" => InstanceKind::Fire(Fire::from_properties(&mut properties)?),
-        "Flag" => InstanceKind::Flag(Flag::from_properties(&mut properties)?),
-        "FlagStand" => InstanceKind::FlagStand(FlagStand::from_properties(&mut properties)?),
+        "EqualizerSoundEffect" => {
+            Instance::EqualizerSoundEffect(EqualizerSoundEffect::from_properties(&mut properties)?)
+        }
+        "Explosion" => Instance::Explosion(Explosion::from_properties(&mut properties)?),
+        "FileMesh" => Instance::FileMesh(FileMesh::from_properties(&mut properties)?),
+        "Fire" => Instance::Fire(Fire::from_properties(&mut properties)?),
+        "Flag" => Instance::Flag(Flag::from_properties(&mut properties)?),
+        "FlagStand" => Instance::FlagStand(FlagStand::from_properties(&mut properties)?),
         "FlangeSoundEffect" => {
-            InstanceKind::FlangeSoundEffect(FlangeSoundEffect::from_properties(&mut properties)?)
+            Instance::FlangeSoundEffect(FlangeSoundEffect::from_properties(&mut properties)?)
         }
-        "FloorWire" => InstanceKind::FloorWire(FloorWire::from_properties(&mut properties)?),
-        "Folder" => InstanceKind::Folder(Folder::from_properties(&mut properties)?),
-        "ForceField" => InstanceKind::ForceField(ForceField::from_properties(&mut properties)?),
-        "Frame" => InstanceKind::Frame(Frame::from_properties(&mut properties)?),
+        "FloorWire" => Instance::FloorWire(FloorWire::from_properties(&mut properties)?),
+        "Folder" => Instance::Folder(Folder::from_properties(&mut properties)?),
+        "ForceField" => Instance::ForceField(ForceField::from_properties(&mut properties)?),
+        "Frame" => Instance::Frame(Frame::from_properties(&mut properties)?),
         "FunctionalTest" => {
-            InstanceKind::FunctionalTest(FunctionalTest::from_properties(&mut properties)?)
+            Instance::FunctionalTest(FunctionalTest::from_properties(&mut properties)?)
         }
-        "Glue" => InstanceKind::Glue(Glue::from_properties(&mut properties)?),
-        "GuiMain" => InstanceKind::GuiMain(GuiMain::from_properties(&mut properties)?),
-        "Handles" => InstanceKind::Handles(Handles::from_properties(&mut properties)?),
-        "Hat" => InstanceKind::Hat(Hat::from_properties(&mut properties)?),
+        "Glue" => Instance::Glue(Glue::from_properties(&mut properties)?),
+        "GuiMain" => Instance::GuiMain(GuiMain::from_properties(&mut properties)?),
+        "Handles" => Instance::Handles(Handles::from_properties(&mut properties)?),
+        "Hat" => Instance::Hat(Hat::from_properties(&mut properties)?),
         "HingeConstraint" => {
-            InstanceKind::HingeConstraint(HingeConstraint::from_properties(&mut properties)?)
+            Instance::HingeConstraint(HingeConstraint::from_properties(&mut properties)?)
         }
-        "Hint" => InstanceKind::Hint(Hint::from_properties(&mut properties)?),
-        "Hole" => InstanceKind::Hole(Hole::from_properties(&mut properties)?),
-        "HopperBin" => InstanceKind::HopperBin(HopperBin::from_properties(&mut properties)?),
-        "Humanoid" => InstanceKind::Humanoid(Humanoid::from_properties(&mut properties)?),
+        "Hint" => Instance::Hint(Hint::from_properties(&mut properties)?),
+        "Hole" => Instance::Hole(Hole::from_properties(&mut properties)?),
+        "HopperBin" => Instance::HopperBin(HopperBin::from_properties(&mut properties)?),
+        "Humanoid" => Instance::Humanoid(Humanoid::from_properties(&mut properties)?),
         "HumanoidController" => {
-            InstanceKind::HumanoidController(HumanoidController::from_properties(&mut properties)?)
+            Instance::HumanoidController(HumanoidController::from_properties(&mut properties)?)
         }
-        "HumanoidDescription" => InstanceKind::HumanoidDescription(Box::new(
+        "HumanoidDescription" => Instance::HumanoidDescription(Box::new(
             HumanoidDescription::from_properties(&mut properties)?,
         )),
-        "ImageButton" => InstanceKind::ImageButton(ImageButton::from_properties(&mut properties)?),
-        "ImageHandleAdornment" => InstanceKind::ImageHandleAdornment(
-            ImageHandleAdornment::from_properties(&mut properties)?,
-        ),
-        "ImageLabel" => InstanceKind::ImageLabel(ImageLabel::from_properties(&mut properties)?),
-        "IntConstrainedValue" => InstanceKind::IntConstrainedValue(
-            IntConstrainedValue::from_properties(&mut properties)?,
-        ),
-        "IntValue" => InstanceKind::IntValue(IntValue::from_properties(&mut properties)?),
-        "Keyframe" => InstanceKind::Keyframe(Keyframe::from_properties(&mut properties)?),
+        "ImageButton" => Instance::ImageButton(ImageButton::from_properties(&mut properties)?),
+        "ImageHandleAdornment" => {
+            Instance::ImageHandleAdornment(ImageHandleAdornment::from_properties(&mut properties)?)
+        }
+        "ImageLabel" => Instance::ImageLabel(ImageLabel::from_properties(&mut properties)?),
+        "IntConstrainedValue" => {
+            Instance::IntConstrainedValue(IntConstrainedValue::from_properties(&mut properties)?)
+        }
+        "IntValue" => Instance::IntValue(IntValue::from_properties(&mut properties)?),
+        "Keyframe" => Instance::Keyframe(Keyframe::from_properties(&mut properties)?),
         "KeyframeMarker" => {
-            InstanceKind::KeyframeMarker(KeyframeMarker::from_properties(&mut properties)?)
+            Instance::KeyframeMarker(KeyframeMarker::from_properties(&mut properties)?)
         }
         "KeyframeSequence" => {
-            InstanceKind::KeyframeSequence(KeyframeSequence::from_properties(&mut properties)?)
+            Instance::KeyframeSequence(KeyframeSequence::from_properties(&mut properties)?)
         }
-        "LineForce" => InstanceKind::LineForce(LineForce::from_properties(&mut properties)?),
-        "LineHandleAdornment" => InstanceKind::LineHandleAdornment(
-            LineHandleAdornment::from_properties(&mut properties)?,
-        ),
+        "LineForce" => Instance::LineForce(LineForce::from_properties(&mut properties)?),
+        "LineHandleAdornment" => {
+            Instance::LineHandleAdornment(LineHandleAdornment::from_properties(&mut properties)?)
+        }
         "LocalizationTable" => {
-            InstanceKind::LocalizationTable(LocalizationTable::from_properties(&mut properties)?)
+            Instance::LocalizationTable(LocalizationTable::from_properties(&mut properties)?)
         }
-        "LocalScript" => InstanceKind::LocalScript(LocalScript::from_properties(&mut properties)?),
-        "ManualGlue" => InstanceKind::ManualGlue(ManualGlue::from_properties(&mut properties)?),
-        "ManualWeld" => InstanceKind::ManualWeld(ManualWeld::from_properties(&mut properties)?),
-        "MeshPart" => InstanceKind::MeshPart(MeshPart::from_properties(&mut properties)?),
-        "Message" => InstanceKind::Message(Message::from_properties(&mut properties)?),
-        "Model" => InstanceKind::Model(Model::from_properties(&mut properties)?),
-        "ModuleScript" => {
-            InstanceKind::ModuleScript(ModuleScript::from_properties(&mut properties)?)
-        }
-        "Motor" => InstanceKind::Motor(Motor::from_properties(&mut properties)?),
-        "Motor6D" => InstanceKind::Motor6D(Motor6D::from_properties(&mut properties)?),
-        "MotorFeature" => {
-            InstanceKind::MotorFeature(MotorFeature::from_properties(&mut properties)?)
-        }
+        "LocalScript" => Instance::LocalScript(LocalScript::from_properties(&mut properties)?),
+        "ManualGlue" => Instance::ManualGlue(ManualGlue::from_properties(&mut properties)?),
+        "ManualWeld" => Instance::ManualWeld(ManualWeld::from_properties(&mut properties)?),
+        "MeshPart" => Instance::MeshPart(MeshPart::from_properties(&mut properties)?),
+        "Message" => Instance::Message(Message::from_properties(&mut properties)?),
+        "Model" => Instance::Model(Model::from_properties(&mut properties)?),
+        "ModuleScript" => Instance::ModuleScript(ModuleScript::from_properties(&mut properties)?),
+        "Motor" => Instance::Motor(Motor::from_properties(&mut properties)?),
+        "Motor6D" => Instance::Motor6D(Motor6D::from_properties(&mut properties)?),
+        "MotorFeature" => Instance::MotorFeature(MotorFeature::from_properties(&mut properties)?),
         "NegateOperation" => {
-            InstanceKind::NegateOperation(NegateOperation::from_properties(&mut properties)?)
+            Instance::NegateOperation(NegateOperation::from_properties(&mut properties)?)
         }
-        "NoCollisionConstraint" => InstanceKind::NoCollisionConstraint(
+        "NoCollisionConstraint" => Instance::NoCollisionConstraint(
             NoCollisionConstraint::from_properties(&mut properties)?,
         ),
-        "NumberPose" => InstanceKind::NumberPose(NumberPose::from_properties(&mut properties)?),
-        "NumberValue" => InstanceKind::NumberValue(NumberValue::from_properties(&mut properties)?),
-        "ObjectValue" => InstanceKind::ObjectValue(ObjectValue::from_properties(&mut properties)?),
-        "Pants" => InstanceKind::Pants(Pants::from_properties(&mut properties)?),
-        "Part" => InstanceKind::Part(Part::from_properties(&mut properties)?),
+        "NumberPose" => Instance::NumberPose(NumberPose::from_properties(&mut properties)?),
+        "NumberValue" => Instance::NumberValue(NumberValue::from_properties(&mut properties)?),
+        "ObjectValue" => Instance::ObjectValue(ObjectValue::from_properties(&mut properties)?),
+        "Pants" => Instance::Pants(Pants::from_properties(&mut properties)?),
+        "Part" => Instance::Part(Part::from_properties(&mut properties)?),
         "ParticleEmitter" => {
-            InstanceKind::ParticleEmitter(ParticleEmitter::from_properties(&mut properties)?)
+            Instance::ParticleEmitter(ParticleEmitter::from_properties(&mut properties)?)
         }
         "PartOperation" => {
-            InstanceKind::PartOperation(PartOperation::from_properties(&mut properties)?)
+            Instance::PartOperation(PartOperation::from_properties(&mut properties)?)
         }
         "PartOperationAsset" => {
-            InstanceKind::PartOperationAsset(PartOperationAsset::from_properties(&mut properties)?)
+            Instance::PartOperationAsset(PartOperationAsset::from_properties(&mut properties)?)
         }
-        "PitchShiftSoundEffect" => InstanceKind::PitchShiftSoundEffect(
+        "PitchShiftSoundEffect" => Instance::PitchShiftSoundEffect(
             PitchShiftSoundEffect::from_properties(&mut properties)?,
         ),
-        "PointLight" => InstanceKind::PointLight(PointLight::from_properties(&mut properties)?),
-        "Pose" => InstanceKind::Pose(Pose::from_properties(&mut properties)?),
-        "PrismaticConstraint" => InstanceKind::PrismaticConstraint(
-            PrismaticConstraint::from_properties(&mut properties)?,
-        ),
+        "PointLight" => Instance::PointLight(PointLight::from_properties(&mut properties)?),
+        "Pose" => Instance::Pose(Pose::from_properties(&mut properties)?),
+        "PrismaticConstraint" => {
+            Instance::PrismaticConstraint(PrismaticConstraint::from_properties(&mut properties)?)
+        }
         "ProximityPrompt" => {
-            InstanceKind::ProximityPrompt(ProximityPrompt::from_properties(&mut properties)?)
+            Instance::ProximityPrompt(ProximityPrompt::from_properties(&mut properties)?)
         }
-        "RayValue" => InstanceKind::RayValue(RayValue::from_properties(&mut properties)?),
+        "RayValue" => Instance::RayValue(RayValue::from_properties(&mut properties)?),
         "ReflectionMetadata" => {
-            InstanceKind::ReflectionMetadata(ReflectionMetadata::from_properties(&mut properties)?)
+            Instance::ReflectionMetadata(ReflectionMetadata::from_properties(&mut properties)?)
         }
-        "ReflectionMetadataCallbacks" => InstanceKind::ReflectionMetadataCallbacks(
+        "ReflectionMetadataCallbacks" => Instance::ReflectionMetadataCallbacks(
             ReflectionMetadataCallbacks::from_properties(&mut properties)?,
         ),
-        "ReflectionMetadataClass" => InstanceKind::ReflectionMetadataClass(
+        "ReflectionMetadataClass" => Instance::ReflectionMetadataClass(
             ReflectionMetadataClass::from_properties(&mut properties)?,
         ),
-        "ReflectionMetadataClasses" => InstanceKind::ReflectionMetadataClasses(
+        "ReflectionMetadataClasses" => Instance::ReflectionMetadataClasses(
             ReflectionMetadataClasses::from_properties(&mut properties)?,
         ),
-        "ReflectionMetadataEnum" => InstanceKind::ReflectionMetadataEnum(
+        "ReflectionMetadataEnum" => Instance::ReflectionMetadataEnum(
             ReflectionMetadataEnum::from_properties(&mut properties)?,
         ),
-        "ReflectionMetadataEnumItem" => InstanceKind::ReflectionMetadataEnumItem(
+        "ReflectionMetadataEnumItem" => Instance::ReflectionMetadataEnumItem(
             ReflectionMetadataEnumItem::from_properties(&mut properties)?,
         ),
-        "ReflectionMetadataEnums" => InstanceKind::ReflectionMetadataEnums(
+        "ReflectionMetadataEnums" => Instance::ReflectionMetadataEnums(
             ReflectionMetadataEnums::from_properties(&mut properties)?,
         ),
-        "ReflectionMetadataEvents" => InstanceKind::ReflectionMetadataEvents(
+        "ReflectionMetadataEvents" => Instance::ReflectionMetadataEvents(
             ReflectionMetadataEvents::from_properties(&mut properties)?,
         ),
-        "ReflectionMetadataFunctions" => InstanceKind::ReflectionMetadataFunctions(
+        "ReflectionMetadataFunctions" => Instance::ReflectionMetadataFunctions(
             ReflectionMetadataFunctions::from_properties(&mut properties)?,
         ),
-        "ReflectionMetadataMember" => InstanceKind::ReflectionMetadataMember(
+        "ReflectionMetadataMember" => Instance::ReflectionMetadataMember(
             ReflectionMetadataMember::from_properties(&mut properties)?,
         ),
-        "ReflectionMetadataProperties" => InstanceKind::ReflectionMetadataProperties(
+        "ReflectionMetadataProperties" => Instance::ReflectionMetadataProperties(
             ReflectionMetadataProperties::from_properties(&mut properties)?,
         ),
-        "ReflectionMetadataYieldFunctions" => InstanceKind::ReflectionMetadataYieldFunctions(
+        "ReflectionMetadataYieldFunctions" => Instance::ReflectionMetadataYieldFunctions(
             ReflectionMetadataYieldFunctions::from_properties(&mut properties)?,
         ),
-        "RemoteEvent" => InstanceKind::RemoteEvent(RemoteEvent::from_properties(&mut properties)?),
+        "RemoteEvent" => Instance::RemoteEvent(RemoteEvent::from_properties(&mut properties)?),
         "RemoteFunction" => {
-            InstanceKind::RemoteFunction(RemoteFunction::from_properties(&mut properties)?)
+            Instance::RemoteFunction(RemoteFunction::from_properties(&mut properties)?)
         }
         "RenderingTest" => {
-            InstanceKind::RenderingTest(RenderingTest::from_properties(&mut properties)?)
+            Instance::RenderingTest(RenderingTest::from_properties(&mut properties)?)
         }
         "ReverbSoundEffect" => {
-            InstanceKind::ReverbSoundEffect(ReverbSoundEffect::from_properties(&mut properties)?)
+            Instance::ReverbSoundEffect(ReverbSoundEffect::from_properties(&mut properties)?)
         }
         "RocketPropulsion" => {
-            InstanceKind::RocketPropulsion(RocketPropulsion::from_properties(&mut properties)?)
+            Instance::RocketPropulsion(RocketPropulsion::from_properties(&mut properties)?)
         }
         "RodConstraint" => {
-            InstanceKind::RodConstraint(RodConstraint::from_properties(&mut properties)?)
+            Instance::RodConstraint(RodConstraint::from_properties(&mut properties)?)
         }
         "RopeConstraint" => {
-            InstanceKind::RopeConstraint(RopeConstraint::from_properties(&mut properties)?)
+            Instance::RopeConstraint(RopeConstraint::from_properties(&mut properties)?)
         }
-        "Rotate" => InstanceKind::Rotate(Rotate::from_properties(&mut properties)?),
-        "RotateP" => InstanceKind::RotateP(RotateP::from_properties(&mut properties)?),
-        "RotateV" => InstanceKind::RotateV(RotateV::from_properties(&mut properties)?),
-        "ScreenGui" => InstanceKind::ScreenGui(ScreenGui::from_properties(&mut properties)?),
-        "Script" => InstanceKind::Script(Script::from_properties(&mut properties)?),
+        "Rotate" => Instance::Rotate(Rotate::from_properties(&mut properties)?),
+        "RotateP" => Instance::RotateP(RotateP::from_properties(&mut properties)?),
+        "RotateV" => Instance::RotateV(RotateV::from_properties(&mut properties)?),
+        "ScreenGui" => Instance::ScreenGui(ScreenGui::from_properties(&mut properties)?),
+        "Script" => Instance::Script(Script::from_properties(&mut properties)?),
         "ScrollingFrame" => {
-            InstanceKind::ScrollingFrame(ScrollingFrame::from_properties(&mut properties)?)
+            Instance::ScrollingFrame(ScrollingFrame::from_properties(&mut properties)?)
         }
-        "Seat" => InstanceKind::Seat(Seat::from_properties(&mut properties)?),
-        "SelectionBox" => {
-            InstanceKind::SelectionBox(SelectionBox::from_properties(&mut properties)?)
-        }
+        "Seat" => Instance::Seat(Seat::from_properties(&mut properties)?),
+        "SelectionBox" => Instance::SelectionBox(SelectionBox::from_properties(&mut properties)?),
         "SelectionPartLasso" => {
-            InstanceKind::SelectionPartLasso(SelectionPartLasso::from_properties(&mut properties)?)
+            Instance::SelectionPartLasso(SelectionPartLasso::from_properties(&mut properties)?)
         }
-        "SelectionPointLasso" => InstanceKind::SelectionPointLasso(
-            SelectionPointLasso::from_properties(&mut properties)?,
-        ),
+        "SelectionPointLasso" => {
+            Instance::SelectionPointLasso(SelectionPointLasso::from_properties(&mut properties)?)
+        }
         "SelectionSphere" => {
-            InstanceKind::SelectionSphere(SelectionSphere::from_properties(&mut properties)?)
+            Instance::SelectionSphere(SelectionSphere::from_properties(&mut properties)?)
         }
-        "Shirt" => InstanceKind::Shirt(Shirt::from_properties(&mut properties)?),
-        "ShirtGraphic" => {
-            InstanceKind::ShirtGraphic(ShirtGraphic::from_properties(&mut properties)?)
+        "Shirt" => Instance::Shirt(Shirt::from_properties(&mut properties)?),
+        "ShirtGraphic" => Instance::ShirtGraphic(ShirtGraphic::from_properties(&mut properties)?),
+        "SkateboardController" => {
+            Instance::SkateboardController(SkateboardController::from_properties(&mut properties)?)
         }
-        "SkateboardController" => InstanceKind::SkateboardController(
-            SkateboardController::from_properties(&mut properties)?,
-        ),
         "SkateboardPlatform" => {
-            InstanceKind::SkateboardPlatform(SkateboardPlatform::from_properties(&mut properties)?)
+            Instance::SkateboardPlatform(SkateboardPlatform::from_properties(&mut properties)?)
         }
-        "Skin" => InstanceKind::Skin(Skin::from_properties(&mut properties)?),
-        "Sky" => InstanceKind::Sky(Sky::from_properties(&mut properties)?),
-        "Smoke" => InstanceKind::Smoke(Smoke::from_properties(&mut properties)?),
-        "Snap" => InstanceKind::Snap(Snap::from_properties(&mut properties)?),
-        "Sound" => InstanceKind::Sound(Sound::from_properties(&mut properties)?),
-        "SoundGroup" => InstanceKind::SoundGroup(SoundGroup::from_properties(&mut properties)?),
-        "Sparkles" => InstanceKind::Sparkles(Sparkles::from_properties(&mut properties)?),
+        "Skin" => Instance::Skin(Skin::from_properties(&mut properties)?),
+        "Sky" => Instance::Sky(Sky::from_properties(&mut properties)?),
+        "Smoke" => Instance::Smoke(Smoke::from_properties(&mut properties)?),
+        "Snap" => Instance::Snap(Snap::from_properties(&mut properties)?),
+        "Sound" => Instance::Sound(Sound::from_properties(&mut properties)?),
+        "SoundGroup" => Instance::SoundGroup(SoundGroup::from_properties(&mut properties)?),
+        "Sparkles" => Instance::Sparkles(Sparkles::from_properties(&mut properties)?),
         "SpawnLocation" => {
-            InstanceKind::SpawnLocation(SpawnLocation::from_properties(&mut properties)?)
+            Instance::SpawnLocation(SpawnLocation::from_properties(&mut properties)?)
         }
-        "SpecialMesh" => InstanceKind::SpecialMesh(SpecialMesh::from_properties(&mut properties)?),
-        "SphereHandleAdornment" => InstanceKind::SphereHandleAdornment(
+        "SpecialMesh" => Instance::SpecialMesh(SpecialMesh::from_properties(&mut properties)?),
+        "SphereHandleAdornment" => Instance::SphereHandleAdornment(
             SphereHandleAdornment::from_properties(&mut properties)?,
         ),
-        "SpotLight" => InstanceKind::SpotLight(SpotLight::from_properties(&mut properties)?),
+        "SpotLight" => Instance::SpotLight(SpotLight::from_properties(&mut properties)?),
         "SpringConstraint" => {
-            InstanceKind::SpringConstraint(SpringConstraint::from_properties(&mut properties)?)
+            Instance::SpringConstraint(SpringConstraint::from_properties(&mut properties)?)
         }
-        "StandalonePluginScripts" => InstanceKind::StandalonePluginScripts(
+        "StandalonePluginScripts" => Instance::StandalonePluginScripts(
             StandalonePluginScripts::from_properties(&mut properties)?,
         ),
-        "StarterGear" => InstanceKind::StarterGear(StarterGear::from_properties(&mut properties)?),
-        "StringValue" => InstanceKind::StringValue(StringValue::from_properties(&mut properties)?),
+        "StarterGear" => Instance::StarterGear(StarterGear::from_properties(&mut properties)?),
+        "StringValue" => Instance::StringValue(StringValue::from_properties(&mut properties)?),
         "SunRaysEffect" => {
-            InstanceKind::SunRaysEffect(SunRaysEffect::from_properties(&mut properties)?)
+            Instance::SunRaysEffect(SunRaysEffect::from_properties(&mut properties)?)
         }
         "SurfaceAppearance" => {
-            InstanceKind::SurfaceAppearance(SurfaceAppearance::from_properties(&mut properties)?)
+            Instance::SurfaceAppearance(SurfaceAppearance::from_properties(&mut properties)?)
         }
-        "SurfaceGui" => InstanceKind::SurfaceGui(SurfaceGui::from_properties(&mut properties)?),
-        "SurfaceLight" => {
-            InstanceKind::SurfaceLight(SurfaceLight::from_properties(&mut properties)?)
-        }
+        "SurfaceGui" => Instance::SurfaceGui(SurfaceGui::from_properties(&mut properties)?),
+        "SurfaceLight" => Instance::SurfaceLight(SurfaceLight::from_properties(&mut properties)?),
         "SurfaceSelection" => {
-            InstanceKind::SurfaceSelection(SurfaceSelection::from_properties(&mut properties)?)
+            Instance::SurfaceSelection(SurfaceSelection::from_properties(&mut properties)?)
         }
-        "Team" => InstanceKind::Team(Team::from_properties(&mut properties)?),
+        "Team" => Instance::Team(Team::from_properties(&mut properties)?),
         "TeleportOptions" => {
-            InstanceKind::TeleportOptions(TeleportOptions::from_properties(&mut properties)?)
+            Instance::TeleportOptions(TeleportOptions::from_properties(&mut properties)?)
         }
-        "Terrain" => InstanceKind::Terrain(Terrain::from_properties(&mut properties)?),
+        "Terrain" => Instance::Terrain(Terrain::from_properties(&mut properties)?),
         "TerrainRegion" => {
-            InstanceKind::TerrainRegion(TerrainRegion::from_properties(&mut properties)?)
+            Instance::TerrainRegion(TerrainRegion::from_properties(&mut properties)?)
         }
-        "TextBox" => InstanceKind::TextBox(TextBox::from_properties(&mut properties)?),
-        "TextButton" => InstanceKind::TextButton(TextButton::from_properties(&mut properties)?),
-        "TextLabel" => InstanceKind::TextLabel(TextLabel::from_properties(&mut properties)?),
-        "Texture" => InstanceKind::Texture(Texture::from_properties(&mut properties)?),
-        "Tool" => InstanceKind::Tool(Tool::from_properties(&mut properties)?),
-        "Torque" => InstanceKind::Torque(Torque::from_properties(&mut properties)?),
-        "Trail" => InstanceKind::Trail(Trail::from_properties(&mut properties)?),
+        "TextBox" => Instance::TextBox(TextBox::from_properties(&mut properties)?),
+        "TextButton" => Instance::TextButton(TextButton::from_properties(&mut properties)?),
+        "TextLabel" => Instance::TextLabel(TextLabel::from_properties(&mut properties)?),
+        "Texture" => Instance::Texture(Texture::from_properties(&mut properties)?),
+        "Tool" => Instance::Tool(Tool::from_properties(&mut properties)?),
+        "Torque" => Instance::Torque(Torque::from_properties(&mut properties)?),
+        "Trail" => Instance::Trail(Trail::from_properties(&mut properties)?),
         "TremoloSoundEffect" => {
-            InstanceKind::TremoloSoundEffect(TremoloSoundEffect::from_properties(&mut properties)?)
+            Instance::TremoloSoundEffect(TremoloSoundEffect::from_properties(&mut properties)?)
         }
-        "TrussPart" => InstanceKind::TrussPart(TrussPart::from_properties(&mut properties)?),
-        "Tween" => InstanceKind::Tween(Tween::from_properties(&mut properties)?),
-        "UIAspectRatioConstraint" => InstanceKind::UIAspectRatioConstraint(
+        "TrussPart" => Instance::TrussPart(TrussPart::from_properties(&mut properties)?),
+        "Tween" => Instance::Tween(Tween::from_properties(&mut properties)?),
+        "UIAspectRatioConstraint" => Instance::UIAspectRatioConstraint(
             UIAspectRatioConstraint::from_properties(&mut properties)?,
         ),
-        "UICorner" => InstanceKind::UICorner(UICorner::from_properties(&mut properties)?),
-        "UIGradient" => InstanceKind::UIGradient(UIGradient::from_properties(&mut properties)?),
-        "UIGridLayout" => {
-            InstanceKind::UIGridLayout(UIGridLayout::from_properties(&mut properties)?)
-        }
-        "UIListLayout" => {
-            InstanceKind::UIListLayout(UIListLayout::from_properties(&mut properties)?)
-        }
-        "UIPadding" => InstanceKind::UIPadding(UIPadding::from_properties(&mut properties)?),
-        "UIPageLayout" => {
-            InstanceKind::UIPageLayout(UIPageLayout::from_properties(&mut properties)?)
-        }
-        "UIScale" => InstanceKind::UIScale(UIScale::from_properties(&mut properties)?),
+        "UICorner" => Instance::UICorner(UICorner::from_properties(&mut properties)?),
+        "UIGradient" => Instance::UIGradient(UIGradient::from_properties(&mut properties)?),
+        "UIGridLayout" => Instance::UIGridLayout(UIGridLayout::from_properties(&mut properties)?),
+        "UIListLayout" => Instance::UIListLayout(UIListLayout::from_properties(&mut properties)?),
+        "UIPadding" => Instance::UIPadding(UIPadding::from_properties(&mut properties)?),
+        "UIPageLayout" => Instance::UIPageLayout(UIPageLayout::from_properties(&mut properties)?),
+        "UIScale" => Instance::UIScale(UIScale::from_properties(&mut properties)?),
         "UISizeConstraint" => {
-            InstanceKind::UISizeConstraint(UISizeConstraint::from_properties(&mut properties)?)
+            Instance::UISizeConstraint(UISizeConstraint::from_properties(&mut properties)?)
         }
-        "UIStroke" => InstanceKind::UIStroke(UIStroke::from_properties(&mut properties)?),
+        "UIStroke" => Instance::UIStroke(UIStroke::from_properties(&mut properties)?),
         "UITableLayout" => {
-            InstanceKind::UITableLayout(UITableLayout::from_properties(&mut properties)?)
+            Instance::UITableLayout(UITableLayout::from_properties(&mut properties)?)
         }
-        "UITextSizeConstraint" => InstanceKind::UITextSizeConstraint(
-            UITextSizeConstraint::from_properties(&mut properties)?,
-        ),
+        "UITextSizeConstraint" => {
+            Instance::UITextSizeConstraint(UITextSizeConstraint::from_properties(&mut properties)?)
+        }
         "UnionOperation" => {
-            InstanceKind::UnionOperation(UnionOperation::from_properties(&mut properties)?)
+            Instance::UnionOperation(UnionOperation::from_properties(&mut properties)?)
         }
-        "UniversalConstraint" => InstanceKind::UniversalConstraint(
-            UniversalConstraint::from_properties(&mut properties)?,
-        ),
-        "Vector3Value" => {
-            InstanceKind::Vector3Value(Vector3Value::from_properties(&mut properties)?)
+        "UniversalConstraint" => {
+            Instance::UniversalConstraint(UniversalConstraint::from_properties(&mut properties)?)
         }
-        "VectorForce" => InstanceKind::VectorForce(VectorForce::from_properties(&mut properties)?),
+        "Vector3Value" => Instance::Vector3Value(Vector3Value::from_properties(&mut properties)?),
+        "VectorForce" => Instance::VectorForce(VectorForce::from_properties(&mut properties)?),
         "VehicleController" => {
-            InstanceKind::VehicleController(VehicleController::from_properties(&mut properties)?)
+            Instance::VehicleController(VehicleController::from_properties(&mut properties)?)
         }
-        "VehicleSeat" => InstanceKind::VehicleSeat(VehicleSeat::from_properties(&mut properties)?),
+        "VehicleSeat" => Instance::VehicleSeat(VehicleSeat::from_properties(&mut properties)?),
         "VelocityMotor" => {
-            InstanceKind::VelocityMotor(VelocityMotor::from_properties(&mut properties)?)
+            Instance::VelocityMotor(VelocityMotor::from_properties(&mut properties)?)
         }
-        "VideoFrame" => InstanceKind::VideoFrame(VideoFrame::from_properties(&mut properties)?),
+        "VideoFrame" => Instance::VideoFrame(VideoFrame::from_properties(&mut properties)?),
         "ViewportFrame" => {
-            InstanceKind::ViewportFrame(ViewportFrame::from_properties(&mut properties)?)
+            Instance::ViewportFrame(ViewportFrame::from_properties(&mut properties)?)
         }
-        "WedgePart" => InstanceKind::WedgePart(WedgePart::from_properties(&mut properties)?),
-        "Weld" => InstanceKind::Weld(Weld::from_properties(&mut properties)?),
+        "WedgePart" => Instance::WedgePart(WedgePart::from_properties(&mut properties)?),
+        "Weld" => Instance::Weld(Weld::from_properties(&mut properties)?),
         "WeldConstraint" => {
-            InstanceKind::WeldConstraint(WeldConstraint::from_properties(&mut properties)?)
+            Instance::WeldConstraint(WeldConstraint::from_properties(&mut properties)?)
         }
-        "WorldModel" => InstanceKind::WorldModel(WorldModel::from_properties(&mut properties)?),
+        "WorldModel" => Instance::WorldModel(WorldModel::from_properties(&mut properties)?),
         _ => {
-            let kind = InstanceKind::Other(
+            let kind = Instance::Other(
                 kind.to_string(),
                 properties
                     .iter()
@@ -563,218 +533,218 @@ pub(crate) fn make_kind(
     }
 }
 
-pub(crate) fn break_kind(kind: &InstanceKind) -> BTreeMap<String, Property> {
+pub(crate) fn break_instance(kind: &Instance) -> BTreeMap<String, Property> {
     let mut properties = BTreeMap::new();
 
     match kind {
-        InstanceKind::Accoutrement(data) => data.to_properties(&mut properties),
-        InstanceKind::Accessory(data) => data.to_properties(&mut properties),
-        InstanceKind::Actor(data) => data.to_properties(&mut properties),
-        InstanceKind::AlignOrientation(data) => data.to_properties(&mut properties),
-        InstanceKind::AlignPosition(data) => data.to_properties(&mut properties),
-        InstanceKind::AngularVelocity(data) => data.to_properties(&mut properties),
-        InstanceKind::Animation(data) => data.to_properties(&mut properties),
-        InstanceKind::AnimationController(data) => data.to_properties(&mut properties),
-        InstanceKind::ArcHandles(data) => data.to_properties(&mut properties),
-        InstanceKind::Atmosphere(data) => data.to_properties(&mut properties),
-        InstanceKind::Backpack(data) => data.to_properties(&mut properties),
-        InstanceKind::BallSocketConstraint(data) => data.to_properties(&mut properties),
-        InstanceKind::Beam(data) => data.to_properties(&mut properties),
-        InstanceKind::BillboardGui(data) => data.to_properties(&mut properties),
-        InstanceKind::BinaryStringValue(data) => data.to_properties(&mut properties),
-        InstanceKind::BindableEvent(data) => data.to_properties(&mut properties),
-        InstanceKind::BindableFunction(data) => data.to_properties(&mut properties),
-        InstanceKind::BlockMesh(data) => data.to_properties(&mut properties),
-        InstanceKind::BloomEffect(data) => data.to_properties(&mut properties),
-        InstanceKind::BlurEffect(data) => data.to_properties(&mut properties),
-        InstanceKind::BodyAngularVelocity(data) => data.to_properties(&mut properties),
-        InstanceKind::BodyColors(data) => data.to_properties(&mut properties),
-        InstanceKind::BodyForce(data) => data.to_properties(&mut properties),
-        InstanceKind::BodyGyro(data) => data.to_properties(&mut properties),
-        InstanceKind::BodyPosition(data) => data.to_properties(&mut properties),
-        InstanceKind::BodyThrust(data) => data.to_properties(&mut properties),
-        InstanceKind::BodyVelocity(data) => data.to_properties(&mut properties),
-        InstanceKind::BoolValue(data) => data.to_properties(&mut properties),
-        InstanceKind::BoxHandleAdornment(data) => data.to_properties(&mut properties),
-        InstanceKind::BrickColorValue(data) => data.to_properties(&mut properties),
-        InstanceKind::Camera(data) => data.to_properties(&mut properties),
-        InstanceKind::CFrameValue(data) => data.to_properties(&mut properties),
-        InstanceKind::CharacterMesh(data) => data.to_properties(&mut properties),
-        InstanceKind::ChorusSoundEffect(data) => data.to_properties(&mut properties),
-        InstanceKind::ClickDetector(data) => data.to_properties(&mut properties),
-        InstanceKind::Clouds(data) => data.to_properties(&mut properties),
-        InstanceKind::Color3Value(data) => data.to_properties(&mut properties),
-        InstanceKind::ColorCorrectionEffect(data) => data.to_properties(&mut properties),
-        InstanceKind::CompressorSoundEffect(data) => data.to_properties(&mut properties),
-        InstanceKind::ConeHandleAdornment(data) => data.to_properties(&mut properties),
-        InstanceKind::Configuration(data) => data.to_properties(&mut properties),
-        InstanceKind::CornerWedgePart(data) => data.to_properties(&mut properties),
-        InstanceKind::CustomEvent(data) => data.to_properties(&mut properties),
-        InstanceKind::CustomEventReceiver(data) => data.to_properties(&mut properties),
-        InstanceKind::CylinderHandleAdornment(data) => data.to_properties(&mut properties),
-        InstanceKind::CylinderMesh(data) => data.to_properties(&mut properties),
-        InstanceKind::CylindricalConstraint(data) => data.to_properties(&mut properties),
-        InstanceKind::Decal(data) => data.to_properties(&mut properties),
-        InstanceKind::DepthOfFieldEffect(data) => data.to_properties(&mut properties),
-        InstanceKind::Dialog(data) => data.to_properties(&mut properties),
-        InstanceKind::DialogChoice(data) => data.to_properties(&mut properties),
-        InstanceKind::DistortionSoundEffect(data) => data.to_properties(&mut properties),
-        InstanceKind::DoubleConstrainedValue(data) => data.to_properties(&mut properties),
-        InstanceKind::EchoSoundEffect(data) => data.to_properties(&mut properties),
-        InstanceKind::EqualizerSoundEffect(data) => data.to_properties(&mut properties),
-        InstanceKind::Explosion(data) => data.to_properties(&mut properties),
-        InstanceKind::FileMesh(data) => data.to_properties(&mut properties),
-        InstanceKind::Fire(data) => data.to_properties(&mut properties),
-        InstanceKind::Flag(data) => data.to_properties(&mut properties),
-        InstanceKind::FlagStand(data) => data.to_properties(&mut properties),
-        InstanceKind::FlangeSoundEffect(data) => data.to_properties(&mut properties),
-        InstanceKind::FloorWire(data) => data.to_properties(&mut properties),
-        InstanceKind::Folder(data) => data.to_properties(&mut properties),
-        InstanceKind::ForceField(data) => data.to_properties(&mut properties),
-        InstanceKind::Frame(data) => data.to_properties(&mut properties),
-        InstanceKind::FunctionalTest(data) => data.to_properties(&mut properties),
-        InstanceKind::Glue(data) => data.to_properties(&mut properties),
-        InstanceKind::GuiMain(data) => data.to_properties(&mut properties),
-        InstanceKind::Handles(data) => data.to_properties(&mut properties),
-        InstanceKind::Hat(data) => data.to_properties(&mut properties),
-        InstanceKind::HingeConstraint(data) => data.to_properties(&mut properties),
-        InstanceKind::Hint(data) => data.to_properties(&mut properties),
-        InstanceKind::Hole(data) => data.to_properties(&mut properties),
-        InstanceKind::HopperBin(data) => data.to_properties(&mut properties),
-        InstanceKind::Humanoid(data) => data.to_properties(&mut properties),
-        InstanceKind::HumanoidController(data) => data.to_properties(&mut properties),
-        InstanceKind::HumanoidDescription(data) => data.to_properties(&mut properties),
-        InstanceKind::ImageButton(data) => data.to_properties(&mut properties),
-        InstanceKind::ImageHandleAdornment(data) => data.to_properties(&mut properties),
-        InstanceKind::ImageLabel(data) => data.to_properties(&mut properties),
-        InstanceKind::IntConstrainedValue(data) => data.to_properties(&mut properties),
-        InstanceKind::IntValue(data) => data.to_properties(&mut properties),
-        InstanceKind::Keyframe(data) => data.to_properties(&mut properties),
-        InstanceKind::KeyframeMarker(data) => data.to_properties(&mut properties),
-        InstanceKind::KeyframeSequence(data) => data.to_properties(&mut properties),
-        InstanceKind::LineForce(data) => data.to_properties(&mut properties),
-        InstanceKind::LineHandleAdornment(data) => data.to_properties(&mut properties),
-        InstanceKind::LocalizationTable(data) => data.to_properties(&mut properties),
-        InstanceKind::LocalScript(data) => data.to_properties(&mut properties),
-        InstanceKind::ManualGlue(data) => data.to_properties(&mut properties),
-        InstanceKind::ManualWeld(data) => data.to_properties(&mut properties),
-        InstanceKind::MeshPart(data) => data.to_properties(&mut properties),
-        InstanceKind::Message(data) => data.to_properties(&mut properties),
-        InstanceKind::Model(data) => data.to_properties(&mut properties),
-        InstanceKind::ModuleScript(data) => data.to_properties(&mut properties),
-        InstanceKind::Motor(data) => data.to_properties(&mut properties),
-        InstanceKind::Motor6D(data) => data.to_properties(&mut properties),
-        InstanceKind::MotorFeature(data) => data.to_properties(&mut properties),
-        InstanceKind::NegateOperation(data) => data.to_properties(&mut properties),
-        InstanceKind::NoCollisionConstraint(data) => data.to_properties(&mut properties),
-        InstanceKind::NumberPose(data) => data.to_properties(&mut properties),
-        InstanceKind::NumberValue(data) => data.to_properties(&mut properties),
-        InstanceKind::ObjectValue(data) => data.to_properties(&mut properties),
-        InstanceKind::Pants(data) => data.to_properties(&mut properties),
-        InstanceKind::Part(data) => data.to_properties(&mut properties),
-        InstanceKind::ParticleEmitter(data) => data.to_properties(&mut properties),
-        InstanceKind::PartOperation(data) => data.to_properties(&mut properties),
-        InstanceKind::PartOperationAsset(data) => data.to_properties(&mut properties),
-        InstanceKind::PitchShiftSoundEffect(data) => data.to_properties(&mut properties),
-        InstanceKind::PointLight(data) => data.to_properties(&mut properties),
-        InstanceKind::Pose(data) => data.to_properties(&mut properties),
-        InstanceKind::PrismaticConstraint(data) => data.to_properties(&mut properties),
-        InstanceKind::ProximityPrompt(data) => data.to_properties(&mut properties),
-        InstanceKind::RayValue(data) => data.to_properties(&mut properties),
-        InstanceKind::ReflectionMetadata(data) => data.to_properties(&mut properties),
-        InstanceKind::ReflectionMetadataCallbacks(data) => data.to_properties(&mut properties),
-        InstanceKind::ReflectionMetadataClass(data) => data.to_properties(&mut properties),
-        InstanceKind::ReflectionMetadataClasses(data) => data.to_properties(&mut properties),
-        InstanceKind::ReflectionMetadataEnum(data) => data.to_properties(&mut properties),
-        InstanceKind::ReflectionMetadataEnumItem(data) => data.to_properties(&mut properties),
-        InstanceKind::ReflectionMetadataEnums(data) => data.to_properties(&mut properties),
-        InstanceKind::ReflectionMetadataEvents(data) => data.to_properties(&mut properties),
-        InstanceKind::ReflectionMetadataFunctions(data) => data.to_properties(&mut properties),
-        InstanceKind::ReflectionMetadataMember(data) => data.to_properties(&mut properties),
-        InstanceKind::ReflectionMetadataProperties(data) => data.to_properties(&mut properties),
-        InstanceKind::ReflectionMetadataYieldFunctions(data) => data.to_properties(&mut properties),
-        InstanceKind::RemoteEvent(data) => data.to_properties(&mut properties),
-        InstanceKind::RemoteFunction(data) => data.to_properties(&mut properties),
-        InstanceKind::RenderingTest(data) => data.to_properties(&mut properties),
-        InstanceKind::ReverbSoundEffect(data) => data.to_properties(&mut properties),
-        InstanceKind::RocketPropulsion(data) => data.to_properties(&mut properties),
-        InstanceKind::RodConstraint(data) => data.to_properties(&mut properties),
-        InstanceKind::RopeConstraint(data) => data.to_properties(&mut properties),
-        InstanceKind::Rotate(data) => data.to_properties(&mut properties),
-        InstanceKind::RotateP(data) => data.to_properties(&mut properties),
-        InstanceKind::RotateV(data) => data.to_properties(&mut properties),
-        InstanceKind::ScreenGui(data) => data.to_properties(&mut properties),
-        InstanceKind::Script(data) => data.to_properties(&mut properties),
-        InstanceKind::ScrollingFrame(data) => data.to_properties(&mut properties),
-        InstanceKind::Seat(data) => data.to_properties(&mut properties),
-        InstanceKind::SelectionBox(data) => data.to_properties(&mut properties),
-        InstanceKind::SelectionPartLasso(data) => data.to_properties(&mut properties),
-        InstanceKind::SelectionPointLasso(data) => data.to_properties(&mut properties),
-        InstanceKind::SelectionSphere(data) => data.to_properties(&mut properties),
-        InstanceKind::Shirt(data) => data.to_properties(&mut properties),
-        InstanceKind::ShirtGraphic(data) => data.to_properties(&mut properties),
-        InstanceKind::SkateboardController(data) => data.to_properties(&mut properties),
-        InstanceKind::SkateboardPlatform(data) => data.to_properties(&mut properties),
-        InstanceKind::Skin(data) => data.to_properties(&mut properties),
-        InstanceKind::Sky(data) => data.to_properties(&mut properties),
-        InstanceKind::Smoke(data) => data.to_properties(&mut properties),
-        InstanceKind::Snap(data) => data.to_properties(&mut properties),
-        InstanceKind::Sound(data) => data.to_properties(&mut properties),
-        InstanceKind::SoundGroup(data) => data.to_properties(&mut properties),
-        InstanceKind::Sparkles(data) => data.to_properties(&mut properties),
-        InstanceKind::SpawnLocation(data) => data.to_properties(&mut properties),
-        InstanceKind::SpecialMesh(data) => data.to_properties(&mut properties),
-        InstanceKind::SphereHandleAdornment(data) => data.to_properties(&mut properties),
-        InstanceKind::SpotLight(data) => data.to_properties(&mut properties),
-        InstanceKind::SpringConstraint(data) => data.to_properties(&mut properties),
-        InstanceKind::StandalonePluginScripts(data) => data.to_properties(&mut properties),
-        InstanceKind::StarterGear(data) => data.to_properties(&mut properties),
-        InstanceKind::StringValue(data) => data.to_properties(&mut properties),
-        InstanceKind::SunRaysEffect(data) => data.to_properties(&mut properties),
-        InstanceKind::SurfaceAppearance(data) => data.to_properties(&mut properties),
-        InstanceKind::SurfaceGui(data) => data.to_properties(&mut properties),
-        InstanceKind::SurfaceLight(data) => data.to_properties(&mut properties),
-        InstanceKind::SurfaceSelection(data) => data.to_properties(&mut properties),
-        InstanceKind::Team(data) => data.to_properties(&mut properties),
-        InstanceKind::TeleportOptions(data) => data.to_properties(&mut properties),
-        InstanceKind::Terrain(data) => data.to_properties(&mut properties),
-        InstanceKind::TerrainRegion(data) => data.to_properties(&mut properties),
-        InstanceKind::TextBox(data) => data.to_properties(&mut properties),
-        InstanceKind::TextButton(data) => data.to_properties(&mut properties),
-        InstanceKind::TextLabel(data) => data.to_properties(&mut properties),
-        InstanceKind::Texture(data) => data.to_properties(&mut properties),
-        InstanceKind::Tool(data) => data.to_properties(&mut properties),
-        InstanceKind::Torque(data) => data.to_properties(&mut properties),
-        InstanceKind::Trail(data) => data.to_properties(&mut properties),
-        InstanceKind::TremoloSoundEffect(data) => data.to_properties(&mut properties),
-        InstanceKind::TrussPart(data) => data.to_properties(&mut properties),
-        InstanceKind::Tween(data) => data.to_properties(&mut properties),
-        InstanceKind::UIAspectRatioConstraint(data) => data.to_properties(&mut properties),
-        InstanceKind::UICorner(data) => data.to_properties(&mut properties),
-        InstanceKind::UIGradient(data) => data.to_properties(&mut properties),
-        InstanceKind::UIGridLayout(data) => data.to_properties(&mut properties),
-        InstanceKind::UIListLayout(data) => data.to_properties(&mut properties),
-        InstanceKind::UIPadding(data) => data.to_properties(&mut properties),
-        InstanceKind::UIPageLayout(data) => data.to_properties(&mut properties),
-        InstanceKind::UIScale(data) => data.to_properties(&mut properties),
-        InstanceKind::UISizeConstraint(data) => data.to_properties(&mut properties),
-        InstanceKind::UIStroke(data) => data.to_properties(&mut properties),
-        InstanceKind::UITableLayout(data) => data.to_properties(&mut properties),
-        InstanceKind::UITextSizeConstraint(data) => data.to_properties(&mut properties),
-        InstanceKind::UnionOperation(data) => data.to_properties(&mut properties),
-        InstanceKind::UniversalConstraint(data) => data.to_properties(&mut properties),
-        InstanceKind::Vector3Value(data) => data.to_properties(&mut properties),
-        InstanceKind::VectorForce(data) => data.to_properties(&mut properties),
-        InstanceKind::VehicleController(data) => data.to_properties(&mut properties),
-        InstanceKind::VehicleSeat(data) => data.to_properties(&mut properties),
-        InstanceKind::VelocityMotor(data) => data.to_properties(&mut properties),
-        InstanceKind::VideoFrame(data) => data.to_properties(&mut properties),
-        InstanceKind::ViewportFrame(data) => data.to_properties(&mut properties),
-        InstanceKind::WedgePart(data) => data.to_properties(&mut properties),
-        InstanceKind::Weld(data) => data.to_properties(&mut properties),
-        InstanceKind::WeldConstraint(data) => data.to_properties(&mut properties),
-        InstanceKind::WorldModel(data) => data.to_properties(&mut properties),
-        InstanceKind::Other(_, data) => properties.extend(data.clone()),
+        Instance::Accoutrement(data) => data.to_properties(&mut properties),
+        Instance::Accessory(data) => data.to_properties(&mut properties),
+        Instance::Actor(data) => data.to_properties(&mut properties),
+        Instance::AlignOrientation(data) => data.to_properties(&mut properties),
+        Instance::AlignPosition(data) => data.to_properties(&mut properties),
+        Instance::AngularVelocity(data) => data.to_properties(&mut properties),
+        Instance::Animation(data) => data.to_properties(&mut properties),
+        Instance::AnimationController(data) => data.to_properties(&mut properties),
+        Instance::ArcHandles(data) => data.to_properties(&mut properties),
+        Instance::Atmosphere(data) => data.to_properties(&mut properties),
+        Instance::Backpack(data) => data.to_properties(&mut properties),
+        Instance::BallSocketConstraint(data) => data.to_properties(&mut properties),
+        Instance::Beam(data) => data.to_properties(&mut properties),
+        Instance::BillboardGui(data) => data.to_properties(&mut properties),
+        Instance::BinaryStringValue(data) => data.to_properties(&mut properties),
+        Instance::BindableEvent(data) => data.to_properties(&mut properties),
+        Instance::BindableFunction(data) => data.to_properties(&mut properties),
+        Instance::BlockMesh(data) => data.to_properties(&mut properties),
+        Instance::BloomEffect(data) => data.to_properties(&mut properties),
+        Instance::BlurEffect(data) => data.to_properties(&mut properties),
+        Instance::BodyAngularVelocity(data) => data.to_properties(&mut properties),
+        Instance::BodyColors(data) => data.to_properties(&mut properties),
+        Instance::BodyForce(data) => data.to_properties(&mut properties),
+        Instance::BodyGyro(data) => data.to_properties(&mut properties),
+        Instance::BodyPosition(data) => data.to_properties(&mut properties),
+        Instance::BodyThrust(data) => data.to_properties(&mut properties),
+        Instance::BodyVelocity(data) => data.to_properties(&mut properties),
+        Instance::BoolValue(data) => data.to_properties(&mut properties),
+        Instance::BoxHandleAdornment(data) => data.to_properties(&mut properties),
+        Instance::BrickColorValue(data) => data.to_properties(&mut properties),
+        Instance::Camera(data) => data.to_properties(&mut properties),
+        Instance::CFrameValue(data) => data.to_properties(&mut properties),
+        Instance::CharacterMesh(data) => data.to_properties(&mut properties),
+        Instance::ChorusSoundEffect(data) => data.to_properties(&mut properties),
+        Instance::ClickDetector(data) => data.to_properties(&mut properties),
+        Instance::Clouds(data) => data.to_properties(&mut properties),
+        Instance::Color3Value(data) => data.to_properties(&mut properties),
+        Instance::ColorCorrectionEffect(data) => data.to_properties(&mut properties),
+        Instance::CompressorSoundEffect(data) => data.to_properties(&mut properties),
+        Instance::ConeHandleAdornment(data) => data.to_properties(&mut properties),
+        Instance::Configuration(data) => data.to_properties(&mut properties),
+        Instance::CornerWedgePart(data) => data.to_properties(&mut properties),
+        Instance::CustomEvent(data) => data.to_properties(&mut properties),
+        Instance::CustomEventReceiver(data) => data.to_properties(&mut properties),
+        Instance::CylinderHandleAdornment(data) => data.to_properties(&mut properties),
+        Instance::CylinderMesh(data) => data.to_properties(&mut properties),
+        Instance::CylindricalConstraint(data) => data.to_properties(&mut properties),
+        Instance::Decal(data) => data.to_properties(&mut properties),
+        Instance::DepthOfFieldEffect(data) => data.to_properties(&mut properties),
+        Instance::Dialog(data) => data.to_properties(&mut properties),
+        Instance::DialogChoice(data) => data.to_properties(&mut properties),
+        Instance::DistortionSoundEffect(data) => data.to_properties(&mut properties),
+        Instance::DoubleConstrainedValue(data) => data.to_properties(&mut properties),
+        Instance::EchoSoundEffect(data) => data.to_properties(&mut properties),
+        Instance::EqualizerSoundEffect(data) => data.to_properties(&mut properties),
+        Instance::Explosion(data) => data.to_properties(&mut properties),
+        Instance::FileMesh(data) => data.to_properties(&mut properties),
+        Instance::Fire(data) => data.to_properties(&mut properties),
+        Instance::Flag(data) => data.to_properties(&mut properties),
+        Instance::FlagStand(data) => data.to_properties(&mut properties),
+        Instance::FlangeSoundEffect(data) => data.to_properties(&mut properties),
+        Instance::FloorWire(data) => data.to_properties(&mut properties),
+        Instance::Folder(data) => data.to_properties(&mut properties),
+        Instance::ForceField(data) => data.to_properties(&mut properties),
+        Instance::Frame(data) => data.to_properties(&mut properties),
+        Instance::FunctionalTest(data) => data.to_properties(&mut properties),
+        Instance::Glue(data) => data.to_properties(&mut properties),
+        Instance::GuiMain(data) => data.to_properties(&mut properties),
+        Instance::Handles(data) => data.to_properties(&mut properties),
+        Instance::Hat(data) => data.to_properties(&mut properties),
+        Instance::HingeConstraint(data) => data.to_properties(&mut properties),
+        Instance::Hint(data) => data.to_properties(&mut properties),
+        Instance::Hole(data) => data.to_properties(&mut properties),
+        Instance::HopperBin(data) => data.to_properties(&mut properties),
+        Instance::Humanoid(data) => data.to_properties(&mut properties),
+        Instance::HumanoidController(data) => data.to_properties(&mut properties),
+        Instance::HumanoidDescription(data) => data.to_properties(&mut properties),
+        Instance::ImageButton(data) => data.to_properties(&mut properties),
+        Instance::ImageHandleAdornment(data) => data.to_properties(&mut properties),
+        Instance::ImageLabel(data) => data.to_properties(&mut properties),
+        Instance::IntConstrainedValue(data) => data.to_properties(&mut properties),
+        Instance::IntValue(data) => data.to_properties(&mut properties),
+        Instance::Keyframe(data) => data.to_properties(&mut properties),
+        Instance::KeyframeMarker(data) => data.to_properties(&mut properties),
+        Instance::KeyframeSequence(data) => data.to_properties(&mut properties),
+        Instance::LineForce(data) => data.to_properties(&mut properties),
+        Instance::LineHandleAdornment(data) => data.to_properties(&mut properties),
+        Instance::LocalizationTable(data) => data.to_properties(&mut properties),
+        Instance::LocalScript(data) => data.to_properties(&mut properties),
+        Instance::ManualGlue(data) => data.to_properties(&mut properties),
+        Instance::ManualWeld(data) => data.to_properties(&mut properties),
+        Instance::MeshPart(data) => data.to_properties(&mut properties),
+        Instance::Message(data) => data.to_properties(&mut properties),
+        Instance::Model(data) => data.to_properties(&mut properties),
+        Instance::ModuleScript(data) => data.to_properties(&mut properties),
+        Instance::Motor(data) => data.to_properties(&mut properties),
+        Instance::Motor6D(data) => data.to_properties(&mut properties),
+        Instance::MotorFeature(data) => data.to_properties(&mut properties),
+        Instance::NegateOperation(data) => data.to_properties(&mut properties),
+        Instance::NoCollisionConstraint(data) => data.to_properties(&mut properties),
+        Instance::NumberPose(data) => data.to_properties(&mut properties),
+        Instance::NumberValue(data) => data.to_properties(&mut properties),
+        Instance::ObjectValue(data) => data.to_properties(&mut properties),
+        Instance::Pants(data) => data.to_properties(&mut properties),
+        Instance::Part(data) => data.to_properties(&mut properties),
+        Instance::ParticleEmitter(data) => data.to_properties(&mut properties),
+        Instance::PartOperation(data) => data.to_properties(&mut properties),
+        Instance::PartOperationAsset(data) => data.to_properties(&mut properties),
+        Instance::PitchShiftSoundEffect(data) => data.to_properties(&mut properties),
+        Instance::PointLight(data) => data.to_properties(&mut properties),
+        Instance::Pose(data) => data.to_properties(&mut properties),
+        Instance::PrismaticConstraint(data) => data.to_properties(&mut properties),
+        Instance::ProximityPrompt(data) => data.to_properties(&mut properties),
+        Instance::RayValue(data) => data.to_properties(&mut properties),
+        Instance::ReflectionMetadata(data) => data.to_properties(&mut properties),
+        Instance::ReflectionMetadataCallbacks(data) => data.to_properties(&mut properties),
+        Instance::ReflectionMetadataClass(data) => data.to_properties(&mut properties),
+        Instance::ReflectionMetadataClasses(data) => data.to_properties(&mut properties),
+        Instance::ReflectionMetadataEnum(data) => data.to_properties(&mut properties),
+        Instance::ReflectionMetadataEnumItem(data) => data.to_properties(&mut properties),
+        Instance::ReflectionMetadataEnums(data) => data.to_properties(&mut properties),
+        Instance::ReflectionMetadataEvents(data) => data.to_properties(&mut properties),
+        Instance::ReflectionMetadataFunctions(data) => data.to_properties(&mut properties),
+        Instance::ReflectionMetadataMember(data) => data.to_properties(&mut properties),
+        Instance::ReflectionMetadataProperties(data) => data.to_properties(&mut properties),
+        Instance::ReflectionMetadataYieldFunctions(data) => data.to_properties(&mut properties),
+        Instance::RemoteEvent(data) => data.to_properties(&mut properties),
+        Instance::RemoteFunction(data) => data.to_properties(&mut properties),
+        Instance::RenderingTest(data) => data.to_properties(&mut properties),
+        Instance::ReverbSoundEffect(data) => data.to_properties(&mut properties),
+        Instance::RocketPropulsion(data) => data.to_properties(&mut properties),
+        Instance::RodConstraint(data) => data.to_properties(&mut properties),
+        Instance::RopeConstraint(data) => data.to_properties(&mut properties),
+        Instance::Rotate(data) => data.to_properties(&mut properties),
+        Instance::RotateP(data) => data.to_properties(&mut properties),
+        Instance::RotateV(data) => data.to_properties(&mut properties),
+        Instance::ScreenGui(data) => data.to_properties(&mut properties),
+        Instance::Script(data) => data.to_properties(&mut properties),
+        Instance::ScrollingFrame(data) => data.to_properties(&mut properties),
+        Instance::Seat(data) => data.to_properties(&mut properties),
+        Instance::SelectionBox(data) => data.to_properties(&mut properties),
+        Instance::SelectionPartLasso(data) => data.to_properties(&mut properties),
+        Instance::SelectionPointLasso(data) => data.to_properties(&mut properties),
+        Instance::SelectionSphere(data) => data.to_properties(&mut properties),
+        Instance::Shirt(data) => data.to_properties(&mut properties),
+        Instance::ShirtGraphic(data) => data.to_properties(&mut properties),
+        Instance::SkateboardController(data) => data.to_properties(&mut properties),
+        Instance::SkateboardPlatform(data) => data.to_properties(&mut properties),
+        Instance::Skin(data) => data.to_properties(&mut properties),
+        Instance::Sky(data) => data.to_properties(&mut properties),
+        Instance::Smoke(data) => data.to_properties(&mut properties),
+        Instance::Snap(data) => data.to_properties(&mut properties),
+        Instance::Sound(data) => data.to_properties(&mut properties),
+        Instance::SoundGroup(data) => data.to_properties(&mut properties),
+        Instance::Sparkles(data) => data.to_properties(&mut properties),
+        Instance::SpawnLocation(data) => data.to_properties(&mut properties),
+        Instance::SpecialMesh(data) => data.to_properties(&mut properties),
+        Instance::SphereHandleAdornment(data) => data.to_properties(&mut properties),
+        Instance::SpotLight(data) => data.to_properties(&mut properties),
+        Instance::SpringConstraint(data) => data.to_properties(&mut properties),
+        Instance::StandalonePluginScripts(data) => data.to_properties(&mut properties),
+        Instance::StarterGear(data) => data.to_properties(&mut properties),
+        Instance::StringValue(data) => data.to_properties(&mut properties),
+        Instance::SunRaysEffect(data) => data.to_properties(&mut properties),
+        Instance::SurfaceAppearance(data) => data.to_properties(&mut properties),
+        Instance::SurfaceGui(data) => data.to_properties(&mut properties),
+        Instance::SurfaceLight(data) => data.to_properties(&mut properties),
+        Instance::SurfaceSelection(data) => data.to_properties(&mut properties),
+        Instance::Team(data) => data.to_properties(&mut properties),
+        Instance::TeleportOptions(data) => data.to_properties(&mut properties),
+        Instance::Terrain(data) => data.to_properties(&mut properties),
+        Instance::TerrainRegion(data) => data.to_properties(&mut properties),
+        Instance::TextBox(data) => data.to_properties(&mut properties),
+        Instance::TextButton(data) => data.to_properties(&mut properties),
+        Instance::TextLabel(data) => data.to_properties(&mut properties),
+        Instance::Texture(data) => data.to_properties(&mut properties),
+        Instance::Tool(data) => data.to_properties(&mut properties),
+        Instance::Torque(data) => data.to_properties(&mut properties),
+        Instance::Trail(data) => data.to_properties(&mut properties),
+        Instance::TremoloSoundEffect(data) => data.to_properties(&mut properties),
+        Instance::TrussPart(data) => data.to_properties(&mut properties),
+        Instance::Tween(data) => data.to_properties(&mut properties),
+        Instance::UIAspectRatioConstraint(data) => data.to_properties(&mut properties),
+        Instance::UICorner(data) => data.to_properties(&mut properties),
+        Instance::UIGradient(data) => data.to_properties(&mut properties),
+        Instance::UIGridLayout(data) => data.to_properties(&mut properties),
+        Instance::UIListLayout(data) => data.to_properties(&mut properties),
+        Instance::UIPadding(data) => data.to_properties(&mut properties),
+        Instance::UIPageLayout(data) => data.to_properties(&mut properties),
+        Instance::UIScale(data) => data.to_properties(&mut properties),
+        Instance::UISizeConstraint(data) => data.to_properties(&mut properties),
+        Instance::UIStroke(data) => data.to_properties(&mut properties),
+        Instance::UITableLayout(data) => data.to_properties(&mut properties),
+        Instance::UITextSizeConstraint(data) => data.to_properties(&mut properties),
+        Instance::UnionOperation(data) => data.to_properties(&mut properties),
+        Instance::UniversalConstraint(data) => data.to_properties(&mut properties),
+        Instance::Vector3Value(data) => data.to_properties(&mut properties),
+        Instance::VectorForce(data) => data.to_properties(&mut properties),
+        Instance::VehicleController(data) => data.to_properties(&mut properties),
+        Instance::VehicleSeat(data) => data.to_properties(&mut properties),
+        Instance::VelocityMotor(data) => data.to_properties(&mut properties),
+        Instance::VideoFrame(data) => data.to_properties(&mut properties),
+        Instance::ViewportFrame(data) => data.to_properties(&mut properties),
+        Instance::WedgePart(data) => data.to_properties(&mut properties),
+        Instance::Weld(data) => data.to_properties(&mut properties),
+        Instance::WeldConstraint(data) => data.to_properties(&mut properties),
+        Instance::WorldModel(data) => data.to_properties(&mut properties),
+        Instance::Other(_, data) => properties.extend(data.clone()),
     }
 
     properties
