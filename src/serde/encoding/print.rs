@@ -3,6 +3,9 @@ use crate::serde::encoding::{encode_f32, encode_i32};
 use crate::serde::io::Write;
 use crate::serde::Result;
 
+use alloc::string::String;
+use alloc::vec::Vec;
+
 macro_rules! float_match {
     ($var:expr, $($array:expr; $num:literal),+) => {
         if false { unreachable!() }

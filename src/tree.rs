@@ -1,3 +1,5 @@
+use alloc::boxed::Box;
+use alloc::vec::Vec;
 use core::cell::{Ref, RefCell, RefMut};
 use core::fmt;
 use core::ops::{Deref, DerefMut};
@@ -63,6 +65,7 @@ macro_rules! ref_common {
     };
 }
 
+// TODO: TreeKey that tracks instance it's tied to, so users can't use key with wrong tree?
 new_key_type! {
     pub struct TreeKey;
 }
@@ -126,18 +129,14 @@ impl<T> Tree<T> {
         inner.parents.insert(child, parent);
     }
 
-    fn inner_remove_child(
-        &self,
-        parent: &mut NodeRefMut<'_, '_, T>,
-        child: &mut NodeRefMut<'_, '_, T>,
-    ) {
+    fn inner_remove_child(&self, parent: TreeKey, child: TreeKey) {
         let mut inner = self.inner.borrow_mut();
 
-        inner.children[parent.key()].retain(|&k| k != child.key());
+        inner.children[parent].retain(|&k| k != child);
 
-        inner.parents.remove(child.key());
+        inner.parents.remove(child);
 
-        inner.roots.push(child.key());
+        inner.roots.push(child);
     }
 
     pub fn len(&self) -> usize {
@@ -331,7 +330,7 @@ pub struct NodeRefMut<'a, 'b, T> {
 ref_common! { NodeRefMut<'a, 'b, T> }
 
 impl<'a, 'b, T> NodeRefMut<'a, 'b, T> {
-    pub fn set_parent(&mut self, parent: &mut NodeRefMut<'_, '_, T>) {
+    pub fn set_parent(&mut self, parent: &NodeRef<'_, '_, T>) {
         self.tree.inner_set_child(parent.key(), self.key());
     }
 
@@ -339,12 +338,12 @@ impl<'a, 'b, T> NodeRefMut<'a, 'b, T> {
         self.tree.inner_new_child(child, self.key());
     }
 
-    pub fn add_child(&mut self, child: &mut NodeRefMut<'_, '_, T>) {
+    pub fn add_child(&mut self, child: &NodeRef<'_, '_, T>) {
         self.tree.inner_set_child(self.key(), child.key());
     }
 
-    pub fn remove_child(&mut self, child: &mut NodeRefMut<'_, '_, T>) {
-        self.tree.inner_remove_child(self, child);
+    pub fn remove_child(&mut self, child: &NodeRef<'_, '_, T>) {
+        self.tree.inner_remove_child(self.key(), child.key());
     }
 }
 
@@ -369,8 +368,8 @@ mod tests {
     #[test]
     fn new_tree() {
         let tree = Tree::<()>::new();
-        assert!(tree.len() == 0);
-        assert!(tree.roots().collect::<Vec<_>>().len() == 0);
+        assert_eq!(tree.len(), 0);
+        assert_eq!(tree.roots().collect::<Vec<_>>().len(), 0);
     }
 
     #[test]
@@ -379,8 +378,8 @@ mod tests {
         tree.add_root(true);
         tree.add_root(false);
 
-        assert!(tree.len() == 2);
-        assert!(tree.roots().collect::<Vec<_>>().len() == 2);
+        assert_eq!(tree.len(), 2);
+        assert_eq!(tree.roots().collect::<Vec<_>>().len(), 2);
     }
 
     #[test]

@@ -1,4 +1,4 @@
-use crate::model::{InstanceKind, ModelError};
+use crate::model::{Instance, ModelError};
 use crate::tree::{NodeRef, Tree};
 
 use alloc::collections::BTreeMap;
@@ -33,7 +33,7 @@ fn split_path(path: &str) -> Result<Vec<PathSegment<'_>>, ModelError> {
 #[derive(Debug, Clone)]
 pub struct RbxModel {
     pub(crate) meta: BTreeMap<String, String>,
-    pub(crate) nodes: Tree<InstanceKind>,
+    pub(crate) nodes: Tree<Instance>,
 }
 
 impl RbxModel {
@@ -53,7 +53,7 @@ impl RbxModel {
     /// - A component can be either an index or a name
     /// - An index component is a usize representing the Nth child
     /// - A name component is any non-number string matching a possible instance name
-    pub fn get_path(&self, path: &str) -> Result<NodeRef<'_, '_, InstanceKind>, ModelError> {
+    pub fn get_path(&self, path: &str) -> Result<NodeRef<'_, '_, Instance>, ModelError> {
         let parts = split_path(path)?;
 
         let mut nodes = self
@@ -106,7 +106,7 @@ impl RbxModel {
     }
 
     /// Get the instance tree of this model
-    pub fn tree(&self) -> &Tree<InstanceKind> {
+    pub fn tree(&self) -> &Tree<Instance> {
         &self.nodes
     }
 }

@@ -10,9 +10,9 @@ use crate::serde::{Error, Result};
 use crate::tree::Tree;
 
 use alloc::collections::BTreeMap;
+use alloc::collections::BTreeSet;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use std::collections::BTreeSet;
 
 #[derive(Default)]
 struct RawInfo {
@@ -92,7 +92,7 @@ impl<R: Read> Deserializer<R> {
         for &id in instances.keys() {
             id_key.insert(
                 id,
-                tree.add_root(InstanceKind::Other(String::new(), BTreeMap::new())),
+                tree.add_root(Instance::Other(String::new(), BTreeMap::new())),
             );
         }
 
@@ -135,17 +135,16 @@ impl<R: Read> Deserializer<R> {
                 Ok(())
             })?;
 
-        // TODO: Verify child info matches
         for (child, parent) in parent_info.into_iter().filter(|&(_, parent)| parent != -1) {
             let parent_key = *id_key.get(&parent).ok_or(Error::UnknownInstance(parent))?;
             let child_key = *id_key.get(&child).ok_or(Error::UnknownInstance(child))?;
             let mut parent = tree.try_get_mut(parent_key).unwrap();
-            let mut child = tree.try_get_mut(child_key).unwrap();
+            let child = tree.try_get(child_key).unwrap();
 
-            parent.add_child(&mut child);
+            parent.add_child(&child);
         }
 
-        for (parent, children) in child_info {
+        for (parent, children) in child_info.into_iter().filter(|&(parent, _)| parent != -1) {
             let parent_key = *id_key.get(&parent).ok_or(Error::UnknownInstance(parent))?;
             let parent = tree.try_get(parent_key).unwrap();
 
@@ -433,4 +432,17 @@ pub fn from_file<P: AsRef<std::path::Path>>(path: P) -> Result<RbxModel> {
 /// Read a model from a raw byte slice
 pub fn from_bytes(bytes: &[u8]) -> Result<RbxModel> {
     from_reader(bytes)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn attrs() {
+        let part = from_file("attrs.rbxm")
+            .unwrap();
+
+        dbg!(part);
+    }
 }

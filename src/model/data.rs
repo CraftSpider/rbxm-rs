@@ -225,7 +225,8 @@ pub struct Color3Uint8 {
 pub struct Pivot {
     /// The position and orientation of the pivot in space
     pub cframe: CFrame,
-    /// TODO
+    /// Unknown extra data
+    // FIXME(CraftSpider)
     pub unknown: u8,
 }
 

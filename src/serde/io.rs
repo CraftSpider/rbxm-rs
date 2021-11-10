@@ -44,7 +44,7 @@ impl<T: std::io::Write> Write for T {
 }
 
 #[cfg(not(feature = "std"))]
-impl Write for Vec<u8> {
+impl Write for alloc::vec::Vec<u8> {
     fn write_all(&mut self, buf: &[u8]) -> Result<()> {
         self.extend_from_slice(buf);
         Ok(())

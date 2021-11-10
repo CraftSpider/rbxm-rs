@@ -7,7 +7,7 @@ mod print;
 pub use chomp::{Chomp, ChompInterleaved, ChompInterleavedTransform, ChompTransform};
 pub use print::{Print, PrintInterleaved, PrintInterleavedTransform, PrintTransform};
 
-// Decode the special formats used to store some values
+// Decode/Encode the special formats used to store some values
 
 /// Convert a u32 into an i32, using the special Roblox encoding
 pub fn decode_i32(mut raw: u32) -> i32 {

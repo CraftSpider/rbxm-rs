@@ -5,6 +5,9 @@ use crate::serde::encoding::{decode_f32, decode_i32};
 use crate::serde::io::Read;
 use crate::serde::{Error, Result};
 
+use alloc::string::String;
+use alloc::vec::Vec;
+
 /// Types that can be read from a stream that is assumed to match the RBXM encoding format
 pub trait Chomp<R: Read>: Sized {
     /// Consume type from stream
