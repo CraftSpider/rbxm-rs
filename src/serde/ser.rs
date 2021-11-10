@@ -4,7 +4,7 @@ use crate::model::*;
 use crate::serde::encoding::{
     encode_cumulative, Print, PrintInterleaved, PrintInterleavedTransform, PrintTransform,
 };
-use crate::serde::internal::{break_kind, RawProperty};
+use crate::serde::internal::{break_instance, RawProperty};
 use crate::serde::io::Write;
 use crate::serde::Result;
 
@@ -80,7 +80,7 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
             unreachable!()
         };
 
-        for (prop_name, prop_value) in break_kind(inst) {
+        for (prop_name, prop_value) in break_instance(inst) {
             let prop_block = prop_blocks
                 .entry((class_index, prop_name.clone()))
                 .or_insert(Block::Property {

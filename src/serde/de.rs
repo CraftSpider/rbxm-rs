@@ -4,7 +4,7 @@ use crate::model::*;
 use crate::serde::encoding::{
     decode_cumulative, Chomp, ChompInterleaved, ChompInterleavedTransform, ChompTransform,
 };
-use crate::serde::internal::{make_kind, RawProperty};
+use crate::serde::internal::{make_instance, RawProperty};
 use crate::serde::io::Read;
 use crate::serde::{Error, Result};
 use crate::tree::Tree;
@@ -130,7 +130,7 @@ impl<R: Read> Deserializer<R> {
                     })
                     .collect::<Result<_>>()?;
 
-                *tree.try_get_mut(id_key[&id]).unwrap() = make_kind(class_name, props)?;
+                *tree.try_get_mut(id_key[&id]).unwrap() = make_instance(class_name, props)?;
 
                 Ok(())
             })?;
@@ -440,8 +440,7 @@ mod tests {
 
     #[test]
     fn attrs() {
-        let part = from_file("attrs.rbxm")
-            .unwrap();
+        let part = from_file("attrs.rbxm").unwrap();
 
         dbg!(part);
     }
