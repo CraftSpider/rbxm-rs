@@ -167,7 +167,7 @@ pub fn property_convert(item: TokenStream) -> TokenStream {
                                 "String" => "TextString",
                                 "Vec" if shared => "SharedBinaryString",
                                 "Vec" => "BinaryString",
-                                "Weak" => "InstanceRef",
+                                "TreeKey" => "InstanceRef",
                                 "TriMesh" if shared => "SharedTriMesh",
                                 ident => ident,
                             };

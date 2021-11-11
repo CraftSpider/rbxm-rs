@@ -1,18 +1,16 @@
-use super::OwnedInstance;
-use crate::model::ModelError;
+use crate::model::{Instance, ModelError};
+use crate::tree::{NodeRef, Tree};
 
 use alloc::collections::BTreeMap;
-use alloc::rc::Rc;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use core::cell::Ref;
 
 enum PathSegment<'a> {
     Index(usize),
     Name(&'a str),
 }
 
-fn split_path(path: &str) -> Result<Vec<PathSegment>, ModelError> {
+fn split_path(path: &str) -> Result<Vec<PathSegment<'_>>, ModelError> {
     if path.is_empty() {
         return Err(ModelError::InvalidPath);
     }
@@ -35,7 +33,7 @@ fn split_path(path: &str) -> Result<Vec<PathSegment>, ModelError> {
 #[derive(Debug, Clone)]
 pub struct RbxModel {
     pub(crate) meta: BTreeMap<String, String>,
-    pub(crate) roots: Vec<OwnedInstance>,
+    pub(crate) nodes: Tree<Instance>,
 }
 
 impl RbxModel {
@@ -43,7 +41,7 @@ impl RbxModel {
     pub fn new() -> RbxModel {
         RbxModel {
             meta: BTreeMap::new(),
-            roots: Vec::new(),
+            nodes: Tree::new(),
         }
     }
 
@@ -55,50 +53,46 @@ impl RbxModel {
     /// - A component can be either an index or a name
     /// - An index component is a usize representing the Nth child
     /// - A name component is any non-number string matching a possible instance name
-    pub fn get_path(&self, path: &str) -> Result<OwnedInstance, ModelError> {
+    pub fn get_path(&self, path: &str) -> Result<NodeRef<'_, '_, Instance>, ModelError> {
         let parts = split_path(path)?;
 
-        let mut cur = match &parts[0] {
-            PathSegment::Index(index) => {
-                Rc::clone(self.roots.get(*index).ok_or(ModelError::NotFound)?)
-            }
-            PathSegment::Name(name) => {
-                let results = self
-                    .roots
-                    .iter()
-                    .filter(|inst| inst.borrow().kind.name() == *name)
-                    .collect::<Vec<_>>();
-                if results.len() > 1 {
-                    return Err(ModelError::AmbiguousPath);
-                }
-                Rc::clone(results.get(0).ok_or(ModelError::NotFound)?)
-            }
-        };
+        let mut nodes = self
+            .nodes
+            .roots()
+            .into_iter()
+            .collect::<Result<Vec<_>, _>>();
 
-        for segment in &parts[1..] {
-            let new_cur = {
-                let children = Ref::map(cur.borrow(), |inst| &inst.children);
-                match segment {
-                    PathSegment::Index(index) => {
-                        Rc::clone(children.get(*index).ok_or(ModelError::NotFound)?)
-                    }
-                    PathSegment::Name(name) => {
-                        let results = children
-                            .iter()
-                            .filter(|inst| inst.borrow().kind.name() == *name)
-                            .collect::<Vec<_>>();
-                        if results.len() > 1 {
-                            return Err(ModelError::AmbiguousPath);
-                        }
-                        Rc::clone(results.get(0).ok_or(ModelError::NotFound)?)
+        let mut out = None;
+
+        for segment in parts {
+            let new_next = match segment {
+                PathSegment::Index(index) => {
+                    nodes?.into_iter().nth(index).ok_or(ModelError::NotFound)?
+                }
+                PathSegment::Name(name) => {
+                    let mut results = nodes?
+                        .into_iter()
+                        .filter(|inst| inst.name() == name)
+                        .collect::<Vec<_>>();
+                    if results.len() > 1 {
+                        return Err(ModelError::AmbiguousPath);
+                    } else if results.is_empty() {
+                        return Err(ModelError::NotFound);
+                    } else {
+                        results.remove(0)
                     }
                 }
             };
 
-            cur = new_cur;
+            nodes = new_next
+                .children()
+                .into_iter()
+                .collect::<Result<Vec<_>, _>>();
+
+            out = Some(new_next);
         }
 
-        Ok(cur)
+        out.ok_or(ModelError::InvalidPath)
     }
 
     /// Get a reference to the set of meta values for this model
@@ -111,19 +105,9 @@ impl RbxModel {
         &mut self.meta
     }
 
-    /// Get the root instances of this model
-    pub fn roots(&self) -> &Vec<OwnedInstance> {
-        &self.roots
-    }
-
-    /// Add a root instance to this model
-    pub fn add_root(&mut self, inst: OwnedInstance) {
-        self.roots.push(inst)
-    }
-
-    /// Remove a root instance from this model
-    pub fn remove_root(&mut self, inst: &OwnedInstance) {
-        self.roots.retain(|item| !Rc::ptr_eq(item, inst));
+    /// Get the instance tree of this model
+    pub fn tree(&self) -> &Tree<Instance> {
+        &self.nodes
     }
 }
 
@@ -131,7 +115,7 @@ impl Default for RbxModel {
     fn default() -> RbxModel {
         let mut out = RbxModel {
             meta: BTreeMap::default(),
-            roots: Vec::default(),
+            nodes: Tree::new(),
         };
         out.meta
             .insert("ExplicitAutoJoints".to_string(), "true".to_string());

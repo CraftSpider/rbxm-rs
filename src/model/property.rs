@@ -1,8 +1,8 @@
 //! An enum for an unrecognized Instance property, which could be any of the valid property types.
 
-use super::InstanceRef;
 use crate::model::data::*;
 
+use crate::tree::TreeKey;
 use alloc::string::String;
 use alloc::vec::Vec;
 
@@ -55,7 +55,7 @@ pub enum Property {
     /// provided and must be known ahead of time.
     Enum(i32),
     /// A reference to an instance
-    InstanceRef(InstanceRef),
+    InstanceRef(TreeKey),
     /// See [`Vector3Int16`]
     Vector3Int16(Vector3Int16),
     /// See [`NumberSequence`]
@@ -70,4 +70,6 @@ pub enum Property {
     CustomPhysicalProperties(bool),
     /// See [`Color3Uint8`]
     Color3Uint8(Color3Uint8),
+    /// See [`Pivot`]
+    Pivot(Pivot),
 }

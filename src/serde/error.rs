@@ -36,6 +36,8 @@ pub enum Error {
     MissingProperty(String),
     /// An instance successfully parsed, but contained more properties than expected
     UnconsumedProperties(String, Vec<String>),
+    /// A parent->child relationship was encoded in the RBXM incorrectly
+    InconsistentTree,
 
     /// The input experienced an underlying IO error
     IoError(
@@ -49,7 +51,7 @@ pub enum Error {
 }
 
 impl fmt::Display for Error {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         let msg = match self {
             Error::BadMagic => "Invalid File Magic".to_string(),
             Error::UnknownBlock(block) => format!("Unrecognized data-block type `{}`", block),
@@ -68,6 +70,9 @@ impl fmt::Display for Error {
                 "Instance type {} had unexpected properties with names {:?}",
                 class_name, prop_names
             ),
+            Error::InconsistentTree => {
+                String::from("RBXM parent->child relationships were inconsistent")
+            }
 
             Error::IoError(err) => format!("Error in IO: {}", err),
             Error::InvalidString => "String contained invalid UTF data".to_string(),

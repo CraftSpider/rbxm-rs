@@ -2,20 +2,17 @@
 
 #![allow(missing_docs)]
 
-use super::{InstanceRef, OwnedInstance};
+use super::InstanceRef;
 use crate::model::data::*;
 use crate::model::enums::*;
-use crate::model::error::InstanceError;
 use crate::model::Property;
 use crate::serde::internal::{FromProperty, ToProperty};
 use rbxm_proc::{Inherits, PropertyConvert};
 
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
-use alloc::rc::{Rc, Weak};
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use core::cell::RefCell;
 
 macro_rules! chomp_prop {
     // A binary string could be valid text, allow that
@@ -37,7 +34,7 @@ macro_rules! chomp_prop {
     };
     ($map:ident, $name:literal, TriMesh) => {
         match chomp_prop!($map, $name, BinaryString) {
-            Ok(bytes) => $crate::serde::de::chomp_mesh(&mut &*bytes),
+            Ok(bytes) => $crate::serde::encoding::Chomp::chomp(&mut &*bytes),
             Err(e) => Err(e),
         }
     };
@@ -45,7 +42,7 @@ macro_rules! chomp_prop {
         match chomp_prop!($map, $name, SharedBinaryString) {
             Ok(bytes) => {
                 let mut reader = &*bytes;
-                let out = $crate::serde::de::chomp_mesh(&mut reader);
+                let out = $crate::serde::encoding::Chomp::chomp(&mut reader);
                 assert_eq!(*reader, [], "TriMesh didn't consume whole physics buffer");
                 out
             }
@@ -64,12 +61,12 @@ macro_rules! chomp_prop {
 macro_rules! write_prop {
     ($map:ident, $name:literal, $field:expr, TriMesh) => {{
         let mut out = Vec::new();
-        $crate::serde::ser::write_mesh(&mut out, &$field).unwrap();
+        $crate::serde::encoding::Print::print(&mut out, $field).unwrap();
         write_prop!($map, $name, BinaryString)
     }};
     ($map:ident, $name:literal, $field:expr, SharedTriMesh) => {{
         let mut out = Vec::new();
-        $crate::serde::ser::write_mesh(&mut out, &$field).unwrap();
+        $crate::serde::encoding::Print::print(&mut out, $field).unwrap();
         write_prop!($map, $name, out, SharedBinaryString)
     }};
     ($map:ident, $name:literal, $field:expr, $prop:ident) => {
@@ -77,141 +74,12 @@ macro_rules! write_prop {
     };
 }
 
-/// Represents a Roblox [Instance][rbx-instances],
-/// the base component which all models are made up of.
-///
-/// **Reference Link**: [class/Instance][rbx-instances]
-///
-/// [rbx-instances]: https://developer.roblox.com/en-us/api-reference/class/Instance
-#[derive(Debug, Clone)]
-pub struct Instance {
-    pub(crate) children: Vec<OwnedInstance>,
-    pub(crate) parent: Weak<RefCell<Instance>>,
-    pub kind: InstanceKind,
-}
-
-#[warn(missing_docs)]
-impl Instance {
-    /// Create a new Instance of the specified kind, optionally attaching it to a parent. May fail
-    /// if the parent cannot be mutably borrowed.
-    pub fn new(
-        kind: InstanceKind,
-        parent: Option<&OwnedInstance>,
-    ) -> Result<OwnedInstance, InstanceError> {
-        let out = Rc::new(RefCell::new(Instance {
-            children: vec![],
-            parent: Weak::default(),
-            kind,
-        }));
-
-        if let Some(parent) = parent {
-            Instance::add_child(parent, out.clone())?
-        }
-
-        Ok(out)
-    }
-
-    pub(crate) fn uninit() -> OwnedInstance {
-        Rc::new(RefCell::new(Instance {
-            children: Vec::default(),
-            parent: Weak::default(),
-            kind: InstanceKind::Other(String::default(), BTreeMap::default()),
-        }))
-    }
-
-    /// Add a child to a parent Instance. May fail if either cannot be mutably borrowed, or the
-    /// provided Instance is already a child of the parent.
-    pub fn add_child(parent: &OwnedInstance, child: OwnedInstance) -> Result<(), InstanceError> {
-        let mut parent_mut = parent
-            .try_borrow_mut()
-            .map_err(|_| InstanceError::FailedBorrowMut)?;
-
-        if parent_mut.has_child(&child) {
-            return Err(InstanceError::AlreadyHasChild);
-        }
-
-        {
-            let mut child_mut = child
-                .try_borrow_mut()
-                .map_err(|_| InstanceError::FailedBorrowMut)?;
-
-            if let Some(parent) = child_mut.parent.upgrade() {
-                parent
-                    .try_borrow_mut()
-                    .map_err(|_| InstanceError::FailedBorrowMut)?
-                    .children
-                    .retain(|existing| !Rc::ptr_eq(existing, &child))
-            }
-
-            child_mut.parent = Rc::downgrade(parent);
-        }
-
-        parent_mut.children.push(child);
-
-        Ok(())
-    }
-
-    /// Remove a child from a parent instance. May fail if either instance cannot be mutably borrowed,
-    /// or the provided instance is already a child of the parent.
-    pub fn remove_child(
-        parent: &OwnedInstance,
-        child: &OwnedInstance,
-    ) -> Result<(), InstanceError> {
-        let mut parent_mut = parent
-            .try_borrow_mut()
-            .map_err(|_| InstanceError::FailedBorrowMut)?;
-
-        if !parent_mut.has_child(&child) {
-            return Err(InstanceError::NoSuchChild);
-        }
-
-        {
-            let mut child_mut = child
-                .try_borrow_mut()
-                .map_err(|_| InstanceError::FailedBorrowMut)?;
-
-            child_mut.parent = Weak::default();
-        }
-
-        parent_mut
-            .children
-            .retain(|existing| !Rc::ptr_eq(existing, child));
-
-        Ok(())
-    }
-
-    /// Get the current children of this Instance
-    pub fn children(&self) -> &Vec<OwnedInstance> {
-        &self.children
-    }
-
-    /// Get the parent of this model, if it has one
-    pub fn parent(&self) -> Option<OwnedInstance> {
-        self.parent.upgrade()
-    }
-
-    /// Check if this Instance has some other Instance as a child.
-    pub fn has_child(&self, inst: &OwnedInstance) -> bool {
-        self.children.iter().any(|child| Rc::ptr_eq(child, inst))
-    }
-
-    /// Get the class name of this Instance
-    pub fn class_name(&self) -> String {
-        self.kind.class_name()
-    }
-
-    /// Get the name of this Instance
-    pub fn name(&self) -> &str {
-        self.kind.name()
-    }
-}
-
 /// Represent the kind of an [`Instance`]. This is not meant to be matched exhaustively, more often
 /// only checking if an Instance is of a specific kind, otherwise performing some default activity
 /// or erroring out.
 #[non_exhaustive]
 #[derive(Debug, Clone)]
-pub enum InstanceKind {
+pub enum Instance {
     Accessory(Accessory),
     Accoutrement(Accoutrement),
     Actor(Actor),
@@ -424,434 +292,436 @@ pub enum InstanceKind {
 }
 
 #[warn(missing_docs)]
-impl InstanceKind {
+impl Instance {
     /// Get the name of the class for this kind
     pub fn class_name(&self) -> String {
         String::from(match self {
-            InstanceKind::Accessory(..) => "Accessory",
-            InstanceKind::Accoutrement(..) => "Accoutrement",
-            InstanceKind::Actor(..) => "Actor",
-            InstanceKind::AlignOrientation(..) => "AlignOrientation",
-            InstanceKind::AlignPosition(..) => "AlignPosition",
-            InstanceKind::AngularVelocity(..) => "AngularVelocity",
-            InstanceKind::Animation(..) => "Animation",
-            InstanceKind::AnimationController(..) => "AnimationController",
-            InstanceKind::ArcHandles(..) => "ArcHandles",
-            InstanceKind::Atmosphere(..) => "Atmosphere",
-            InstanceKind::Backpack(..) => "Backpack",
-            InstanceKind::BallSocketConstraint(..) => "BallSocketConstraint",
-            InstanceKind::Beam(..) => "Beam",
-            InstanceKind::BillboardGui(..) => "BillboardGui",
-            InstanceKind::BinaryStringValue(..) => "BinaryStringValue",
-            InstanceKind::BindableEvent(..) => "BindableEvent",
-            InstanceKind::BindableFunction(..) => "BindableFunction",
-            InstanceKind::BlockMesh(..) => "BlockMesh",
-            InstanceKind::BloomEffect(..) => "BloomEffect",
-            InstanceKind::BlurEffect(..) => "BlurEffect",
-            InstanceKind::BodyAngularVelocity(..) => "BodyAngularVelocity",
-            InstanceKind::BodyColors(..) => "BodyColors",
-            InstanceKind::BodyForce(..) => "BodyForce",
-            InstanceKind::BodyGyro(..) => "BodyGyro",
-            InstanceKind::BodyPosition(..) => "BodyPosition",
-            InstanceKind::BodyThrust(..) => "BodyThrust",
-            InstanceKind::BodyVelocity(..) => "BodyVelocity",
-            InstanceKind::BoolValue(..) => "BoolValue",
-            InstanceKind::BoxHandleAdornment(..) => "BoxHandleAdornment",
-            InstanceKind::BrickColorValue(..) => "BrickColorValue",
-            InstanceKind::Camera(..) => "Camera",
-            InstanceKind::CFrameValue(..) => "CFrameValue",
-            InstanceKind::CharacterMesh(..) => "CharacterMesh",
-            InstanceKind::ChorusSoundEffect(..) => "ChorusSoundEffect",
-            InstanceKind::ClickDetector(..) => "ClickDetector",
-            InstanceKind::Clouds(..) => "Clouds",
-            InstanceKind::Color3Value(..) => "Color3Value",
-            InstanceKind::ColorCorrectionEffect(..) => "ColorCorrectionEffect",
-            InstanceKind::CompressorSoundEffect(..) => "CompressorSoundEffect",
-            InstanceKind::ConeHandleAdornment(..) => "ConeHandleAdornment",
-            InstanceKind::Configuration(..) => "Configuration",
-            InstanceKind::CornerWedgePart(..) => "CornerWedgePart",
-            InstanceKind::CustomEvent(..) => "CustomEvent",
-            InstanceKind::CustomEventReceiver(..) => "CustomEventReceiver",
-            InstanceKind::CylinderHandleAdornment(..) => "CylinderHandleAdornment",
-            InstanceKind::CylinderMesh(..) => "CylinderMesh",
-            InstanceKind::CylindricalConstraint(..) => "CylindricalConstraint",
-            InstanceKind::Decal(..) => "Decal",
-            InstanceKind::DepthOfFieldEffect(..) => "DepthOfFieldEffect",
-            InstanceKind::Dialog(..) => "Dialog",
-            InstanceKind::DialogChoice(..) => "DialogChoice",
-            InstanceKind::DistortionSoundEffect(..) => "DistortionSoundEffect",
-            InstanceKind::DoubleConstrainedValue(..) => "DoubleConstrainedValue",
-            InstanceKind::EchoSoundEffect(..) => "EchoSoundEffect",
-            InstanceKind::EqualizerSoundEffect(..) => "EqualizerSoundEffect",
-            InstanceKind::Explosion(..) => "Explosion",
-            InstanceKind::FileMesh(..) => "FileMesh",
-            InstanceKind::Fire(..) => "Fire",
-            InstanceKind::Flag(..) => "Flag",
-            InstanceKind::FlagStand(..) => "FlagStand",
-            InstanceKind::FlangeSoundEffect(..) => "FlangeSoundEffect",
-            InstanceKind::FloorWire(..) => "FloorWire",
-            InstanceKind::Folder(..) => "Folder",
-            InstanceKind::ForceField(..) => "ForceField",
-            InstanceKind::Frame(..) => "Frame",
-            InstanceKind::FunctionalTest(..) => "FunctionalTest",
-            InstanceKind::Glue(..) => "Glue",
-            InstanceKind::GuiMain(..) => "GuiMain",
-            InstanceKind::Handles(..) => "Handles",
-            InstanceKind::Hat(..) => "Hat",
-            InstanceKind::HingeConstraint(..) => "HingeConstraint",
-            InstanceKind::Hint(..) => "Hint",
-            InstanceKind::Hole(..) => "Hole",
-            InstanceKind::HopperBin(..) => "HopperBin",
-            InstanceKind::Humanoid(..) => "Humanoid",
-            InstanceKind::HumanoidController(..) => "HumanoidController",
-            InstanceKind::HumanoidDescription(..) => "HumanoidDescription",
-            InstanceKind::ImageButton(..) => "ImageButton",
-            InstanceKind::ImageHandleAdornment(..) => "ImageHandleAdornment",
-            InstanceKind::ImageLabel(..) => "ImageLabel",
-            InstanceKind::IntConstrainedValue(..) => "IntConstrainedValue",
-            InstanceKind::IntValue(..) => "IntValue",
-            InstanceKind::Keyframe(..) => "Keyframe",
-            InstanceKind::KeyframeMarker(..) => "KeyframeMarker",
-            InstanceKind::KeyframeSequence(..) => "KeyframeSequence",
-            InstanceKind::LineForce(..) => "LineForce",
-            InstanceKind::LineHandleAdornment(..) => "LineHandleAdornment",
-            InstanceKind::LocalizationTable(..) => "LocalizationTable",
-            InstanceKind::LocalScript(..) => "LocalScript",
-            InstanceKind::ManualGlue(..) => "ManualGlue",
-            InstanceKind::ManualWeld(..) => "ManualWeld",
-            InstanceKind::MeshPart(..) => "MeshPart",
-            InstanceKind::Message(..) => "Message",
-            InstanceKind::Model(..) => "Model",
-            InstanceKind::ModuleScript(..) => "ModuleScript",
-            InstanceKind::Motor(..) => "Motor",
-            InstanceKind::Motor6D(..) => "Motor6D",
-            InstanceKind::MotorFeature(..) => "MotorFeature",
-            InstanceKind::NegateOperation(..) => "NegateOperation",
-            InstanceKind::NoCollisionConstraint(..) => "NoCollisionConstraint",
-            InstanceKind::NumberPose(..) => "NumberPose",
-            InstanceKind::NumberValue(..) => "NumberValue",
-            InstanceKind::ObjectValue(..) => "ObjectValue",
-            InstanceKind::Pants(..) => "Pants",
-            InstanceKind::Part(..) => "Part",
-            InstanceKind::ParticleEmitter(..) => "ParticleEmitter",
-            InstanceKind::PartOperation(..) => "PartOperation",
-            InstanceKind::PartOperationAsset(..) => "PartOperationAsset",
-            InstanceKind::PitchShiftSoundEffect(..) => "PitchShiftSoundEffect",
-            InstanceKind::PointLight(..) => "PointLight",
-            InstanceKind::Pose(..) => "Pose",
-            InstanceKind::PrismaticConstraint(..) => "PrismaticConstraint",
-            InstanceKind::ProximityPrompt(..) => "ProximityPrompt",
-            InstanceKind::RayValue(..) => "RayValue",
-            InstanceKind::ReflectionMetadata(..) => "ReflectionMetadata",
-            InstanceKind::ReflectionMetadataCallbacks(..) => "ReflectionMetadataCallbacks",
-            InstanceKind::ReflectionMetadataClass(..) => "ReflectionMetadataClass",
-            InstanceKind::ReflectionMetadataClasses(..) => "ReflectionMetadataClasses",
-            InstanceKind::ReflectionMetadataEnum(..) => "ReflectionMetadataEnum",
-            InstanceKind::ReflectionMetadataEnumItem(..) => "ReflectionMetadataEnumItem",
-            InstanceKind::ReflectionMetadataEnums(..) => "ReflectionMetadataEnums",
-            InstanceKind::ReflectionMetadataEvents(..) => "ReflectionMetadataEvents",
-            InstanceKind::ReflectionMetadataFunctions(..) => "ReflectionMetadataFunctions",
-            InstanceKind::ReflectionMetadataMember(..) => "ReflectionMetadataMember",
-            InstanceKind::ReflectionMetadataProperties(..) => "ReflectionMetadataProperties",
-            InstanceKind::ReflectionMetadataYieldFunctions(..) => {
-                "ReflectionMetadataYieldFunctions"
-            }
-            InstanceKind::RemoteEvent(..) => "RemoteEvent",
-            InstanceKind::RemoteFunction(..) => "RemoteFunction",
-            InstanceKind::RenderingTest(..) => "RenderingTest",
-            InstanceKind::ReverbSoundEffect(..) => "ReverbSoundEffect",
-            InstanceKind::RocketPropulsion(..) => "RocketPropulsion",
-            InstanceKind::RodConstraint(..) => "RodConstraint",
-            InstanceKind::RopeConstraint(..) => "RopeConstraint",
-            InstanceKind::Rotate(..) => "Rotate",
-            InstanceKind::RotateP(..) => "RotateP",
-            InstanceKind::RotateV(..) => "RotateV",
-            InstanceKind::ScreenGui(..) => "ScreenGui",
-            InstanceKind::Script(..) => "Script",
-            InstanceKind::ScrollingFrame(..) => "ScrollingFrame",
-            InstanceKind::Seat(..) => "Seat",
-            InstanceKind::SelectionBox(..) => "SelectionBox",
-            InstanceKind::SelectionPartLasso(..) => "SelectionPartLasso",
-            InstanceKind::SelectionPointLasso(..) => "SelectionPointLasso",
-            InstanceKind::SelectionSphere(..) => "SelectionSphere",
-            InstanceKind::Shirt(..) => "Shirt",
-            InstanceKind::ShirtGraphic(..) => "ShirtGraphic",
-            InstanceKind::SkateboardController(..) => "SkateboardController",
-            InstanceKind::SkateboardPlatform(..) => "SkateboardPlatform",
-            InstanceKind::Skin(..) => "Skin",
-            InstanceKind::Sky(..) => "Sky",
-            InstanceKind::Smoke(..) => "Smoke",
-            InstanceKind::Snap(..) => "Snap",
-            InstanceKind::Sound(..) => "Sound",
-            InstanceKind::SoundGroup(..) => "SoundGroup",
-            InstanceKind::Sparkles(..) => "Sparkles",
-            InstanceKind::SpawnLocation(..) => "SpawnLocation",
-            InstanceKind::SpecialMesh(..) => "SpecialMesh",
-            InstanceKind::SphereHandleAdornment(..) => "SphereHandleAdornment",
-            InstanceKind::SpotLight(..) => "SpotLight",
-            InstanceKind::SpringConstraint(..) => "SpringConstraint",
-            InstanceKind::StandalonePluginScripts(..) => "StandalonePluginScripts",
-            InstanceKind::StarterGear(..) => "StarterGear",
-            InstanceKind::StringValue(..) => "StringValue",
-            InstanceKind::SunRaysEffect(..) => "SunRaysEffect",
-            InstanceKind::SurfaceAppearance(..) => "SurfaceAppearance",
-            InstanceKind::SurfaceGui(..) => "SurfaceGui",
-            InstanceKind::SurfaceLight(..) => "SurfaceLight",
-            InstanceKind::SurfaceSelection(..) => "SurfaceSelection",
-            InstanceKind::Team(..) => "Team",
-            InstanceKind::TeleportOptions(..) => "TeleportOptions",
-            InstanceKind::Terrain(..) => "Terrain",
-            InstanceKind::TerrainRegion(..) => "TerrainRegion",
-            InstanceKind::TextBox(..) => "TextBox",
-            InstanceKind::TextButton(..) => "TextButton",
-            InstanceKind::TextLabel(..) => "TextLabel",
-            InstanceKind::Texture(..) => "Texture",
-            InstanceKind::Tool(..) => "Tool",
-            InstanceKind::Torque(..) => "Torque",
-            InstanceKind::Trail(..) => "Trail",
-            InstanceKind::TremoloSoundEffect(..) => "TremoloSoundEffect",
-            InstanceKind::TrussPart(..) => "TrussPart",
-            InstanceKind::Tween(..) => "Tween",
-            InstanceKind::UIAspectRatioConstraint(..) => "UIAspectRatioConstraint",
-            InstanceKind::UICorner(..) => "UICorner",
-            InstanceKind::UIGradient(..) => "UIGradient",
-            InstanceKind::UIGridLayout(..) => "UIGridLayout",
-            InstanceKind::UIListLayout(..) => "UIListLayout",
-            InstanceKind::UIPadding(..) => "UIPadding",
-            InstanceKind::UIPageLayout(..) => "UIPageLayout",
-            InstanceKind::UIScale(..) => "UIScale",
-            InstanceKind::UISizeConstraint(..) => "UISizeConstraint",
-            InstanceKind::UIStroke(..) => "UIStroke",
-            InstanceKind::UITableLayout(..) => "UITableLayout",
-            InstanceKind::UITextSizeConstraint(..) => "UITextSizeConstraint",
-            InstanceKind::UnionOperation(..) => "UnionOperation",
-            InstanceKind::UniversalConstraint(..) => "UniversalConstraint",
-            InstanceKind::Vector3Value(..) => "Vector3Value",
-            InstanceKind::VectorForce(..) => "VectorForce",
-            InstanceKind::VehicleController(..) => "VehicleController",
-            InstanceKind::VehicleSeat(..) => "VehicleSeat",
-            InstanceKind::VelocityMotor(..) => "VelocityMotor",
-            InstanceKind::VideoFrame(..) => "VideoFrame",
-            InstanceKind::ViewportFrame(..) => "ViewportFrame",
-            InstanceKind::WedgePart(..) => "WedgePart",
-            InstanceKind::Weld(..) => "Weld",
-            InstanceKind::WeldConstraint(..) => "WeldConstraint",
-            InstanceKind::WorldModel(..) => "WorldModel",
-            InstanceKind::Other(name, ..) => name,
+            Instance::Accessory(..) => "Accessory",
+            Instance::Accoutrement(..) => "Accoutrement",
+            Instance::Actor(..) => "Actor",
+            Instance::AlignOrientation(..) => "AlignOrientation",
+            Instance::AlignPosition(..) => "AlignPosition",
+            Instance::AngularVelocity(..) => "AngularVelocity",
+            Instance::Animation(..) => "Animation",
+            Instance::AnimationController(..) => "AnimationController",
+            Instance::ArcHandles(..) => "ArcHandles",
+            Instance::Atmosphere(..) => "Atmosphere",
+            Instance::Backpack(..) => "Backpack",
+            Instance::BallSocketConstraint(..) => "BallSocketConstraint",
+            Instance::Beam(..) => "Beam",
+            Instance::BillboardGui(..) => "BillboardGui",
+            Instance::BinaryStringValue(..) => "BinaryStringValue",
+            Instance::BindableEvent(..) => "BindableEvent",
+            Instance::BindableFunction(..) => "BindableFunction",
+            Instance::BlockMesh(..) => "BlockMesh",
+            Instance::BloomEffect(..) => "BloomEffect",
+            Instance::BlurEffect(..) => "BlurEffect",
+            Instance::BodyAngularVelocity(..) => "BodyAngularVelocity",
+            Instance::BodyColors(..) => "BodyColors",
+            Instance::BodyForce(..) => "BodyForce",
+            Instance::BodyGyro(..) => "BodyGyro",
+            Instance::BodyPosition(..) => "BodyPosition",
+            Instance::BodyThrust(..) => "BodyThrust",
+            Instance::BodyVelocity(..) => "BodyVelocity",
+            Instance::BoolValue(..) => "BoolValue",
+            Instance::BoxHandleAdornment(..) => "BoxHandleAdornment",
+            Instance::BrickColorValue(..) => "BrickColorValue",
+            Instance::Camera(..) => "Camera",
+            Instance::CFrameValue(..) => "CFrameValue",
+            Instance::CharacterMesh(..) => "CharacterMesh",
+            Instance::ChorusSoundEffect(..) => "ChorusSoundEffect",
+            Instance::ClickDetector(..) => "ClickDetector",
+            Instance::Clouds(..) => "Clouds",
+            Instance::Color3Value(..) => "Color3Value",
+            Instance::ColorCorrectionEffect(..) => "ColorCorrectionEffect",
+            Instance::CompressorSoundEffect(..) => "CompressorSoundEffect",
+            Instance::ConeHandleAdornment(..) => "ConeHandleAdornment",
+            Instance::Configuration(..) => "Configuration",
+            Instance::CornerWedgePart(..) => "CornerWedgePart",
+            Instance::CustomEvent(..) => "CustomEvent",
+            Instance::CustomEventReceiver(..) => "CustomEventReceiver",
+            Instance::CylinderHandleAdornment(..) => "CylinderHandleAdornment",
+            Instance::CylinderMesh(..) => "CylinderMesh",
+            Instance::CylindricalConstraint(..) => "CylindricalConstraint",
+            Instance::Decal(..) => "Decal",
+            Instance::DepthOfFieldEffect(..) => "DepthOfFieldEffect",
+            Instance::Dialog(..) => "Dialog",
+            Instance::DialogChoice(..) => "DialogChoice",
+            Instance::DistortionSoundEffect(..) => "DistortionSoundEffect",
+            Instance::DoubleConstrainedValue(..) => "DoubleConstrainedValue",
+            Instance::EchoSoundEffect(..) => "EchoSoundEffect",
+            Instance::EqualizerSoundEffect(..) => "EqualizerSoundEffect",
+            Instance::Explosion(..) => "Explosion",
+            Instance::FileMesh(..) => "FileMesh",
+            Instance::Fire(..) => "Fire",
+            Instance::Flag(..) => "Flag",
+            Instance::FlagStand(..) => "FlagStand",
+            Instance::FlangeSoundEffect(..) => "FlangeSoundEffect",
+            Instance::FloorWire(..) => "FloorWire",
+            Instance::Folder(..) => "Folder",
+            Instance::ForceField(..) => "ForceField",
+            Instance::Frame(..) => "Frame",
+            Instance::FunctionalTest(..) => "FunctionalTest",
+            Instance::Glue(..) => "Glue",
+            Instance::GuiMain(..) => "GuiMain",
+            Instance::Handles(..) => "Handles",
+            Instance::Hat(..) => "Hat",
+            Instance::HingeConstraint(..) => "HingeConstraint",
+            Instance::Hint(..) => "Hint",
+            Instance::Hole(..) => "Hole",
+            Instance::HopperBin(..) => "HopperBin",
+            Instance::Humanoid(..) => "Humanoid",
+            Instance::HumanoidController(..) => "HumanoidController",
+            Instance::HumanoidDescription(..) => "HumanoidDescription",
+            Instance::ImageButton(..) => "ImageButton",
+            Instance::ImageHandleAdornment(..) => "ImageHandleAdornment",
+            Instance::ImageLabel(..) => "ImageLabel",
+            Instance::IntConstrainedValue(..) => "IntConstrainedValue",
+            Instance::IntValue(..) => "IntValue",
+            Instance::Keyframe(..) => "Keyframe",
+            Instance::KeyframeMarker(..) => "KeyframeMarker",
+            Instance::KeyframeSequence(..) => "KeyframeSequence",
+            Instance::LineForce(..) => "LineForce",
+            Instance::LineHandleAdornment(..) => "LineHandleAdornment",
+            Instance::LocalizationTable(..) => "LocalizationTable",
+            Instance::LocalScript(..) => "LocalScript",
+            Instance::ManualGlue(..) => "ManualGlue",
+            Instance::ManualWeld(..) => "ManualWeld",
+            Instance::MeshPart(..) => "MeshPart",
+            Instance::Message(..) => "Message",
+            Instance::Model(..) => "Model",
+            Instance::ModuleScript(..) => "ModuleScript",
+            Instance::Motor(..) => "Motor",
+            Instance::Motor6D(..) => "Motor6D",
+            Instance::MotorFeature(..) => "MotorFeature",
+            Instance::NegateOperation(..) => "NegateOperation",
+            Instance::NoCollisionConstraint(..) => "NoCollisionConstraint",
+            Instance::NumberPose(..) => "NumberPose",
+            Instance::NumberValue(..) => "NumberValue",
+            Instance::ObjectValue(..) => "ObjectValue",
+            Instance::Pants(..) => "Pants",
+            Instance::Part(..) => "Part",
+            Instance::ParticleEmitter(..) => "ParticleEmitter",
+            Instance::PartOperation(..) => "PartOperation",
+            Instance::PartOperationAsset(..) => "PartOperationAsset",
+            Instance::PitchShiftSoundEffect(..) => "PitchShiftSoundEffect",
+            Instance::PointLight(..) => "PointLight",
+            Instance::Pose(..) => "Pose",
+            Instance::PrismaticConstraint(..) => "PrismaticConstraint",
+            Instance::ProximityPrompt(..) => "ProximityPrompt",
+            Instance::RayValue(..) => "RayValue",
+            Instance::ReflectionMetadata(..) => "ReflectionMetadata",
+            Instance::ReflectionMetadataCallbacks(..) => "ReflectionMetadataCallbacks",
+            Instance::ReflectionMetadataClass(..) => "ReflectionMetadataClass",
+            Instance::ReflectionMetadataClasses(..) => "ReflectionMetadataClasses",
+            Instance::ReflectionMetadataEnum(..) => "ReflectionMetadataEnum",
+            Instance::ReflectionMetadataEnumItem(..) => "ReflectionMetadataEnumItem",
+            Instance::ReflectionMetadataEnums(..) => "ReflectionMetadataEnums",
+            Instance::ReflectionMetadataEvents(..) => "ReflectionMetadataEvents",
+            Instance::ReflectionMetadataFunctions(..) => "ReflectionMetadataFunctions",
+            Instance::ReflectionMetadataMember(..) => "ReflectionMetadataMember",
+            Instance::ReflectionMetadataProperties(..) => "ReflectionMetadataProperties",
+            Instance::ReflectionMetadataYieldFunctions(..) => "ReflectionMetadataYieldFunctions",
+            Instance::RemoteEvent(..) => "RemoteEvent",
+            Instance::RemoteFunction(..) => "RemoteFunction",
+            Instance::RenderingTest(..) => "RenderingTest",
+            Instance::ReverbSoundEffect(..) => "ReverbSoundEffect",
+            Instance::RocketPropulsion(..) => "RocketPropulsion",
+            Instance::RodConstraint(..) => "RodConstraint",
+            Instance::RopeConstraint(..) => "RopeConstraint",
+            Instance::Rotate(..) => "Rotate",
+            Instance::RotateP(..) => "RotateP",
+            Instance::RotateV(..) => "RotateV",
+            Instance::ScreenGui(..) => "ScreenGui",
+            Instance::Script(..) => "Script",
+            Instance::ScrollingFrame(..) => "ScrollingFrame",
+            Instance::Seat(..) => "Seat",
+            Instance::SelectionBox(..) => "SelectionBox",
+            Instance::SelectionPartLasso(..) => "SelectionPartLasso",
+            Instance::SelectionPointLasso(..) => "SelectionPointLasso",
+            Instance::SelectionSphere(..) => "SelectionSphere",
+            Instance::Shirt(..) => "Shirt",
+            Instance::ShirtGraphic(..) => "ShirtGraphic",
+            Instance::SkateboardController(..) => "SkateboardController",
+            Instance::SkateboardPlatform(..) => "SkateboardPlatform",
+            Instance::Skin(..) => "Skin",
+            Instance::Sky(..) => "Sky",
+            Instance::Smoke(..) => "Smoke",
+            Instance::Snap(..) => "Snap",
+            Instance::Sound(..) => "Sound",
+            Instance::SoundGroup(..) => "SoundGroup",
+            Instance::Sparkles(..) => "Sparkles",
+            Instance::SpawnLocation(..) => "SpawnLocation",
+            Instance::SpecialMesh(..) => "SpecialMesh",
+            Instance::SphereHandleAdornment(..) => "SphereHandleAdornment",
+            Instance::SpotLight(..) => "SpotLight",
+            Instance::SpringConstraint(..) => "SpringConstraint",
+            Instance::StandalonePluginScripts(..) => "StandalonePluginScripts",
+            Instance::StarterGear(..) => "StarterGear",
+            Instance::StringValue(..) => "StringValue",
+            Instance::SunRaysEffect(..) => "SunRaysEffect",
+            Instance::SurfaceAppearance(..) => "SurfaceAppearance",
+            Instance::SurfaceGui(..) => "SurfaceGui",
+            Instance::SurfaceLight(..) => "SurfaceLight",
+            Instance::SurfaceSelection(..) => "SurfaceSelection",
+            Instance::Team(..) => "Team",
+            Instance::TeleportOptions(..) => "TeleportOptions",
+            Instance::Terrain(..) => "Terrain",
+            Instance::TerrainRegion(..) => "TerrainRegion",
+            Instance::TextBox(..) => "TextBox",
+            Instance::TextButton(..) => "TextButton",
+            Instance::TextLabel(..) => "TextLabel",
+            Instance::Texture(..) => "Texture",
+            Instance::Tool(..) => "Tool",
+            Instance::Torque(..) => "Torque",
+            Instance::Trail(..) => "Trail",
+            Instance::TremoloSoundEffect(..) => "TremoloSoundEffect",
+            Instance::TrussPart(..) => "TrussPart",
+            Instance::Tween(..) => "Tween",
+            Instance::UIAspectRatioConstraint(..) => "UIAspectRatioConstraint",
+            Instance::UICorner(..) => "UICorner",
+            Instance::UIGradient(..) => "UIGradient",
+            Instance::UIGridLayout(..) => "UIGridLayout",
+            Instance::UIListLayout(..) => "UIListLayout",
+            Instance::UIPadding(..) => "UIPadding",
+            Instance::UIPageLayout(..) => "UIPageLayout",
+            Instance::UIScale(..) => "UIScale",
+            Instance::UISizeConstraint(..) => "UISizeConstraint",
+            Instance::UIStroke(..) => "UIStroke",
+            Instance::UITableLayout(..) => "UITableLayout",
+            Instance::UITextSizeConstraint(..) => "UITextSizeConstraint",
+            Instance::UnionOperation(..) => "UnionOperation",
+            Instance::UniversalConstraint(..) => "UniversalConstraint",
+            Instance::Vector3Value(..) => "Vector3Value",
+            Instance::VectorForce(..) => "VectorForce",
+            Instance::VehicleController(..) => "VehicleController",
+            Instance::VehicleSeat(..) => "VehicleSeat",
+            Instance::VelocityMotor(..) => "VelocityMotor",
+            Instance::VideoFrame(..) => "VideoFrame",
+            Instance::ViewportFrame(..) => "ViewportFrame",
+            Instance::WedgePart(..) => "WedgePart",
+            Instance::Weld(..) => "Weld",
+            Instance::WeldConstraint(..) => "WeldConstraint",
+            Instance::WorldModel(..) => "WorldModel",
+            Instance::Other(name, ..) => name,
         })
     }
 
     /// Get the name of this kind
+    ///
+    /// # Panics
+    ///
+    /// If the instance is of an unrecognized type which doesn't have a name.
     pub fn name(&self) -> &str {
         match self {
-            InstanceKind::Accessory(data) => &data.name,
-            InstanceKind::Accoutrement(data) => &data.name,
-            InstanceKind::Actor(data) => &data.name,
-            InstanceKind::AlignOrientation(data) => &data.name,
-            InstanceKind::AlignPosition(data) => &data.name,
-            InstanceKind::AngularVelocity(data) => &data.name,
-            InstanceKind::Animation(data) => &data.name,
-            InstanceKind::AnimationController(data) => &data.name,
-            InstanceKind::ArcHandles(data) => &data.name,
-            InstanceKind::Atmosphere(data) => &data.name,
-            InstanceKind::Backpack(data) => &data.name,
-            InstanceKind::BallSocketConstraint(data) => &data.name,
-            InstanceKind::Beam(data) => &data.name,
-            InstanceKind::BillboardGui(data) => &data.name,
-            InstanceKind::BinaryStringValue(data) => &data.name,
-            InstanceKind::BindableEvent(data) => &data.name,
-            InstanceKind::BindableFunction(data) => &data.name,
-            InstanceKind::BlockMesh(data) => &data.name,
-            InstanceKind::BloomEffect(data) => &data.name,
-            InstanceKind::BlurEffect(data) => &data.name,
-            InstanceKind::BodyAngularVelocity(data) => &data.name,
-            InstanceKind::BodyColors(data) => &data.name,
-            InstanceKind::BodyForce(data) => &data.name,
-            InstanceKind::BodyGyro(data) => &data.name,
-            InstanceKind::BodyPosition(data) => &data.name,
-            InstanceKind::BodyThrust(data) => &data.name,
-            InstanceKind::BodyVelocity(data) => &data.name,
-            InstanceKind::BoolValue(data) => &data.name,
-            InstanceKind::BoxHandleAdornment(data) => &data.name,
-            InstanceKind::BrickColorValue(data) => &data.name,
-            InstanceKind::Camera(data) => &data.name,
-            InstanceKind::CFrameValue(data) => &data.name,
-            InstanceKind::CharacterMesh(data) => &data.name,
-            InstanceKind::ChorusSoundEffect(data) => &data.name,
-            InstanceKind::ClickDetector(data) => &data.name,
-            InstanceKind::Clouds(data) => &data.name,
-            InstanceKind::Color3Value(data) => &data.name,
-            InstanceKind::ColorCorrectionEffect(data) => &data.name,
-            InstanceKind::CompressorSoundEffect(data) => &data.name,
-            InstanceKind::ConeHandleAdornment(data) => &data.name,
-            InstanceKind::Configuration(data) => &data.name,
-            InstanceKind::CornerWedgePart(data) => &data.name,
-            InstanceKind::CustomEvent(data) => &data.name,
-            InstanceKind::CustomEventReceiver(data) => &data.name,
-            InstanceKind::CylinderHandleAdornment(data) => &data.name,
-            InstanceKind::CylinderMesh(data) => &data.name,
-            InstanceKind::CylindricalConstraint(data) => &data.name,
-            InstanceKind::Decal(data) => &data.name,
-            InstanceKind::DepthOfFieldEffect(data) => &data.name,
-            InstanceKind::Dialog(data) => &data.name,
-            InstanceKind::DialogChoice(data) => &data.name,
-            InstanceKind::DistortionSoundEffect(data) => &data.name,
-            InstanceKind::DoubleConstrainedValue(data) => &data.name,
-            InstanceKind::EchoSoundEffect(data) => &data.name,
-            InstanceKind::EqualizerSoundEffect(data) => &data.name,
-            InstanceKind::Explosion(data) => &data.name,
-            InstanceKind::FileMesh(data) => &data.name,
-            InstanceKind::Fire(data) => &data.name,
-            InstanceKind::Flag(data) => &data.name,
-            InstanceKind::FlagStand(data) => &data.name,
-            InstanceKind::FlangeSoundEffect(data) => &data.name,
-            InstanceKind::FloorWire(data) => &data.name,
-            InstanceKind::Folder(data) => &data.name,
-            InstanceKind::ForceField(data) => &data.name,
-            InstanceKind::Frame(data) => &data.name,
-            InstanceKind::FunctionalTest(data) => &data.name,
-            InstanceKind::Glue(data) => &data.name,
-            InstanceKind::GuiMain(data) => &data.name,
-            InstanceKind::Handles(data) => &data.name,
-            InstanceKind::Hat(data) => &data.name,
-            InstanceKind::HingeConstraint(data) => &data.name,
-            InstanceKind::Hint(data) => &data.name,
-            InstanceKind::Hole(data) => &data.name,
-            InstanceKind::HopperBin(data) => &data.name,
-            InstanceKind::Humanoid(data) => &data.name,
-            InstanceKind::HumanoidController(data) => &data.name,
-            InstanceKind::HumanoidDescription(data) => &data.name,
-            InstanceKind::ImageButton(data) => &data.name,
-            InstanceKind::ImageHandleAdornment(data) => &data.name,
-            InstanceKind::ImageLabel(data) => &data.name,
-            InstanceKind::IntConstrainedValue(data) => &data.name,
-            InstanceKind::IntValue(data) => &data.name,
-            InstanceKind::Keyframe(data) => &data.name,
-            InstanceKind::KeyframeMarker(data) => &data.name,
-            InstanceKind::KeyframeSequence(data) => &data.name,
-            InstanceKind::LineForce(data) => &data.name,
-            InstanceKind::LineHandleAdornment(data) => &data.name,
-            InstanceKind::LocalizationTable(data) => &data.name,
-            InstanceKind::LocalScript(data) => &data.name,
-            InstanceKind::ManualGlue(data) => &data.name,
-            InstanceKind::ManualWeld(data) => &data.name,
-            InstanceKind::MeshPart(data) => &data.name,
-            InstanceKind::Message(data) => &data.name,
-            InstanceKind::Model(data) => &data.name,
-            InstanceKind::ModuleScript(data) => &data.name,
-            InstanceKind::Motor(data) => &data.name,
-            InstanceKind::Motor6D(data) => &data.name,
-            InstanceKind::MotorFeature(data) => &data.name,
-            InstanceKind::NegateOperation(data) => &data.name,
-            InstanceKind::NoCollisionConstraint(data) => &data.name,
-            InstanceKind::NumberPose(data) => &data.name,
-            InstanceKind::NumberValue(data) => &data.name,
-            InstanceKind::ObjectValue(data) => &data.name,
-            InstanceKind::Pants(data) => &data.name,
-            InstanceKind::Part(data) => &data.name,
-            InstanceKind::ParticleEmitter(data) => &data.name,
-            InstanceKind::PartOperation(data) => &data.name,
-            InstanceKind::PartOperationAsset(data) => &data.name,
-            InstanceKind::PitchShiftSoundEffect(data) => &data.name,
-            InstanceKind::PointLight(data) => &data.name,
-            InstanceKind::Pose(data) => &data.name,
-            InstanceKind::PrismaticConstraint(data) => &data.name,
-            InstanceKind::ProximityPrompt(data) => &data.name,
-            InstanceKind::RayValue(data) => &data.name,
-            InstanceKind::ReflectionMetadata(data) => &data.name,
-            InstanceKind::ReflectionMetadataCallbacks(data) => &data.name,
-            InstanceKind::ReflectionMetadataClass(data) => &data.name,
-            InstanceKind::ReflectionMetadataClasses(data) => &data.name,
-            InstanceKind::ReflectionMetadataEnum(data) => &data.name,
-            InstanceKind::ReflectionMetadataEnumItem(data) => &data.name,
-            InstanceKind::ReflectionMetadataEnums(data) => &data.name,
-            InstanceKind::ReflectionMetadataEvents(data) => &data.name,
-            InstanceKind::ReflectionMetadataFunctions(data) => &data.name,
-            InstanceKind::ReflectionMetadataMember(data) => &data.name,
-            InstanceKind::ReflectionMetadataProperties(data) => &data.name,
-            InstanceKind::ReflectionMetadataYieldFunctions(data) => &data.name,
-            InstanceKind::RemoteEvent(data) => &data.name,
-            InstanceKind::RemoteFunction(data) => &data.name,
-            InstanceKind::RenderingTest(data) => &data.name,
-            InstanceKind::ReverbSoundEffect(data) => &data.name,
-            InstanceKind::RocketPropulsion(data) => &data.name,
-            InstanceKind::RodConstraint(data) => &data.name,
-            InstanceKind::RopeConstraint(data) => &data.name,
-            InstanceKind::Rotate(data) => &data.name,
-            InstanceKind::RotateP(data) => &data.name,
-            InstanceKind::RotateV(data) => &data.name,
-            InstanceKind::ScreenGui(data) => &data.name,
-            InstanceKind::Script(data) => &data.name,
-            InstanceKind::ScrollingFrame(data) => &data.name,
-            InstanceKind::Seat(data) => &data.name,
-            InstanceKind::SelectionBox(data) => &data.name,
-            InstanceKind::SelectionPartLasso(data) => &data.name,
-            InstanceKind::SelectionPointLasso(data) => &data.name,
-            InstanceKind::SelectionSphere(data) => &data.name,
-            InstanceKind::Shirt(data) => &data.name,
-            InstanceKind::ShirtGraphic(data) => &data.name,
-            InstanceKind::SkateboardController(data) => &data.name,
-            InstanceKind::SkateboardPlatform(data) => &data.name,
-            InstanceKind::Skin(data) => &data.name,
-            InstanceKind::Sky(data) => &data.name,
-            InstanceKind::Smoke(data) => &data.name,
-            InstanceKind::Snap(data) => &data.name,
-            InstanceKind::Sound(data) => &data.name,
-            InstanceKind::SoundGroup(data) => &data.name,
-            InstanceKind::Sparkles(data) => &data.name,
-            InstanceKind::SpawnLocation(data) => &data.name,
-            InstanceKind::SpecialMesh(data) => &data.name,
-            InstanceKind::SphereHandleAdornment(data) => &data.name,
-            InstanceKind::SpotLight(data) => &data.name,
-            InstanceKind::SpringConstraint(data) => &data.name,
-            InstanceKind::StandalonePluginScripts(data) => &data.name,
-            InstanceKind::StarterGear(data) => &data.name,
-            InstanceKind::StringValue(data) => &data.name,
-            InstanceKind::SunRaysEffect(data) => &data.name,
-            InstanceKind::SurfaceAppearance(data) => &data.name,
-            InstanceKind::SurfaceGui(data) => &data.name,
-            InstanceKind::SurfaceLight(data) => &data.name,
-            InstanceKind::SurfaceSelection(data) => &data.name,
-            InstanceKind::Team(data) => &data.name,
-            InstanceKind::TeleportOptions(data) => &data.name,
-            InstanceKind::Terrain(data) => &data.name,
-            InstanceKind::TerrainRegion(data) => &data.name,
-            InstanceKind::TextBox(data) => &data.name,
-            InstanceKind::TextButton(data) => &data.name,
-            InstanceKind::TextLabel(data) => &data.name,
-            InstanceKind::Texture(data) => &data.name,
-            InstanceKind::Tool(data) => &data.name,
-            InstanceKind::Torque(data) => &data.name,
-            InstanceKind::Trail(data) => &data.name,
-            InstanceKind::TremoloSoundEffect(data) => &data.name,
-            InstanceKind::TrussPart(data) => &data.name,
-            InstanceKind::Tween(data) => &data.name,
-            InstanceKind::UIAspectRatioConstraint(data) => &data.name,
-            InstanceKind::UICorner(data) => &data.name,
-            InstanceKind::UIGradient(data) => &data.name,
-            InstanceKind::UIGridLayout(data) => &data.name,
-            InstanceKind::UIListLayout(data) => &data.name,
-            InstanceKind::UIPadding(data) => &data.name,
-            InstanceKind::UIPageLayout(data) => &data.name,
-            InstanceKind::UIScale(data) => &data.name,
-            InstanceKind::UISizeConstraint(data) => &data.name,
-            InstanceKind::UIStroke(data) => &data.name,
-            InstanceKind::UITableLayout(data) => &data.name,
-            InstanceKind::UITextSizeConstraint(data) => &data.name,
-            InstanceKind::UnionOperation(data) => &data.name,
-            InstanceKind::UniversalConstraint(data) => &data.name,
-            InstanceKind::Vector3Value(data) => &data.name,
-            InstanceKind::VectorForce(data) => &data.name,
-            InstanceKind::VehicleController(data) => &data.name,
-            InstanceKind::VehicleSeat(data) => &data.name,
-            InstanceKind::VelocityMotor(data) => &data.name,
-            InstanceKind::VideoFrame(data) => &data.name,
-            InstanceKind::ViewportFrame(data) => &data.name,
-            InstanceKind::WedgePart(data) => &data.name,
-            InstanceKind::Weld(data) => &data.name,
-            InstanceKind::WeldConstraint(data) => &data.name,
-            InstanceKind::WorldModel(data) => &data.name,
-            InstanceKind::Other(_, props) => {
+            Instance::Accessory(data) => &data.name,
+            Instance::Accoutrement(data) => &data.name,
+            Instance::Actor(data) => &data.name,
+            Instance::AlignOrientation(data) => &data.name,
+            Instance::AlignPosition(data) => &data.name,
+            Instance::AngularVelocity(data) => &data.name,
+            Instance::Animation(data) => &data.name,
+            Instance::AnimationController(data) => &data.name,
+            Instance::ArcHandles(data) => &data.name,
+            Instance::Atmosphere(data) => &data.name,
+            Instance::Backpack(data) => &data.name,
+            Instance::BallSocketConstraint(data) => &data.name,
+            Instance::Beam(data) => &data.name,
+            Instance::BillboardGui(data) => &data.name,
+            Instance::BinaryStringValue(data) => &data.name,
+            Instance::BindableEvent(data) => &data.name,
+            Instance::BindableFunction(data) => &data.name,
+            Instance::BlockMesh(data) => &data.name,
+            Instance::BloomEffect(data) => &data.name,
+            Instance::BlurEffect(data) => &data.name,
+            Instance::BodyAngularVelocity(data) => &data.name,
+            Instance::BodyColors(data) => &data.name,
+            Instance::BodyForce(data) => &data.name,
+            Instance::BodyGyro(data) => &data.name,
+            Instance::BodyPosition(data) => &data.name,
+            Instance::BodyThrust(data) => &data.name,
+            Instance::BodyVelocity(data) => &data.name,
+            Instance::BoolValue(data) => &data.name,
+            Instance::BoxHandleAdornment(data) => &data.name,
+            Instance::BrickColorValue(data) => &data.name,
+            Instance::Camera(data) => &data.name,
+            Instance::CFrameValue(data) => &data.name,
+            Instance::CharacterMesh(data) => &data.name,
+            Instance::ChorusSoundEffect(data) => &data.name,
+            Instance::ClickDetector(data) => &data.name,
+            Instance::Clouds(data) => &data.name,
+            Instance::Color3Value(data) => &data.name,
+            Instance::ColorCorrectionEffect(data) => &data.name,
+            Instance::CompressorSoundEffect(data) => &data.name,
+            Instance::ConeHandleAdornment(data) => &data.name,
+            Instance::Configuration(data) => &data.name,
+            Instance::CornerWedgePart(data) => &data.name,
+            Instance::CustomEvent(data) => &data.name,
+            Instance::CustomEventReceiver(data) => &data.name,
+            Instance::CylinderHandleAdornment(data) => &data.name,
+            Instance::CylinderMesh(data) => &data.name,
+            Instance::CylindricalConstraint(data) => &data.name,
+            Instance::Decal(data) => &data.name,
+            Instance::DepthOfFieldEffect(data) => &data.name,
+            Instance::Dialog(data) => &data.name,
+            Instance::DialogChoice(data) => &data.name,
+            Instance::DistortionSoundEffect(data) => &data.name,
+            Instance::DoubleConstrainedValue(data) => &data.name,
+            Instance::EchoSoundEffect(data) => &data.name,
+            Instance::EqualizerSoundEffect(data) => &data.name,
+            Instance::Explosion(data) => &data.name,
+            Instance::FileMesh(data) => &data.name,
+            Instance::Fire(data) => &data.name,
+            Instance::Flag(data) => &data.name,
+            Instance::FlagStand(data) => &data.name,
+            Instance::FlangeSoundEffect(data) => &data.name,
+            Instance::FloorWire(data) => &data.name,
+            Instance::Folder(data) => &data.name,
+            Instance::ForceField(data) => &data.name,
+            Instance::Frame(data) => &data.name,
+            Instance::FunctionalTest(data) => &data.name,
+            Instance::Glue(data) => &data.name,
+            Instance::GuiMain(data) => &data.name,
+            Instance::Handles(data) => &data.name,
+            Instance::Hat(data) => &data.name,
+            Instance::HingeConstraint(data) => &data.name,
+            Instance::Hint(data) => &data.name,
+            Instance::Hole(data) => &data.name,
+            Instance::HopperBin(data) => &data.name,
+            Instance::Humanoid(data) => &data.name,
+            Instance::HumanoidController(data) => &data.name,
+            Instance::HumanoidDescription(data) => &data.name,
+            Instance::ImageButton(data) => &data.name,
+            Instance::ImageHandleAdornment(data) => &data.name,
+            Instance::ImageLabel(data) => &data.name,
+            Instance::IntConstrainedValue(data) => &data.name,
+            Instance::IntValue(data) => &data.name,
+            Instance::Keyframe(data) => &data.name,
+            Instance::KeyframeMarker(data) => &data.name,
+            Instance::KeyframeSequence(data) => &data.name,
+            Instance::LineForce(data) => &data.name,
+            Instance::LineHandleAdornment(data) => &data.name,
+            Instance::LocalizationTable(data) => &data.name,
+            Instance::LocalScript(data) => &data.name,
+            Instance::ManualGlue(data) => &data.name,
+            Instance::ManualWeld(data) => &data.name,
+            Instance::MeshPart(data) => &data.name,
+            Instance::Message(data) => &data.name,
+            Instance::Model(data) => &data.name,
+            Instance::ModuleScript(data) => &data.name,
+            Instance::Motor(data) => &data.name,
+            Instance::Motor6D(data) => &data.name,
+            Instance::MotorFeature(data) => &data.name,
+            Instance::NegateOperation(data) => &data.name,
+            Instance::NoCollisionConstraint(data) => &data.name,
+            Instance::NumberPose(data) => &data.name,
+            Instance::NumberValue(data) => &data.name,
+            Instance::ObjectValue(data) => &data.name,
+            Instance::Pants(data) => &data.name,
+            Instance::Part(data) => &data.name,
+            Instance::ParticleEmitter(data) => &data.name,
+            Instance::PartOperation(data) => &data.name,
+            Instance::PartOperationAsset(data) => &data.name,
+            Instance::PitchShiftSoundEffect(data) => &data.name,
+            Instance::PointLight(data) => &data.name,
+            Instance::Pose(data) => &data.name,
+            Instance::PrismaticConstraint(data) => &data.name,
+            Instance::ProximityPrompt(data) => &data.name,
+            Instance::RayValue(data) => &data.name,
+            Instance::ReflectionMetadata(data) => &data.name,
+            Instance::ReflectionMetadataCallbacks(data) => &data.name,
+            Instance::ReflectionMetadataClass(data) => &data.name,
+            Instance::ReflectionMetadataClasses(data) => &data.name,
+            Instance::ReflectionMetadataEnum(data) => &data.name,
+            Instance::ReflectionMetadataEnumItem(data) => &data.name,
+            Instance::ReflectionMetadataEnums(data) => &data.name,
+            Instance::ReflectionMetadataEvents(data) => &data.name,
+            Instance::ReflectionMetadataFunctions(data) => &data.name,
+            Instance::ReflectionMetadataMember(data) => &data.name,
+            Instance::ReflectionMetadataProperties(data) => &data.name,
+            Instance::ReflectionMetadataYieldFunctions(data) => &data.name,
+            Instance::RemoteEvent(data) => &data.name,
+            Instance::RemoteFunction(data) => &data.name,
+            Instance::RenderingTest(data) => &data.name,
+            Instance::ReverbSoundEffect(data) => &data.name,
+            Instance::RocketPropulsion(data) => &data.name,
+            Instance::RodConstraint(data) => &data.name,
+            Instance::RopeConstraint(data) => &data.name,
+            Instance::Rotate(data) => &data.name,
+            Instance::RotateP(data) => &data.name,
+            Instance::RotateV(data) => &data.name,
+            Instance::ScreenGui(data) => &data.name,
+            Instance::Script(data) => &data.name,
+            Instance::ScrollingFrame(data) => &data.name,
+            Instance::Seat(data) => &data.name,
+            Instance::SelectionBox(data) => &data.name,
+            Instance::SelectionPartLasso(data) => &data.name,
+            Instance::SelectionPointLasso(data) => &data.name,
+            Instance::SelectionSphere(data) => &data.name,
+            Instance::Shirt(data) => &data.name,
+            Instance::ShirtGraphic(data) => &data.name,
+            Instance::SkateboardController(data) => &data.name,
+            Instance::SkateboardPlatform(data) => &data.name,
+            Instance::Skin(data) => &data.name,
+            Instance::Sky(data) => &data.name,
+            Instance::Smoke(data) => &data.name,
+            Instance::Snap(data) => &data.name,
+            Instance::Sound(data) => &data.name,
+            Instance::SoundGroup(data) => &data.name,
+            Instance::Sparkles(data) => &data.name,
+            Instance::SpawnLocation(data) => &data.name,
+            Instance::SpecialMesh(data) => &data.name,
+            Instance::SphereHandleAdornment(data) => &data.name,
+            Instance::SpotLight(data) => &data.name,
+            Instance::SpringConstraint(data) => &data.name,
+            Instance::StandalonePluginScripts(data) => &data.name,
+            Instance::StarterGear(data) => &data.name,
+            Instance::StringValue(data) => &data.name,
+            Instance::SunRaysEffect(data) => &data.name,
+            Instance::SurfaceAppearance(data) => &data.name,
+            Instance::SurfaceGui(data) => &data.name,
+            Instance::SurfaceLight(data) => &data.name,
+            Instance::SurfaceSelection(data) => &data.name,
+            Instance::Team(data) => &data.name,
+            Instance::TeleportOptions(data) => &data.name,
+            Instance::Terrain(data) => &data.name,
+            Instance::TerrainRegion(data) => &data.name,
+            Instance::TextBox(data) => &data.name,
+            Instance::TextButton(data) => &data.name,
+            Instance::TextLabel(data) => &data.name,
+            Instance::Texture(data) => &data.name,
+            Instance::Tool(data) => &data.name,
+            Instance::Torque(data) => &data.name,
+            Instance::Trail(data) => &data.name,
+            Instance::TremoloSoundEffect(data) => &data.name,
+            Instance::TrussPart(data) => &data.name,
+            Instance::Tween(data) => &data.name,
+            Instance::UIAspectRatioConstraint(data) => &data.name,
+            Instance::UICorner(data) => &data.name,
+            Instance::UIGradient(data) => &data.name,
+            Instance::UIGridLayout(data) => &data.name,
+            Instance::UIListLayout(data) => &data.name,
+            Instance::UIPadding(data) => &data.name,
+            Instance::UIPageLayout(data) => &data.name,
+            Instance::UIScale(data) => &data.name,
+            Instance::UISizeConstraint(data) => &data.name,
+            Instance::UIStroke(data) => &data.name,
+            Instance::UITableLayout(data) => &data.name,
+            Instance::UITextSizeConstraint(data) => &data.name,
+            Instance::UnionOperation(data) => &data.name,
+            Instance::UniversalConstraint(data) => &data.name,
+            Instance::Vector3Value(data) => &data.name,
+            Instance::VectorForce(data) => &data.name,
+            Instance::VehicleController(data) => &data.name,
+            Instance::VehicleSeat(data) => &data.name,
+            Instance::VelocityMotor(data) => &data.name,
+            Instance::VideoFrame(data) => &data.name,
+            Instance::ViewportFrame(data) => &data.name,
+            Instance::WedgePart(data) => &data.name,
+            Instance::Weld(data) => &data.name,
+            Instance::WeldConstraint(data) => &data.name,
+            Instance::WorldModel(data) => &data.name,
+            Instance::Other(_, props) => {
                 if let Property::TextString(name) = props.get("Name").unwrap() {
                     name
                 } else {
@@ -867,11 +737,14 @@ impl InstanceKind {
 pub struct Base {
     /// The name of this instance
     pub name: String,
-    // TODO: Unknown
+    /// Custom tags applied to the instance
+    // FIXME(CraftSpider) This is most likely actually a map of some kind
     pub tags: String,
-    // TODO: Unknown
+    /// The ID of the asset source for this instance
+    // FIXME(CraftSpider)
     pub source_asset_id: i64,
-    // TODO: Unknown
+    /// Serialized custom attributes on the instance
+    // FIXME(CraftSpider) Deserialize this correctly, probably into a custom type?
     pub attributes_serialize: String,
 }
 
@@ -1009,12 +882,14 @@ pub struct BasePart {
     pub can_touch: bool,
     pub can_collide: bool,
     pub cast_shadow: bool,
+    pub can_query: bool,
 
     #[propname = "size"]
     pub size: Vector3,
     pub c_frame: CFrame,
     pub velocity: Vector3,
     pub rot_velocity: Vector3,
+    pub pivot_offset: CFrame,
 
     #[isenum]
     pub material: Material,
@@ -2123,7 +1998,7 @@ pub struct Model {
     pub base: Base,
     #[isenum]
     pub level_of_detail: ModelLevelOfDetail,
-    pub model_in_primary: CFrame,
+    pub model_in_primary: Option<CFrame>,
     #[cfg(feature = "mesh-format")]
     #[shared]
     pub model_mesh_data: TriMesh,
@@ -2133,6 +2008,8 @@ pub struct Model {
     pub model_mesh_size: Vector3,
     pub model_mesh_c_frame: CFrame,
     pub primary_part: InstanceRef,
+    pub needs_pivot_migration: bool,
+    pub world_pivot_data: Pivot,
 }
 
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
@@ -3386,62 +3263,4 @@ pub struct WeldConstraint {
 pub struct WorldModel {
     #[delegate]
     pub model: Model,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn dummy_kind() -> InstanceKind {
-        InstanceKind::Other("TestClass".to_string(), BTreeMap::new())
-    }
-
-    // TODO: Use assert_matches when it stabilizes
-
-    #[test]
-    fn test_instance_new_without_parent() {
-        let inst = Instance::new(dummy_kind(), None).unwrap();
-
-        assert_eq!(inst.borrow().children().len(), 0);
-    }
-
-    #[test]
-    fn test_instance_new_with_parent() {
-        let parent = Instance::new(dummy_kind(), None).unwrap();
-        let child = Instance::new(dummy_kind(), Some(&parent)).unwrap();
-
-        assert_eq!(parent.borrow().children().len(), 1);
-        match child.borrow().parent() {
-            Some(inst) if Rc::ptr_eq(&inst, &parent) => (),
-            _ => panic!("Child parent was wrong"),
-        };
-    }
-
-    #[test]
-    fn test_instance_add_child() {
-        let parent = Instance::new(dummy_kind(), None).unwrap();
-        let child = Instance::new(dummy_kind(), None).unwrap();
-
-        Instance::add_child(&parent, child.clone()).expect("Couldn't add child to parent");
-
-        assert_eq!(parent.borrow().children().len(), 1);
-        match child.borrow().parent() {
-            Some(inst) if Rc::ptr_eq(&inst, &parent) => (),
-            other => panic!("Child parent was wrong: {:?}", other),
-        };
-    }
-
-    #[test]
-    fn test_instance_remove_child() {
-        let parent = Instance::new(dummy_kind(), None).unwrap();
-        let child = Instance::new(dummy_kind(), Some(&parent)).unwrap();
-
-        Instance::remove_child(&parent, &child).expect("Couldn't remove child from parent");
-
-        assert_eq!(parent.borrow().children().len(), 0);
-        match child.borrow().parent() {
-            None => (),
-            _ => panic!("Child still had a parent"),
-        };
-    }
 }
