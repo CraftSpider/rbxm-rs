@@ -27,7 +27,7 @@
 //!     Err(err) => panic!("Model Error: {}", err),
 //! };
 //!
-//! println!("Part Class: {}", part.borrow().kind.class_name())
+//! println!("Part Class: {}", part.class_name())
 //! ```
 //!
 
@@ -51,6 +51,7 @@
 )]
 #![cfg_attr(docsrs, features(doc_cfg))]
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(all(feature = "std", feature = "unstable"), feature(backtrace))]
 
 #[macro_use]
 extern crate alloc;

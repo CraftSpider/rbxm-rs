@@ -6,10 +6,6 @@ fn match_path(path: &syn::Path, ident: &str) -> bool {
     path.is_ident(&Ident::new(ident, Span::call_site().into()))
 }
 
-fn path_as_ident(path: &syn::Path) -> String {
-    path.segments.last().unwrap().ident.to_string()
-}
-
 fn to_pascal_case(ident: &Ident) -> LitStr {
     let ident = ident
         .to_string()
@@ -26,28 +22,6 @@ fn to_pascal_case(ident: &Ident) -> LitStr {
 
 fn has_attr(attrs: &Vec<syn::Attribute>, name: &str) -> bool {
     attrs.iter().any(|attr| match_path(&attr.path, name))
-}
-
-fn unwrap_option(ty: &syn::Type) -> (bool, &syn::Type) {
-    match ty {
-        syn::Type::Path(path) => {
-            let name = path_as_ident(&path.path);
-            if name == "Option" {
-                let args = &path.path.segments.last().unwrap().arguments;
-                let inner_ty = match args {
-                    syn::PathArguments::AngleBracketed(args) => match args.args.first().unwrap() {
-                        syn::GenericArgument::Type(ty) => ty,
-                        _ => unreachable!(),
-                    },
-                    _ => unreachable!(),
-                };
-                (true, inner_ty)
-            } else {
-                (false, ty)
-            }
-        }
-        _ => panic!(),
-    }
 }
 
 #[proc_macro_derive(Inherits)]
@@ -89,7 +63,7 @@ pub fn inherits(item: TokenStream) -> TokenStream {
 
 #[proc_macro_derive(
     PropertyConvert,
-    attributes(delegate, isenum, shared, propname, propty)
+    attributes(delegate, shared, propname)
 )]
 pub fn property_convert(item: TokenStream) -> TokenStream {
     let item = parse_macro_input!(item as DeriveInput);
@@ -110,7 +84,6 @@ pub fn property_convert(item: TokenStream) -> TokenStream {
         .map(|field| {
             let field_name = &field.ident;
             let delegate = has_attr(&field.attrs, "delegate");
-            let is_enum = has_attr(&field.attrs, "isenum");
             let shared = has_attr(&field.attrs, "shared");
             let prop_name = field.attrs.iter().find(|attr| match_path(&attr.path, "propname")).map(|attr| {
                 let meta = if let syn::Meta::NameValue(value) = attr.parse_meta().unwrap() {
@@ -131,72 +104,22 @@ pub fn property_convert(item: TokenStream) -> TokenStream {
                     quote!(<#field_ty as FromProperty>::from_properties(properties)?),
                     quote!(<#field_ty as ToProperty>::to_properties(&self.#field_name, properties)),
                 )
-            } else if is_enum {
-                (
-                    quote!({
-                        let val = chomp_prop!(properties, #prop_name, Enum)?;
-                        <i32 as core::convert::TryInto<_>>::try_into(val).map_err(|_| crate::SerdeError::UnknownVariant(val))?
-                    }),
-                    quote!(properties.insert(#prop_name.to_string(), Property::Enum(self.#field_name.clone().into()))),
-                )
             } else {
-                let (is_option, field_ty) = unwrap_option(&field.ty);
-
-                let prop_ty = field.attrs.iter().find(|attr| match_path(&attr.path, "propty")).map(|attr| {
-                    let meta = if let syn::Meta::NameValue(value) = attr.parse_meta().unwrap() {
-                        value
-                    } else {
-                        panic!()
-                    };
-                    if let syn::Lit::Str(lit) = meta.lit {
-                        lit.parse::<Ident>().unwrap()
-                    } else {
-                        panic!()
-                    }
-                }).unwrap_or_else(|| {
-                    match &field_ty {
-                        syn::Type::Path(path) => {
-                            let path = path_as_ident(&path.path);
-                            let name = match &*path {
-                                "bool" => "Bool",
-                                "i32" => "Int32",
-                                "i64" => "Int64",
-                                "f32" => "Float",
-                                "f64" => "Double",
-                                "String" if shared => "SharedTextString",
-                                "String" => "TextString",
-                                "Vec" if shared => "SharedBinaryString",
-                                "Vec" => "BinaryString",
-                                "TreeKey" => "InstanceRef",
-                                "TriMesh" if shared => "SharedTriMesh",
-                                ident => ident,
-                            };
-
-                            syn::Ident::new(name, Span::call_site().into())
-                        },
-                        _ => panic!("Unsupported type for property")
-                    }
-                });
-
-                if is_option {
-                    (
-                        quote!(chomp_prop!(properties, #prop_name, #prop_ty)
-                            .map(Some)
-                            .or_else(|err| if let crate::SerdeError::MissingProperty(_) = err {
-                                Ok(None)
-                            } else {
-                                Err(err)
-                            })?),
-                        quote!(if let Some(#field_name) = &self.#field_name {
-                            write_prop!(properties, #prop_name, #field_name.clone(), #prop_ty);
-                        }),
-                    )
-                } else {
-                    (
-                        quote!(chomp_prop!(properties, #prop_name, #prop_ty)?),
-                        quote!(write_prop!(properties, #prop_name, self.#field_name.clone(), #prop_ty)),
-                    )
-                }
+                (
+                    quote!(
+                        crate::serde::internal::FieldFromProperties::from_properties(
+                            crate::serde::internal::FieldAttrs { field_name: stringify!(#field_name), prop_name: #prop_name, shared: #shared },
+                            properties,
+                        )?
+                    ),
+                    quote!(
+                        crate::serde::internal::FieldToProperties::to_properties(
+                            self.#field_name.clone(),
+                            crate::serde::internal::FieldAttrs { field_name: stringify!(#field_name), prop_name: #prop_name, shared: #shared },
+                            properties,
+                        );
+                    ),
+                )
             };
 
             (quote!(#field_name: #getter), quote!(#setter))

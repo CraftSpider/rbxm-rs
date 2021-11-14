@@ -122,3 +122,17 @@ impl Default for RbxModel {
         out
     }
 }
+
+/*#[cfg(test)]
+mod tests {
+    use crate::model::instance::{Base, Model};
+    use super::*;
+
+    #[test]
+    fn test_get_path() {
+        let model = RbxModel::new();
+        model
+            .tree()
+            .add_root(Instance::Model(Model { base: Base::default(),  }));
+    }
+}*/

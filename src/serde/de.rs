@@ -13,6 +13,7 @@ use alloc::collections::BTreeMap;
 use alloc::collections::BTreeSet;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
+use uuid::Uuid;
 
 #[derive(Default)]
 struct RawInfo {
@@ -32,6 +33,12 @@ pub struct Deserializer<R> {
 }
 
 impl<R: Read> Deserializer<R> {
+    // "<roblox!" followed by 0x89FF (unknown), 0x0D0A (crlf), 0x1A0A (sublf?), 0x0000 (null)
+    const BINARY_MAGIC_START: [u8; 16] = [
+        0x3C, 0x72, 0x6F, 0x62, 0x6C, 0x6F, 0x78, 0x21, 0x89, 0xFF, 0x0D, 0x0A, 0x1A, 0x0A, 0x00,
+        0x00
+    ];
+
     /// Create a new deserializer from a reader and if necessary any other state
     pub fn new(reader: R) -> Deserializer<R> {
         Deserializer {
@@ -44,13 +51,8 @@ impl<R: Read> Deserializer<R> {
     pub fn deserialize(mut self) -> Result<RbxModel> {
         let magic = <[u8; 16]>::chomp(&mut self.reader)?;
 
-        if magic
-            != [
-                0x3C, 0x72, 0x6F, 0x62, 0x6C, 0x6F, 0x78, 0x21, 0x89, 0xFF, 0x0D, 0x0A, 0x1A, 0x0A,
-                0x00, 0x00,
-            ]
-        {
-            return Err(Error::BadMagic);
+        if magic != Self::BINARY_MAGIC_START {
+            return Err(Error::bad_magic());
         }
 
         let num_classes = i32::chomp(&mut self.reader)?;
@@ -65,7 +67,7 @@ impl<R: Read> Deserializer<R> {
         let magic_end = <[u8; 9]>::chomp(&mut self.reader)?;
 
         if magic_end != [0x3C, 0x2F, 0x72, 0x6F, 0x62, 0x6C, 0x6F, 0x78, 0x3E] {
-            return Err(Error::BadMagic);
+            return Err(Error::bad_magic());
         }
 
         debug_assert_eq!(self.raw_info.class_ids.len(), num_classes as usize);
@@ -100,7 +102,7 @@ impl<R: Read> Deserializer<R> {
         instances
             .iter()
             .try_for_each::<_, Result<()>>(|(&id, class_name)| {
-                let raw_props = raw_props.remove(&id).ok_or(Error::UnknownInstance(id))?;
+                let raw_props = raw_props.remove(&id).ok_or(Error::unknown_instance(id))?;
 
                 let props = raw_props
                     .into_iter()
@@ -119,7 +121,7 @@ impl<R: Read> Deserializer<R> {
                             }
                             RawProperty::InstanceRef(ref_id) => {
                                 let key =
-                                    id_key.get(&ref_id).ok_or(Error::UnknownInstance(ref_id))?;
+                                    id_key.get(&ref_id).ok_or(Error::unknown_instance(ref_id))?;
 
                                 Property::InstanceRef(*key)
                             }
@@ -130,14 +132,15 @@ impl<R: Read> Deserializer<R> {
                     })
                     .collect::<Result<_>>()?;
 
-                *tree.try_get_mut(id_key[&id]).unwrap() = make_instance(class_name, props)?;
+                let mut inst = tree.try_get_mut(id_key[&id]).unwrap();
+                *inst = make_instance(class_name, props)?;
 
                 Ok(())
             })?;
 
         for (child, parent) in parent_info.into_iter().filter(|&(_, parent)| parent != -1) {
-            let parent_key = *id_key.get(&parent).ok_or(Error::UnknownInstance(parent))?;
-            let child_key = *id_key.get(&child).ok_or(Error::UnknownInstance(child))?;
+            let parent_key = *id_key.get(&parent).ok_or(Error::unknown_instance(parent))?;
+            let child_key = *id_key.get(&child).ok_or(Error::unknown_instance(child))?;
             let mut parent = tree.try_get_mut(parent_key).unwrap();
             let child = tree.try_get(child_key).unwrap();
 
@@ -145,12 +148,12 @@ impl<R: Read> Deserializer<R> {
         }
 
         for (parent, children) in child_info.into_iter().filter(|&(parent, _)| parent != -1) {
-            let parent_key = *id_key.get(&parent).ok_or(Error::UnknownInstance(parent))?;
+            let parent_key = *id_key.get(&parent).ok_or(Error::unknown_instance(parent))?;
             let parent = tree.try_get(parent_key).unwrap();
 
             let expected_children = children
                 .into_iter()
-                .map(|i| id_key.get(&i).copied().ok_or(Error::UnknownInstance(i)))
+                .map(|i| id_key.get(&i).copied().ok_or(Error::unknown_instance(i)))
                 .collect::<Result<BTreeSet<_>>>()?;
 
             let real_children = parent
@@ -161,7 +164,7 @@ impl<R: Read> Deserializer<R> {
                 .unwrap();
 
             if expected_children != real_children {
-                return Err(Error::InconsistentTree);
+                return Err(Error::inconsistent_tree());
             }
         }
 
@@ -234,7 +237,7 @@ impl<R: Read> Deserializer<R> {
                     .raw_info
                     .class_ids
                     .get(&class_index)
-                    .ok_or(Error::UnknownClass(class_index))?;
+                    .ok_or(Error::unknown_class(class_index))?;
 
                 let num_props = class_ids.len();
 
@@ -291,7 +294,7 @@ impl<R: Read> Deserializer<R> {
                             );
                             break;
                         }
-                        17 => todo!("Quaternions not yet supported"),
+                        17 => unimplemented!("Quaternions not supported"),
                         18 => {
                             properties.extend(
                                 i32::chomp_interleaved(block_reader, num_props)?
@@ -318,7 +321,7 @@ impl<R: Read> Deserializer<R> {
                             );
                             break;
                         }
-                        25 => RawProperty::CustomPhysicalProperties(bool::chomp(block_reader)?),
+                        25 => RawProperty::PhysicalProperties(PhysicalProperties::chomp(block_reader)?),
                         26 => RawProperty::Color3Uint8(Color3Uint8::chomp(block_reader)?),
                         27 => RawProperty::Int64(i64::chomp(block_reader)?),
                         28 => {
@@ -337,8 +340,10 @@ impl<R: Read> Deserializer<R> {
                             );
                             break;
                         }
+                        31 => RawProperty::UUID(Uuid::chomp(block_reader)?),
                         _ => {
-                            return Err(Error::UnknownProperty(prop_ty));
+                            // println!("Name: {}", property_name);
+                            return Err(Error::unknown_property(prop_ty));
                         }
                     };
 
@@ -384,7 +389,7 @@ impl<R: Read> Deserializer<R> {
                         .push(child_id);
                 }
             }
-            _ => return Err(Error::UnknownBlock(name)),
+            _ => return Err(Error::unknown_block(name)),
         }
         Ok(true)
     }
@@ -395,7 +400,7 @@ impl<R: Read> Deserializer<R> {
         let first_zero = data.iter().copied().position(|b| b == 0).unwrap_or(4) as usize;
 
         Ok(core::str::from_utf8(&data[..first_zero])
-            .map_err(|_| Error::InvalidString)?
+            .map_err(|_| Error::invalid_string())?
             .to_string())
     }
 
@@ -409,7 +414,7 @@ impl<R: Read> Deserializer<R> {
         self.reader.read_exact(&mut data)?;
 
         let out =
-            lz4_flex::block::decompress(&data, uncompressed).map_err(|_| Error::InvalidLz4)?;
+            lz4_flex::block::decompress(&data, uncompressed).map_err(|_| Error::invalid_lz4())?;
 
         assert_eq!(out.len(), uncompressed);
 
@@ -439,9 +444,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn attrs() {
-        let part = from_file("attrs.rbxm").unwrap();
+    fn test_place() {
+        let level = from_file("testing_place.rbxl")
+            .map_err(|e| println!("{}", e))
+            .unwrap();
+        dbg!(level);
+    }
 
-        dbg!(part);
+    #[test]
+    fn whiteboard() -> Result<()> {
+        from_file("whiteboard.rbxm")
+            .map(|_| ())
+    }
+
+    #[test]
+    fn attrs() -> Result<()> {
+        from_file("attrs.rbxm")
+            .map(|_| ())
     }
 }

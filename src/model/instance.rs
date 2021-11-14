@@ -11,68 +11,8 @@ use rbxm_proc::{Inherits, PropertyConvert};
 
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
-use alloc::string::{String, ToString};
+use alloc::string::String;
 use alloc::vec::Vec;
-
-macro_rules! chomp_prop {
-    // A binary string could be valid text, allow that
-    ($map:ident, $name:literal, BinaryString) => {
-        match $map.remove($name) {
-            Some(Property::BinaryString(val)) => Ok(val),
-            Some(Property::TextString(str)) => Ok(str.into_bytes()),
-            Some(_) => Err($crate::SerdeError::WrongPropertyType($name.to_string())),
-            None => Err($crate::SerdeError::MissingProperty($name.to_string())),
-        }
-    };
-    ($map:ident, $name:literal, SharedBinaryString) => {
-        match $map.remove($name) {
-            Some(Property::SharedBinaryString(val)) => Ok(val),
-            Some(Property::SharedTextString(str)) => Ok(str.into_bytes()),
-            Some(_) => Err($crate::SerdeError::WrongPropertyType($name.to_string())),
-            None => Err($crate::SerdeError::MissingProperty($name.to_string())),
-        }
-    };
-    ($map:ident, $name:literal, TriMesh) => {
-        match chomp_prop!($map, $name, BinaryString) {
-            Ok(bytes) => $crate::serde::encoding::Chomp::chomp(&mut &*bytes),
-            Err(e) => Err(e),
-        }
-    };
-    ($map:ident, $name:literal, SharedTriMesh) => {
-        match chomp_prop!($map, $name, SharedBinaryString) {
-            Ok(bytes) => {
-                let mut reader = &*bytes;
-                let out = $crate::serde::encoding::Chomp::chomp(&mut reader);
-                assert_eq!(*reader, [], "TriMesh didn't consume whole physics buffer");
-                out
-            }
-            Err(e) => Err(e),
-        }
-    };
-    ($map:ident, $name:literal, $prop:ident) => {
-        match $map.remove($name) {
-            Some(Property::$prop(val)) => Ok(val),
-            Some(_) => Err($crate::SerdeError::WrongPropertyType($name.to_string())),
-            None => Err($crate::SerdeError::MissingProperty($name.to_string())),
-        }
-    };
-}
-
-macro_rules! write_prop {
-    ($map:ident, $name:literal, $field:expr, TriMesh) => {{
-        let mut out = Vec::new();
-        $crate::serde::encoding::Print::print(&mut out, $field).unwrap();
-        write_prop!($map, $name, BinaryString)
-    }};
-    ($map:ident, $name:literal, $field:expr, SharedTriMesh) => {{
-        let mut out = Vec::new();
-        $crate::serde::encoding::Print::print(&mut out, $field).unwrap();
-        write_prop!($map, $name, out, SharedBinaryString)
-    }};
-    ($map:ident, $name:literal, $field:expr, $prop:ident) => {
-        $map.insert($name.to_string(), Property::$prop($field))
-    };
-}
 
 /// Represent the kind of an [`Instance`]. This is not meant to be matched exhaustively, more often
 /// only checking if an Instance is of a specific kind, otherwise performing some default activity
@@ -733,7 +673,7 @@ impl Instance {
 }
 
 /// Information common to all instances, presumably part of Instance itself.
-#[derive(Debug, Clone, PropertyConvert)]
+#[derive(Debug, Clone, Default, PropertyConvert)]
 pub struct Base {
     /// The name of this instance
     pub name: String,
@@ -776,7 +716,6 @@ pub struct AlignOrientation {
     pub reaction_torque_enabled: bool,
     pub rigidity_enabled: bool,
 
-    #[isenum]
     pub align_type: AlignType,
 
     pub max_angular_velocity: f32,
@@ -803,7 +742,6 @@ pub struct AngularVelocity {
     #[delegate]
     pub constraint: Constraint,
     pub reaction_torque_enabled: bool,
-    #[isenum]
     pub relative_to: ActuatorRelativeTo,
     pub max_torque: f32,
     pub angular_velocity: Vector3,
@@ -891,55 +829,41 @@ pub struct BasePart {
     pub rot_velocity: Vector3,
     pub pivot_offset: CFrame,
 
-    #[isenum]
     pub material: Material,
     pub color3uint8: Color3Uint8,
     pub transparency: f32,
     pub reflectance: f32,
 
     pub collision_group_id: i32,
-    #[propty = "CustomPhysicalProperties"]
-    pub custom_physical_properties: bool,
+    pub custom_physical_properties: PhysicalProperties,
     pub root_priority: i32,
 
-    #[isenum]
     pub top_surface: SurfaceType,
-    #[isenum]
     pub top_surface_input: InputType,
     pub top_param_a: f32,
     pub top_param_b: f32,
 
-    #[isenum]
     pub bottom_surface: SurfaceType,
-    #[isenum]
     pub bottom_surface_input: InputType,
     pub bottom_param_a: f32,
     pub bottom_param_b: f32,
 
-    #[isenum]
     pub front_surface: SurfaceType,
-    #[isenum]
     pub front_surface_input: InputType,
     pub front_param_a: f32,
     pub front_param_b: f32,
 
-    #[isenum]
     pub back_surface: SurfaceType,
-    #[isenum]
     pub back_surface_input: InputType,
     pub back_param_a: f32,
     pub back_param_b: f32,
 
-    #[isenum]
     pub left_surface: SurfaceType,
-    #[isenum]
     pub left_surface_input: InputType,
     pub left_param_a: f32,
     pub left_param_b: f32,
 
-    #[isenum]
     pub right_surface: SurfaceType,
-    #[isenum]
     pub right_surface_input: InputType,
     pub right_param_a: f32,
     pub right_param_b: f32,
@@ -975,7 +899,6 @@ pub struct Beam {
     pub texture: String,
     pub texture_length: f32,
     pub texture_speed: f32,
-    #[isenum]
     pub texture_mode: TextureMode,
 
     pub attachment_0: InstanceRef,
@@ -1151,10 +1074,8 @@ pub struct Camera {
     pub head_locked: bool,
     pub c_frame: CFrame,
     pub camera_subject: InstanceRef,
-    #[isenum]
     pub camera_type: CameraType,
     pub field_of_view: f32,
-    #[isenum]
     pub field_of_view_mode: FieldOfViewMode,
     pub focus: CFrame,
     pub head_scale: f32,
@@ -1171,7 +1092,6 @@ pub struct CFrameValue {
 pub struct CharacterMesh {
     #[delegate]
     pub base: Base,
-    #[isenum]
     pub body_part: BodyPart,
     pub base_texture_id: i64,
     pub overlay_texture_id: i64,
@@ -1306,7 +1226,6 @@ pub struct CylindricalConstraint {
     pub sliding_ball_constraint: SlidingBallConstraint,
     pub angular_limits_enabled: bool,
     pub rotation_axis_visible: bool,
-    #[isenum]
     pub angular_actuator_type: ActuatorType,
     pub angular_restitution: f32,
     pub angular_speed: f32,
@@ -1328,10 +1247,8 @@ pub struct DataModelMesh {
     pub scale: Vector3,
     pub vertex_color: Vector3,
     #[propname = "LODX"]
-    #[isenum]
     pub lodx: LevelOfDetailSetting,
     #[propname = "LODY"]
-    #[isenum]
     pub lody: LevelOfDetailSetting,
 }
 
@@ -1359,14 +1276,11 @@ pub struct Dialog {
     #[delegate]
     pub base: Base,
     pub goodbye_choice_active: bool,
-    #[isenum]
     pub behavior_type: DialogBehaviorType,
     pub conversation_distance: f32,
     pub goodbye_dialog: String,
     pub initial_prompt: String,
-    #[isenum]
     pub purpose: DialogPurpose,
-    #[isenum]
     pub tone: DialogTone,
     pub trigger_distance: f32,
     pub trigger_offset: Vector3,
@@ -1433,7 +1347,6 @@ pub struct Explosion {
     pub blast_pressure: f32,
     pub blast_radius: f32,
     pub destroy_joint_radius_percent: f32,
-    #[isenum]
     pub explosion_type: ExplosionType,
     pub position: Vector3,
 }
@@ -1442,7 +1355,6 @@ pub struct Explosion {
 pub struct FaceInstance {
     #[delegate]
     pub base: Base,
-    #[isenum]
     pub face: NormalId,
 }
 
@@ -1451,13 +1363,9 @@ pub struct Feature {
     #[delegate]
     pub base: Base,
     #[propname = "FaceId"]
-    #[isenum]
     pub face: NormalId,
-    #[isenum]
     pub in_out: InOut,
-    #[isenum]
     pub left_right: LeftRight,
-    #[isenum]
     pub top_bottom: TopBottom,
 }
 
@@ -1536,7 +1444,6 @@ pub struct ForceField {
 pub struct Frame {
     #[delegate]
     pub gui_object: GuiObject,
-    #[isenum]
     pub style: FrameStyle,
 }
 
@@ -1582,7 +1489,6 @@ pub struct GuiButton {
     pub auto_button_color: bool,
     pub modal: bool,
     pub selected: bool,
-    #[isenum]
     pub style: ButtonStyle,
 }
 
@@ -1602,7 +1508,6 @@ pub struct GuiObject {
     pub selectable: bool,
     pub visible: bool,
 
-    #[isenum]
     pub border_mode: BorderMode,
     pub border_size_pixel: i32,
     pub border_color3: Color3,
@@ -1611,9 +1516,7 @@ pub struct GuiObject {
 
     pub anchor_point: Vector2,
     pub position: UDim2,
-    #[isenum]
     pub automatic_size: AutomaticSize,
-    #[isenum]
     pub size_constraint: SizeConstraint,
     pub size: UDim2,
     pub layout_order: i32,
@@ -1632,7 +1535,6 @@ pub struct HandleAdornment {
     #[delegate]
     pub pv_adornment: PVAdornment,
     pub always_on_top: bool,
-    #[isenum]
     pub adorn_culling_mode: AdornCullingMode,
     pub z_index: i32,
     pub size_relative_offset: Vector3,
@@ -1644,7 +1546,6 @@ pub struct Handles {
     #[delegate]
     pub part_adornment: PartAdornment,
     pub faces: Faces,
-    #[isenum]
     pub style: HandlesStyle,
 }
 
@@ -1669,7 +1570,6 @@ pub struct HingeConstraint {
     pub radius: f32,
     pub restitution: f32,
     pub servo_max_torque: f32,
-    #[isenum]
     pub actuator_type: ActuatorType,
 }
 
@@ -1690,7 +1590,6 @@ pub struct HopperBin {
     #[delegate]
     pub backpack_item: BackpackItem,
     pub active: bool,
-    #[isenum]
     pub bin_type: BinType,
 }
 
@@ -1705,15 +1604,10 @@ pub struct Humanoid {
     pub requires_neck: bool,
     pub use_jump_power: bool,
 
-    #[isenum]
     pub rig_type: HumanoidRigType,
-    #[isenum]
     pub name_occlusion: NameOcclusion,
-    #[isenum]
     pub health_display_type: HumanoidHealthDisplayType,
-    #[isenum]
     pub collision_type: HumanoidCollisionType,
-    #[isenum]
     pub display_distance_type: HumanoidDisplayDistanceType,
 
     pub name_display_distance: f32,
@@ -1798,7 +1692,6 @@ pub struct ImageButton {
     pub image_rect_offset: Vector2,
     pub image_rect_size: Vector2,
     pub image_transparency: f32,
-    #[isenum]
     pub scale_type: ScaleType,
     pub slice_center: Rect,
     pub slice_scale: f32,
@@ -1822,7 +1715,6 @@ pub struct ImageLabel {
     pub image_rect_offset: Vector2,
     pub image_rect_size: Vector2,
     pub image_transparency: f32,
-    #[isenum]
     pub scale_type: ScaleType,
     pub slice_center: Rect,
     pub slice_scale: f32,
@@ -1885,7 +1777,6 @@ pub struct KeyframeSequence {
     pub base: Base,
     #[propname = "Loop"]
     pub loop_seq: bool,
-    #[isenum]
     pub priority: AnimationPriority,
     pub authored_hip_height: f32,
 }
@@ -1896,7 +1787,6 @@ pub struct LayerCollector {
     pub gui_base: GuiBase2D,
     pub enabled: bool,
     pub reset_on_spawn: bool,
-    #[isenum]
     pub z_index_behavior: ZIndexBehavior,
 }
 
@@ -1978,7 +1868,6 @@ pub struct MeshPart {
     // Deprecated mesh ID
     #[propname = "MeshID"]
     pub mesh_id2: String,
-    #[isenum]
     pub render_fidelity: RenderFidelity,
     #[propname = "TextureID"]
     pub texture_id: String,
@@ -1996,7 +1885,6 @@ pub struct Message {
 pub struct Model {
     #[delegate]
     pub base: Base,
-    #[isenum]
     pub level_of_detail: ModelLevelOfDetail,
     pub model_in_primary: Option<CFrame>,
     #[cfg(feature = "mesh-format")]
@@ -2088,10 +1976,8 @@ pub struct Part {
     #[delegate]
     pub base_part: BasePart,
     #[propname = "formFactorRaw"]
-    #[isenum]
     pub form_factor: FormFactor,
     #[propname = "shape"]
-    #[isenum]
     pub shape: PartType,
 }
 
@@ -2111,12 +1997,10 @@ pub struct ParticleEmitter {
     pub acceleration: Vector3,
     pub color: ColorSequence,
     pub drag: f32,
-    #[isenum]
     pub emission_direction: NormalId,
     pub lifetime: NumberRange,
     pub light_emission: f32,
     pub light_influence: f32,
-    #[isenum]
     pub orientation: ParticleOrientation,
     pub rate: f32,
     pub rot_speed: NumberRange,
@@ -2137,10 +2021,8 @@ pub struct PartOperation {
     pub triangle_mesh_part: TriangleMeshPart,
     pub use_part_color: bool,
     pub smoothing_angle: f32,
-    #[isenum]
     pub render_fidelity: RenderFidelity,
 
-    #[isenum]
     pub form_factor: FormFactor,
     pub asset_id: String,
     pub mesh_data: String,
@@ -2184,9 +2066,7 @@ pub struct Pose {
 pub struct PoseBase {
     #[delegate]
     pub base: Base,
-    #[isenum]
     pub easing_direction: PoseEasingDirection,
-    #[isenum]
     pub easing_style: PoseEasingStyle,
     pub weight: f32,
 }
@@ -2213,17 +2093,13 @@ pub struct ProximityPrompt {
     pub clickable_prompt: bool,
     pub requires_line_of_sight: bool,
     pub action_text: String,
-    #[isenum]
     pub exclusivity: ProximityPromptExclusivity,
-    #[isenum]
     pub gamepad_key_code: KeyCode,
     pub hold_duration: f32,
-    #[isenum]
     pub keyboard_key_code: KeyCode,
     pub max_activation_distance: f32,
     pub object_text: String,
     pub root_localization_table: InstanceRef,
-    #[isenum]
     pub style: ProximityPromptStyle,
     #[propname = "UIOffset"]
     pub ui_offset: Vector2,
@@ -2362,7 +2238,6 @@ pub struct RenderingTest {
     pub should_skip: bool,
     pub c_frame: CFrame,
     pub comparison_diff_threshold: i32,
-    #[isenum]
     pub comparison_method: RenderingTestComparisonMethod,
     pub comparison_psnr_threshold: f32,
     pub description: String,
@@ -2457,25 +2332,19 @@ pub struct ScrollingFrame {
     #[delegate]
     pub gui_object: GuiObject,
     pub scrolling_enabled: bool,
-    #[isenum]
     pub automatic_canvas_size: AutomaticSize,
     pub bottom_image: String,
     pub canvas_position: Vector2,
     pub canvas_size: UDim2,
-    #[isenum]
     pub elastic_behavior: ElasticBehavior,
-    #[isenum]
     pub horizontal_scroll_bar_inset: ScrollBarInset,
     pub mid_image: String,
     pub scroll_bar_image_color3: Color3,
     pub scroll_bar_image_transparency: f32,
     pub scroll_bar_thickness: i32,
-    #[isenum]
     pub scrolling_direction: ScrollingDirection,
     pub top_image: String,
-    #[isenum]
     pub vertical_scroll_bar_inset: ScrollBarInset,
-    #[isenum]
     pub vertical_scroll_bar_position: VerticalScrollBarPosition,
 }
 
@@ -2584,7 +2453,6 @@ pub struct SlidingBallConstraint {
     #[delegate]
     pub constraint: Constraint,
     pub limits_enabled: bool,
-    #[isenum]
     pub actuator_type: ActuatorType,
     pub lower_limit: f32,
     pub motor_max_acceleration: f32,
@@ -2626,7 +2494,6 @@ pub struct Sound {
     pub playing: bool,
     pub play_on_remove: bool,
     pub playback_speed: f32,
-    #[isenum]
     pub roll_off_mode: RollOffMode,
     pub sound_group: InstanceRef,
     #[propname = "xmlRead_MaxDistance_3"]
@@ -2675,7 +2542,6 @@ pub struct SpawnLocation {
 pub struct SpecialMesh {
     #[delegate]
     pub file_mesh: FileMesh,
-    #[isenum]
     pub mesh_type: MeshType,
 }
 
@@ -2691,7 +2557,6 @@ pub struct SpotLight {
     #[delegate]
     pub light: Light,
     pub angle: f32,
-    #[isenum]
     pub face: NormalId,
     pub range: f32,
 }
@@ -2743,7 +2608,6 @@ pub struct SunRaysEffect {
 pub struct SurfaceAppearance {
     #[delegate]
     pub base: Base,
-    #[isenum]
     pub alpha_mode: AlphaMode,
     pub color_map: String,
     pub metalness_map: String,
@@ -2761,11 +2625,9 @@ pub struct SurfaceGui {
     pub clips_descendants: bool,
     pub adornee: InstanceRef,
     pub canvas_size: Vector2,
-    #[isenum]
     pub face: NormalId,
     pub light_influence: f32,
     pub pixels_per_stud: f32,
-    #[isenum]
     pub sizing_mode: SurfaceGuiSizingMode,
     pub tool_punch_through_distance: f32,
     pub z_offset: f32,
@@ -2776,7 +2638,6 @@ pub struct SurfaceLight {
     #[delegate]
     pub light: Light,
     pub angle: f32,
-    #[isenum]
     pub face: NormalId,
     pub range: f32,
 }
@@ -2785,7 +2646,6 @@ pub struct SurfaceLight {
 pub struct SurfaceSelection {
     #[delegate]
     pub part_adornment: PartAdornment,
-    #[isenum]
     pub target_surface: NormalId,
 }
 
@@ -2811,7 +2671,6 @@ pub struct Terrain {
     #[delegate]
     pub base_part: BasePart,
     pub decoration: bool,
-    #[isenum]
     pub acquisition_method: TerrainAcquisitionMethod,
     pub water_wave_size: f32,
     pub water_wave_speed: f32,
@@ -2844,7 +2703,6 @@ pub struct TextBox {
     pub text_scaled: bool,
     pub text_wrapped: bool,
     pub multi_line: bool,
-    #[isenum]
     pub font: Font,
     pub line_height: f32,
     pub max_visible_graphemes: i32,
@@ -2856,11 +2714,8 @@ pub struct TextBox {
     pub text_stroke_color3: Color3,
     pub text_stroke_transparency: f32,
     pub text_transparency: f32,
-    #[isenum]
     pub text_truncate: TextTruncate,
-    #[isenum]
     pub text_x_alignment: TextXAlignment,
-    #[isenum]
     pub text_y_alignment: TextYAlignment,
 }
 
@@ -2871,7 +2726,6 @@ pub struct TextButton {
     pub rich_text: bool,
     pub text_scaled: bool,
     pub text_wrapped: bool,
-    #[isenum]
     pub font: Font,
     pub line_height: f32,
     pub max_visible_graphemes: i32,
@@ -2881,11 +2735,8 @@ pub struct TextButton {
     pub text_stroke_color3: Color3,
     pub text_stroke_transparency: f32,
     pub text_transparency: f32,
-    #[isenum]
     pub text_truncate: TextTruncate,
-    #[isenum]
     pub text_x_alignment: TextXAlignment,
-    #[isenum]
     pub text_y_alignment: TextYAlignment,
 }
 
@@ -2896,7 +2747,6 @@ pub struct TextLabel {
     pub rich_text: bool,
     pub text_scaled: bool,
     pub text_wrapped: bool,
-    #[isenum]
     pub font: Font,
     pub line_height: f32,
     pub max_visible_graphemes: i32,
@@ -2906,11 +2756,8 @@ pub struct TextLabel {
     pub text_stroke_color3: Color3,
     pub text_stroke_transparency: f32,
     pub text_transparency: f32,
-    #[isenum]
     pub text_truncate: TextTruncate,
-    #[isenum]
     pub text_x_alignment: TextXAlignment,
-    #[isenum]
     pub text_y_alignment: TextYAlignment,
 }
 
@@ -2940,7 +2787,6 @@ pub struct Tool {
 pub struct Torque {
     #[delegate]
     pub constraint: Constraint,
-    #[isenum]
     pub relative_to: ActuatorRelativeTo,
     pub torque: Vector3,
 }
@@ -2961,7 +2807,6 @@ pub struct Trail {
     pub min_length: f32,
     pub texture: String,
     pub texture_length: f32,
-    #[isenum]
     pub texture_mode: TextureMode,
     pub transparency: NumberSequence,
     pub width_scale: NumberSequence,
@@ -2997,7 +2842,6 @@ pub struct TrussPart {
     #[delegate]
     pub base_part: BasePart,
     #[propname = "style"]
-    #[isenum]
     pub style: TrussStyle,
 }
 
@@ -3012,9 +2856,7 @@ pub struct UIAspectRatioConstraint {
     #[delegate]
     pub base: Base,
     pub aspect_ratio: f32,
-    #[isenum]
     pub aspect_type: AspectType,
-    #[isenum]
     pub dominant_axis: DominantAxis,
 }
 
@@ -3043,7 +2885,6 @@ pub struct UIGridLayout {
     pub cell_padding: UDim2,
     pub cell_size: UDim2,
     pub fill_direction_max_cells: i32,
-    #[isenum]
     pub start_corner: StartCorner,
 }
 
@@ -3051,13 +2892,9 @@ pub struct UIGridLayout {
 pub struct UIGridStyleLayout {
     #[delegate]
     pub base: Base,
-    #[isenum]
     pub fill_direction: FillDirection,
-    #[isenum]
     pub horizontal_alignment: HorizontalAlignment,
-    #[isenum]
     pub vertical_alignment: VerticalAlignment,
-    #[isenum]
     pub sort_order: SortOrder,
 }
 
@@ -3087,9 +2924,7 @@ pub struct UIPageLayout {
     pub gamepad_input_enabled: bool,
     pub scroll_wheel_input_enabled: bool,
     pub touch_input_enabled: bool,
-    #[isenum]
     pub easing_direction: EasingDirection,
-    #[isenum]
     pub easing_style: EasingStyle,
     pub padding: UDim,
     pub tween_time: f32,
@@ -3115,10 +2950,8 @@ pub struct UIStroke {
     #[delegate]
     pub base: Base,
     pub enabled: bool,
-    #[isenum]
     pub apply_stroke_mode: ApplyStrokeMode,
     pub color: Color3,
-    #[isenum]
     pub line_join_mode: LineJoinMode,
     pub thickness: f32,
     pub transparency: f32,
@@ -3130,7 +2963,6 @@ pub struct UITableLayout {
     pub ui_grid_style_layout: UIGridStyleLayout,
     pub fill_empty_space_columns: bool,
     pub fill_empty_space_rows: bool,
-    #[isenum]
     pub major_axis: TableMajorAxis,
     pub padding: UDim2,
 }
@@ -3172,7 +3004,6 @@ pub struct VectorForce {
     pub constraint: Constraint,
     pub apply_at_center_of_mass: bool,
     pub force: Vector3,
-    #[isenum]
     pub relative_to: ActuatorRelativeTo,
 }
 
@@ -3236,7 +3067,6 @@ pub struct WedgePart {
     #[delegate]
     pub base_part: BasePart,
     #[propname = "formFactorRaw"]
-    #[isenum]
     pub form_factor: FormFactor,
 }
 

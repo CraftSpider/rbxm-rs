@@ -1,6 +1,6 @@
 //! Implementations of `Read` and `Write` for a `no_std` context
 
-use crate::serde::{Error, Result};
+use crate::serde::Result;
 
 /// A `no_std` minimal implementation of [`std::io::Read`]
 pub trait Read {
@@ -11,13 +11,14 @@ pub trait Read {
 #[cfg(feature = "std")]
 impl<T: std::io::Read> Read for T {
     fn read_exact(&mut self, buf: &mut [u8]) -> Result<()> {
-        <Self as std::io::Read>::read_exact(self, buf).map_err(Error::IoError)
+        <Self as std::io::Read>::read_exact(self, buf).map_err(|e| e.into())
     }
 }
 
 #[cfg(not(feature = "std"))]
 impl Read for &[u8] {
     fn read_exact(&mut self, buf: &mut [u8]) -> Result<()> {
+        use crate::serde::error::{Error, ErrorKind};
         if buf.len() < self.len() {
             for i in 0..buf.len() {
                 buf[i] = self[i];
@@ -25,7 +26,7 @@ impl Read for &[u8] {
             *self = &self[buf.len()..];
             Ok(())
         } else {
-            Err(Error::IoError("Input too small to fill buffer"))
+            Err(Error::from_kind(ErrorKind::IoError("Input too small to fill buffer")))
         }
     }
 }
@@ -39,7 +40,7 @@ pub trait Write {
 #[cfg(feature = "std")]
 impl<T: std::io::Write> Write for T {
     fn write_all(&mut self, buf: &[u8]) -> Result<()> {
-        <Self as std::io::Write>::write_all(self, buf).map_err(super::Error::IoError)
+        <Self as std::io::Write>::write_all(self, buf).map_err(|e| e.into())
     }
 }
 

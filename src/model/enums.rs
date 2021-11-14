@@ -22,7 +22,7 @@ pub enum ActuatorRelativeTo {
 /// **Reference Link**: [enum/ActuatorType](https://developer.roblox.com/en-us/api-reference/enum/ActuatorType)
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum ActuatorType {
-    /// No actuation
+    /// No actuati,on
     None = 0,
     /// Motor actuation
     Motor = 1,
@@ -128,7 +128,6 @@ pub enum Axis {
     Z = 2,
 }
 
-///
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum BinType {
     Script = 0,

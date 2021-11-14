@@ -230,11 +230,20 @@ pub struct Pivot {
     pub unknown: u8,
 }
 
+/// A set of physical properties, possibly user defined or not
+#[derive(Debug, Clone)]
+pub enum PhysicalProperties {
+    /// No custom physical properties, use default from part material
+    Default,
+}
+
 /// A full triangle mesh, used for collision or display
 #[cfg_attr(docsrs, doc(cfg(feature = "mesh-format")))]
 #[cfg(feature = "mesh-format")]
 #[derive(Debug, Clone)]
 pub enum TriMesh {
+    /// Default tri-mesh data
+    Default,
     /// A box mesh, no special collision
     Box,
     /// A convex-hull based mesh

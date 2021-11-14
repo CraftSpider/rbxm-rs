@@ -65,7 +65,6 @@ macro_rules! ref_common {
     };
 }
 
-// TODO: TreeKey that tracks instance it's tied to, so users can't use key with wrong tree?
 new_key_type! {
     pub struct TreeKey;
 }
@@ -127,6 +126,11 @@ impl<T> Tree<T> {
         }
 
         inner.parents.insert(child, parent);
+        inner.children
+            .entry(parent)
+            .unwrap()
+            .or_default()
+            .push(child);
     }
 
     fn inner_remove_child(&self, parent: TreeKey, child: TreeKey) {

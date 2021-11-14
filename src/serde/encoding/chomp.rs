@@ -7,6 +7,7 @@ use crate::serde::{Error, Result};
 
 use alloc::string::String;
 use alloc::vec::Vec;
+use uuid::Uuid;
 
 /// Types that can be read from a stream that is assumed to match the RBXM encoding format
 pub trait Chomp<R: Read>: Sized {
@@ -172,7 +173,7 @@ impl<R: Read> Chomp<R> for String {
         let len = i32::chomp(reader)?;
         let mut str = vec![0; len as usize];
         reader.read_exact(&mut str)?;
-        String::from_utf8(str).map_err(|_| Error::InvalidString)
+        String::from_utf8(str).map_err(|_| Error::invalid_string())
     }
 }
 
@@ -303,6 +304,17 @@ impl<R: Read> Chomp<R> for Color3 {
     }
 }
 
+impl<R: Read> Chomp<R> for PhysicalProperties {
+    fn chomp(reader: &mut R) -> Result<Self> {
+        let custom = bool::chomp(reader)?;
+        if custom {
+            todo!("Custom physical properties")
+        } else {
+            Ok(PhysicalProperties::Default)
+        }
+    }
+}
+
 impl<R: Read> Chomp<R> for Color3Uint8 {
     fn chomp(reader: &mut R) -> Result<Self> {
         Ok(Color3Uint8 {
@@ -403,7 +415,7 @@ impl<R: Read> ChompInterleaved<R> for CFrame {
                     [0f32, -1f32, 0f32],
                     [-1f32, 0f32, 0f32],
                 ],
-                _ => return Err(Error::UnknownCFrame(angle_type)),
+                _ => return Err(Error::unknown_cframe(angle_type)),
             };
 
             angles.push(angle);
@@ -562,9 +574,11 @@ impl<R: Read> Chomp<R> for ConvexHull {
 #[cfg(feature = "mesh-format")]
 impl<R: Read> Chomp<R> for TriMesh {
     fn chomp(reader: &mut R) -> Result<Self> {
+        use crate::serde::error::ErrorKind;
+
         let magic = <[u8; 6]>::chomp(reader)?;
         if &magic != b"CSGPHS" {
-            return Err(Error::BadMagic);
+            return Err(Error::bad_magic());
         }
 
         let kind = i32::chomp(reader)?;
@@ -573,7 +587,7 @@ impl<R: Read> Chomp<R> for TriMesh {
             0 => {
                 let magic = <[u8; 5]>::chomp(reader)?;
                 if &magic != b"BLOCK" {
-                    Err(Error::BadMagic)
+                    Err(Error::bad_magic())
                 } else {
                     Ok(TriMesh::Box)
                 }
@@ -602,7 +616,7 @@ impl<R: Read> Chomp<R> for TriMesh {
                 loop {
                     match ConvexHull::chomp(reader) {
                         Ok(mesh) => meshes.push(mesh),
-                        Err(Error::IoError(_)) => break,
+                        Err(Error { kind: ErrorKind::IoError(_), ..}) => break,
                         Err(e) => return Err(e),
                     }
                 }
@@ -614,7 +628,13 @@ impl<R: Read> Chomp<R> for TriMesh {
                     meshes,
                 })
             }
-            val => Err(Error::UnknownMesh(val)),
+            val => Err(Error::unknown_mesh(val)),
         }
+    }
+}
+
+impl<R: Read> Chomp<R> for Uuid {
+    fn chomp(reader: &mut R) -> Result<Self> {
+        Ok(Uuid::from_bytes(<[u8; 16]>::chomp(reader)?))
     }
 }

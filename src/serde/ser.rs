@@ -11,6 +11,7 @@ use crate::serde::Result;
 use alloc::collections::BTreeMap;
 use alloc::string::String;
 use alloc::vec::Vec;
+use uuid::Uuid;
 
 #[derive(Debug)]
 pub(crate) enum Block {
@@ -254,7 +255,7 @@ impl<W: Write> Serializer<W> {
                     RawProperty::Vector2(..) => 13,
                     RawProperty::Vector3(..) => 14,
                     RawProperty::CFrame(..) => 16,
-                    RawProperty::Quaternion => 17,
+                    // RawProperty::Quaternion => 17,
                     RawProperty::Enum(..) => 18,
                     RawProperty::InstanceRef(..) => 19,
                     RawProperty::Vector3Int16(..) => 20,
@@ -262,11 +263,12 @@ impl<W: Write> Serializer<W> {
                     RawProperty::ColorSequence(..) => 22,
                     RawProperty::NumberRange(..) => 23,
                     RawProperty::Rect(..) => 24,
-                    RawProperty::CustomPhysicalProperties(..) => 25,
+                    RawProperty::PhysicalProperties(..) => 25,
                     RawProperty::Color3Uint8(..) => 26,
                     RawProperty::Int64(..) => 27,
                     RawProperty::RawSharedString(..) => 28,
                     RawProperty::Pivot(..) => 30,
+                    RawProperty::UUID(..) => 31,
                 };
 
                 u8::print(writer, prop_ty)?;
@@ -368,7 +370,7 @@ impl<W: Write> Serializer<W> {
                             )?;
                             break;
                         }
-                        RawProperty::Quaternion => todo!("Quaternions not yet supported"),
+                        // RawProperty::Quaternion => unimplemented!("Quaternions not supported"),
                         RawProperty::Enum(..) => {
                             i32::print_interleaved(
                                 writer,
@@ -428,7 +430,7 @@ impl<W: Write> Serializer<W> {
                             )?;
                             break;
                         }
-                        RawProperty::CustomPhysicalProperties(val) => bool::print(writer, *val)?,
+                        RawProperty::PhysicalProperties(val) => PhysicalProperties::print(writer, val.clone())?,
                         RawProperty::Color3Uint8(val) => Color3Uint8::print(writer, val.clone())?,
                         RawProperty::Int64(val) => i64::print(writer, *val)?,
                         RawProperty::RawSharedString(..) => {
@@ -465,6 +467,7 @@ impl<W: Write> Serializer<W> {
                             )?;
                             break;
                         }
+                        RawProperty::UUID(uuid) => Uuid::print(writer, uuid.clone())?,
                     }
                 }
 

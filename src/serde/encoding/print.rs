@@ -5,6 +5,7 @@ use crate::serde::Result;
 
 use alloc::string::String;
 use alloc::vec::Vec;
+use uuid::Uuid;
 
 macro_rules! float_match {
     ($var:expr, $($array:expr; $num:literal),+) => {
@@ -313,6 +314,15 @@ impl<W: Write> PrintTransform<W> for Color3 {
     }
 }
 
+impl<W: Write> Print<W> for PhysicalProperties {
+    fn print(writer: &mut W, val: Self) -> Result<()> {
+        match val {
+            PhysicalProperties::Default => bool::print(writer, false)?,
+        }
+        Ok(())
+    }
+}
+
 impl<W: Write> Print<W> for Color3Uint8 {
     fn print(writer: &mut W, val: Self) -> Result<()> {
         u8::print(writer, val.r)?;
@@ -457,6 +467,12 @@ impl<W: Write> PrintInterleaved<W> for Rect {
     }
 }
 
+impl<W: Write> Print<W> for Uuid {
+    fn print(writer: &mut W, val: Self) -> Result<()> {
+        writer.write_all(val.as_bytes())
+    }
+}
+
 #[cfg(feature = "mesh-format")]
 impl<W: Write> Print<W> for ConvexHull {
     fn print(writer: &mut W, val: Self) -> Result<()> {
@@ -494,9 +510,11 @@ impl<W: Write> Print<W> for ConvexHull {
 #[cfg(feature = "mesh-format")]
 impl<W: Write> Print<W> for TriMesh {
     fn print(writer: &mut W, val: Self) -> Result<()> {
-        writer.write_all(b"CSGPHS")?;
         match val {
+            TriMesh::Default => (),
             TriMesh::Box => {
+                // Start magic
+                writer.write_all(b"CSGPHS")?;
                 // Kind
                 i32::print(writer, 0)?;
                 // Magic content
@@ -508,6 +526,8 @@ impl<W: Write> Print<W> for TriMesh {
                 inertia_tensor,
                 meshes,
             } => {
+                // Start magic
+                writer.write_all(b"CSGPHS")?;
                 // Kind
                 i32::print(writer, 6)?;
                 // Content

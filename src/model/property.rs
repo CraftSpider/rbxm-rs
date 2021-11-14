@@ -5,6 +5,7 @@ use crate::model::data::*;
 use crate::tree::TreeKey;
 use alloc::string::String;
 use alloc::vec::Vec;
+use uuid::Uuid;
 
 /// This represents a property with an unknown type, handling any of the possible types.
 /// Should generally only be used if working with an [`Instance`][crate::model::Instance] not
@@ -66,10 +67,12 @@ pub enum Property {
     NumberRange(NumberRange),
     /// See [`Rect`]
     Rect(Rect),
-    /// A set of custom properties for physics objects. Currently just a boolean value
-    CustomPhysicalProperties(bool),
+    /// A set of physical properties for physics objects.
+    PhysicalProperties(PhysicalProperties),
     /// See [`Color3Uint8`]
     Color3Uint8(Color3Uint8),
     /// See [`Pivot`]
     Pivot(Pivot),
+    /// A Universal Unique Identifier, or UUID
+    UUID(Uuid),
 }
