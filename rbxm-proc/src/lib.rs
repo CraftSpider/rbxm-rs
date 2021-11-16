@@ -178,7 +178,7 @@ pub fn enum_convert(item: TokenStream) -> TokenStream {
 
             last_discrim = discrim;
 
-            quote!( #discrim => Ok(#item_name::#var_name) )
+            quote!( #discrim => Ok(Self::#var_name) )
         })
         .collect::<Vec<_>>();
 

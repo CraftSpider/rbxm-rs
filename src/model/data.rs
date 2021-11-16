@@ -1,11 +1,44 @@
 //! Base data types used primarily by Instance properties.
 
+use crate::model::Property;
+use crate::tree::TreeKey;
+
 use alloc::vec::Vec;
+use alloc::collections::BTreeMap;
+use core::fmt;
+use std::ops::{Deref, DerefMut};
+
+/// A set of named attributes for an instance. Wrapper type for a mapping of
+/// string to property,
+#[derive(Clone, Default)]
+pub struct Attributes {
+    pub(crate) backing: BTreeMap<String, Property>
+}
+
+impl Deref for Attributes {
+    type Target = BTreeMap<String, Property>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.backing
+    }
+}
+
+impl DerefMut for Attributes {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.backing
+    }
+}
+
+impl fmt::Debug for Attributes {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self.backing)
+    }
+}
 
 /// A dimensional component representing a scale and an offset
 ///
 /// **Reference Link**: [datatype/UDim](https://developer.roblox.com/en-us/api-reference/datatype/UDim)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct UDim {
     /// The scale of this component
     pub scale: f32,
@@ -17,7 +50,7 @@ pub struct UDim {
 /// used in GUI objects
 ///
 /// **Reference Link**: [datatype/UDim2](https://developer.roblox.com/en-us/api-reference/datatype/UDim2)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct UDim2 {
     /// The x component of this coordinate
     pub x: UDim,
@@ -28,7 +61,7 @@ pub struct UDim2 {
 /// A ray in 3D space, from origin extending along a unit axis
 ///
 /// **Reference Link**: [datatype/Ray](https://developer.roblox.com/en-us/api-reference/datatype/Ray)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Ray {
     /// The origin point
     pub origin: Vector3,
@@ -39,7 +72,7 @@ pub struct Ray {
 /// A set of faces an Instance is applied to
 ///
 /// **Reference Link**: [datatype/Faces](https://developer.roblox.com/en-us/api-reference/datatype/Faces)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Faces {
     /// Applied to front face
     pub front: bool,
@@ -58,7 +91,7 @@ pub struct Faces {
 /// A set of XYZ axes an Instance is applied to
 ///
 /// **Reference Link**: [datatype/Axes](https://developer.roblox.com/en-us/api-reference/datatype/Axes)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Axes {
     /// Applied to X axis
     pub x: bool,
@@ -72,7 +105,7 @@ pub struct Axes {
 /// in a few places.
 ///
 /// **Reference Link**: [datatype/BrickColor](https://developer.roblox.com/en-us/api-reference/datatype/BrickColor)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct BrickColor {
     /// The palette index of this BrickColor
     pub index: i32,
@@ -81,7 +114,7 @@ pub struct BrickColor {
 /// A 2D vector, most often used in GUI
 ///
 /// **Reference Link**: [datatype/Vector2](https://developer.roblox.com/en-us/api-reference/datatype/Vector2)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Vector2 {
     /// X component
     pub x: f32,
@@ -92,7 +125,7 @@ pub struct Vector2 {
 /// A 3D vector, used for most physical things
 ///
 /// **Reference Link**: [datatype/Vector3](https://developer.roblox.com/en-us/api-reference/datatype/Vector3)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Vector3 {
     /// X component
     pub x: f32,
@@ -114,10 +147,32 @@ pub struct CFrame {
     pub angle: [[f32; 3]; 3],
 }
 
+impl Default for CFrame {
+    fn default() -> Self {
+        CFrame {
+            position: Vector3::default(),
+            angle: [
+                [1., 0., 0.],
+                [0., 1., 0.],
+                [0., 0., 1.],
+            ]
+        }
+    }
+}
+
+/// A reference to another instance in the model, which may be null
+#[derive(Debug, Clone)]
+pub enum InstanceRef {
+    /// A null instance reference
+    Null,
+    /// A reference to another instance in the model
+    Item(TreeKey),
+}
+
 /// A 3D vector, with an underlying unsigned integer datatype.
 ///
 /// **Reference Link**: [datatype/Vector3int16](https://developer.roblox.com/en-us/api-reference/datatype/Vector3int16)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Vector3Int16 {
     /// X component
     pub x: i16,
@@ -131,7 +186,7 @@ pub struct Vector3Int16 {
 /// occur at that time.
 ///
 /// **Reference Link**: [datatype/NumberSequenceKeypoint](https://developer.roblox.com/en-us/api-reference/datatype/NumberSequenceKeypoint)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct NumberKeypoint {
     /// The time of this keypoint
     pub time: f32,
@@ -144,7 +199,7 @@ pub struct NumberKeypoint {
 /// A sequence of values, often used for particles or over-time effects
 ///
 /// **Reference Link**: [datatype/NumberSequence](https://developer.roblox.com/en-us/api-reference/datatype/NumberSequence)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct NumberSequence {
     /// The keypoints contained in this sequence
     pub keypoints: Vec<NumberKeypoint>,
@@ -154,7 +209,7 @@ pub struct NumberSequence {
 /// might occur at that time.
 ///
 /// **Reference Link**: [datatype/ColorSequenceKeypoint](https://developer.roblox.com/en-us/api-reference/datatype/ColorSequenceKeypoint)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ColorKeypoint {
     /// The time of this keypoint
     pub time: f32,
@@ -167,7 +222,7 @@ pub struct ColorKeypoint {
 /// A sequence of color values, often used for particles or over-time effects
 ///
 /// **Reference Links**: [datatype/ColorSequence](https://developer.roblox.com/en-us/api-reference/datatype/ColorSequence)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ColorSequence {
     /// The keypoints contained in this sequence
     pub keypoints: Vec<ColorKeypoint>,
@@ -176,7 +231,7 @@ pub struct ColorSequence {
 /// A range of possible values
 ///
 /// **Reference Links**: [datatype/NumberRange](https://developer.roblox.com/en-us/api-reference/datatype/NumberRange)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct NumberRange {
     /// Low point of the range
     pub low: f32,
@@ -187,7 +242,7 @@ pub struct NumberRange {
 /// A rectangle in a 2D plane
 ///
 /// **Reference Links**: [datatype/Rect](https://developer.roblox.com/en-us/api-reference/datatype/Rect)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Rect {
     /// The top-left corner
     pub top_left: Vector2,
@@ -198,7 +253,7 @@ pub struct Rect {
 /// A color with floating point RGB components, in the range of \[0-1\].
 ///
 /// **Reference Links**: [datatype/Color3](https://developer.roblox.com/en-us/api-reference/datatype/Color3)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Color3 {
     /// Red component
     pub r: f32,
@@ -208,9 +263,19 @@ pub struct Color3 {
     pub b: f32,
 }
 
+impl From<Color3Uint8> for Color3 {
+    fn from(col: Color3Uint8) -> Self {
+        Color3 {
+            r: col.r as f32 / 255.,
+            g: col.g as f32 / 255.,
+            b: col.b as f32 / 255.,
+        }
+    }
+}
+
 /// A color with u8 RGB components, spanning the whole byte range. This isn't actually exposed
 /// to the lua engine, instead shown as a Color3
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Color3Uint8 {
     /// Red component
     pub r: u8,
@@ -220,8 +285,18 @@ pub struct Color3Uint8 {
     pub b: u8,
 }
 
+impl From<Color3> for Color3Uint8 {
+    fn from(col: Color3) -> Self {
+        Color3Uint8 {
+            r: (col.r * 255.) as u8,
+            g: (col.g * 255.) as u8,
+            b: (col.b * 255.) as u8,
+        }
+    }
+}
+
 /// A pivot-point representing the 'center of mass' of a model, which it rotates around
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Pivot {
     /// The position and orientation of the pivot in space
     pub cframe: CFrame,
@@ -232,15 +307,23 @@ pub struct Pivot {
 
 /// A set of physical properties, possibly user defined or not
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum PhysicalProperties {
     /// No custom physical properties, use default from part material
     Default,
+}
+
+impl Default for PhysicalProperties {
+    fn default() -> Self {
+        PhysicalProperties::Default
+    }
 }
 
 /// A full triangle mesh, used for collision or display
 #[cfg_attr(docsrs, doc(cfg(feature = "mesh-format")))]
 #[cfg(feature = "mesh-format")]
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum TriMesh {
     /// Default tri-mesh data
     Default,
@@ -259,10 +342,18 @@ pub enum TriMesh {
     },
 }
 
+#[cfg(feature = "mesh-format")]
+impl Default for TriMesh {
+    fn default() -> Self {
+        TriMesh::Default
+    }
+}
+
 /// A single convex hull, with relevant data
 #[cfg_attr(docsrs, doc(cfg(feature = "mesh-format")))]
 #[cfg(feature = "mesh-format")]
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct ConvexHull {
     /// Unknown, possibly triangle indices
     // FIXME(CraftSpider)
@@ -274,4 +365,16 @@ pub struct ConvexHull {
     pub vertices: Vec<Vector3>,
     /// Face indices into the vertex list
     pub faces: Vec<(usize, usize, usize)>,
+}
+
+#[cfg(feature = "mesh-format")]
+impl ConvexHull {
+    pub fn new(vertices: Vec<Vector3>, faces: Vec<(usize, usize, usize)>) -> ConvexHull {
+        ConvexHull {
+            unknown_1: Vec::new(),
+            unknown_2: Vec::new(),
+            vertices,
+            faces,
+        }
+    }
 }

@@ -1,8 +1,8 @@
 use crate::model::instance::*;
 use crate::model::*;
-use crate::serde::{Error, ErrorKind, Result};
-#[cfg(feature = "mesh-format")]
 use crate::serde::encoding::{Chomp, Print};
+use crate::serde::{Error, ErrorKind, Result};
+use crate::model::property::PropertyType;
 
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
@@ -18,7 +18,10 @@ macro_rules! prop_ty_impl {
             fn from_properties(attrs: FieldAttrs, properties: &mut BTreeMap<String, Property>) -> Result<Self> {
                 match properties.remove(attrs.prop_name) {
                     Some(Property::$variant(val)) => Ok(val),
-                    Some(_) => Err($crate::SerdeError::wrong_property_type(attrs.prop_name.to_string())),
+                    Some(prop) => Err($crate::SerdeError::wrong_property_type(
+                        attrs.prop_name.to_string(),
+                        Some((PropertyType::$variant, prop.kind()))
+                    )),
                     None => Err($crate::SerdeError::missing_property(attrs.prop_name.to_string())),
                 }
             }
@@ -41,7 +44,10 @@ macro_rules! prop_enum_impl {
                 match properties.remove(attrs.prop_name) {
                     Some(Property::Enum(val)) => <$ty>::try_from(val)
                         .map_err(|_| $crate::SerdeError::unknown_variant(val)),
-                    Some(_) => Err($crate::SerdeError::wrong_property_type(attrs.prop_name.to_string())),
+                    Some(prop) => Err($crate::SerdeError::wrong_property_type(
+                        attrs.prop_name.to_string(),
+                        Some((PropertyType::Enum, prop.kind())),
+                    )),
                     None => Err($crate::SerdeError::missing_property(attrs.prop_name.to_string())),
                 }
             }
@@ -57,7 +63,7 @@ macro_rules! prop_enum_impl {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) enum RawProperty {
+pub enum RawProperty {
     RawString(Vec<u8>), // This may or may not be a 'real' string, it can also be just a data blob
     Bool(bool),
     Int32(i32),
@@ -86,7 +92,7 @@ pub(crate) enum RawProperty {
     RawSharedString(i32),
     // TODO: This is called 'OptionalCoordinateFrame' in XML
     Pivot(Pivot),
-    UUID(Uuid),
+    Uuid(Uuid),
 }
 
 impl RawProperty {
@@ -120,7 +126,7 @@ impl RawProperty {
             RawProperty::Int64(val) => Property::Int64(val),
             RawProperty::RawSharedString(..) => unreachable!(),
             RawProperty::Pivot(val) => Property::Pivot(val),
-            RawProperty::UUID(val) => Property::UUID(val),
+            RawProperty::Uuid(val) => Property::Uuid(val),
         }
     }
 
@@ -156,44 +162,51 @@ impl RawProperty {
             Property::Color3Uint8(val) => RawProperty::Color3Uint8(val),
             Property::Int64(val) => RawProperty::Int64(val),
             Property::Pivot(val) => RawProperty::Pivot(val),
-            Property::UUID(val) => RawProperty::UUID(val),
+            Property::Uuid(val) => RawProperty::Uuid(val),
         }
     }
 }
 
-pub(crate) trait FromProperty: Sized {
+pub trait FromProperty: Sized {
     fn from_properties(properties: &mut BTreeMap<String, Property>) -> Result<Self>;
 }
 
-pub(crate) trait ToProperty: Sized {
+pub trait ToProperty: Sized {
     fn to_properties(&self, properties: &mut BTreeMap<String, Property>);
 }
 
-pub(crate) struct FieldAttrs {
+pub struct FieldAttrs {
     pub field_name: &'static str,
     pub prop_name: &'static str,
     pub shared: bool,
 }
 
-pub(crate) trait FieldFromProperties: Sized {
+pub trait FieldFromProperties: Sized {
     fn from_properties(
         attrs: FieldAttrs,
-        properties: &mut BTreeMap<String, Property>
+        properties: &mut BTreeMap<String, Property>,
     ) -> Result<Self>;
 }
 
 impl FieldFromProperties for String {
-    fn from_properties(attrs: FieldAttrs, properties: &mut BTreeMap<String, Property>) -> Result<Self> {
+    fn from_properties(
+        attrs: FieldAttrs,
+        properties: &mut BTreeMap<String, Property>,
+    ) -> Result<Self> {
         if attrs.shared {
             match properties.remove(attrs.prop_name) {
                 Some(Property::SharedTextString(val)) => Ok(val),
-                Some(_) => Err(Error::wrong_property_type(attrs.prop_name.to_string())),
+                Some(prop) => Err(Error::wrong_property_type(
+                    attrs.prop_name.to_string(), Some((PropertyType::SharedTextString, prop.kind()))
+                )),
                 None => Err(Error::missing_property(attrs.prop_name.to_string())),
             }
         } else {
             match properties.remove(attrs.prop_name) {
                 Some(Property::TextString(val)) => Ok(val),
-                Some(_) => Err(Error::wrong_property_type(attrs.prop_name.to_string())),
+                Some(prop) => Err(Error::wrong_property_type(
+                    attrs.prop_name.to_string(), Some((PropertyType::TextString, prop.kind()))
+                )),
                 None => Err(Error::missing_property(attrs.prop_name.to_string())),
             }
         }
@@ -201,28 +214,60 @@ impl FieldFromProperties for String {
 }
 
 impl FieldFromProperties for Vec<u8> {
-    fn from_properties(attrs: FieldAttrs, properties: &mut BTreeMap<String, Property>) -> Result<Self> {
+    fn from_properties(
+        attrs: FieldAttrs,
+        properties: &mut BTreeMap<String, Property>,
+    ) -> Result<Self> {
         if attrs.shared {
             match properties.remove(attrs.prop_name) {
                 Some(Property::SharedBinaryString(val)) => Ok(val),
                 Some(Property::SharedTextString(str)) => Ok(str.into_bytes()),
-                Some(_) => Err(Error::wrong_property_type(attrs.prop_name.to_string())),
+                Some(prop) => Err(Error::wrong_property_type(
+                    attrs.prop_name.to_string(),
+                    Some((PropertyType::SharedBinaryString, prop.kind()))
+                )),
                 None => Err(Error::missing_property(attrs.prop_name.to_string())),
             }
         } else {
             match properties.remove(attrs.prop_name) {
                 Some(Property::BinaryString(val)) => Ok(val),
                 Some(Property::TextString(str)) => Ok(str.into_bytes()),
-                Some(_) => Err(Error::wrong_property_type(attrs.prop_name.to_string())),
+                Some(prop) => Err(Error::wrong_property_type(
+                    attrs.prop_name.to_string(),
+                    Some((PropertyType::BinaryString, prop.kind()))
+                )),
                 None => Err(Error::missing_property(attrs.prop_name.to_string())),
             }
         }
     }
 }
 
+impl FieldFromProperties for Attributes {
+    fn from_properties(
+        attrs: FieldAttrs,
+        properties: &mut BTreeMap<String, Property>
+    ) -> Result<Self> {
+        match <Vec<u8>>::from_properties(attrs, properties) {
+            Ok(bytes) => {
+                if bytes.is_empty() {
+                    return Ok(Attributes::default());
+                }
+                let mut reader = &*bytes;
+                let out = Attributes::chomp(&mut reader);
+                debug_assert_eq!(*reader, [], "Attributes didn't consume whole serialized buffer");
+                out
+            }
+            Err(e) => Err(e),
+        }
+    }
+}
+
 #[cfg(feature = "mesh-format")]
 impl FieldFromProperties for TriMesh {
-    fn from_properties(attrs: FieldAttrs, properties: &mut BTreeMap<String, Property>) -> Result<Self> {
+    fn from_properties(
+        attrs: FieldAttrs,
+        properties: &mut BTreeMap<String, Property>,
+    ) -> Result<Self> {
         match <Vec<u8>>::from_properties(attrs, properties) {
             Ok(bytes) => {
                 // Special Case: Empty bytes, default mesh data
@@ -240,21 +285,23 @@ impl FieldFromProperties for TriMesh {
 }
 
 impl<T: FieldFromProperties> FieldFromProperties for Option<T> {
-    fn from_properties(attrs: FieldAttrs, properties: &mut BTreeMap<String, Property>) -> Result<Self> {
+    fn from_properties(
+        attrs: FieldAttrs,
+        properties: &mut BTreeMap<String, Property>,
+    ) -> Result<Self> {
         match T::from_properties(attrs, properties) {
             Ok(val) => Ok(Some(val)),
-            Err(Error { kind: ErrorKind::MissingProperty(_), .. }) => Ok(None),
+            Err(Error {
+                kind: ErrorKind::MissingProperty(_),
+                ..
+            }) => Ok(None),
             Err(e) => Err(e),
         }
     }
 }
 
-pub(crate) trait FieldToProperties: Sized {
-    fn to_properties(
-        self,
-        attrs: FieldAttrs,
-        properties: &mut BTreeMap<String, Property>
-    );
+pub trait FieldToProperties: Sized {
+    fn to_properties(self, attrs: FieldAttrs, properties: &mut BTreeMap<String, Property>);
 }
 
 impl FieldToProperties for String {
@@ -278,6 +325,14 @@ impl FieldToProperties for Vec<u8> {
         };
 
         properties.insert(attrs.field_name.to_string(), prop);
+    }
+}
+
+impl FieldToProperties for Attributes {
+    fn to_properties(self, attrs: FieldAttrs, properties: &mut BTreeMap<String, Property>) {
+        let mut out = Vec::new();
+        Attributes::print(&mut out, self).unwrap();
+        out.to_properties(attrs, properties);
     }
 }
 
@@ -314,7 +369,7 @@ prop_ty_impl! {
     Vector2 : Vector2,
     Vector3 : Vector3,
     CFrame : CFrame,
-    crate::tree::TreeKey : InstanceRef,
+    InstanceRef : InstanceRef,
     Vector3Int16 : Vector3Int16,
     NumberSequence : NumberSequence,
     ColorSequence : ColorSequence,
@@ -323,25 +378,98 @@ prop_ty_impl! {
     PhysicalProperties : PhysicalProperties,
     Color3Uint8 : Color3Uint8,
     Pivot : Pivot,
+    Uuid : Uuid,
 }
 
 prop_enum_impl! {
-    ActuatorRelativeTo, ActuatorType, AdornCullingMode, AlignType, AlphaMode, AnimationPriority,
-    ApplyStrokeMode, AspectType, AutomaticSize, Axis, BinType, BodyPart, BorderMode, ButtonStyle,
-    CameraType, DialogBehaviorType, DialogPurpose, DialogTone, DominantAxis, EasingDirection,
-    EasingStyle, ElasticBehavior, ExplosionType, FieldOfViewMode, FillDirection, Font, FormFactor,
-    FrameStyle, HandlesStyle, HorizontalAlignment, HumanoidCollisionType,
-    HumanoidDisplayDistanceType, HumanoidHealthDisplayType, HumanoidRigType, InOut, InputType,
-    KeyCode, LeftRight, LevelOfDetailSetting, LineJoinMode, Material, MeshType, ModelLevelOfDetail,
-    NameOcclusion, NormalId, ParticleOrientation, PartType, PoseEasingDirection, PoseEasingStyle,
-    ProximityPromptExclusivity, ProximityPromptStyle, RenderFidelity, RenderingTestComparisonMethod,
-    RollOffMode, ScaleType, ScrollBarInset, ScrollingDirection, SizeConstraint, SortOrder,
-    StartCorner, SurfaceGuiSizingMode, SurfaceType, TableMajorAxis, TerrainAcquisitionMethod,
-    TextTruncate, TextureMode, TextXAlignment, TextYAlignment, TopBottom, TrussStyle,
-    VerticalAlignment,VerticalScrollBarPosition, ZIndexBehavior
+    ActuatorRelativeTo,
+    ActuatorType,
+    AdornCullingMode,
+    AlignType,
+    AlphaMode,
+    AnimationPriority,
+    AnimatorRetargetingMode,
+    ApplyStrokeMode,
+    AspectType,
+    AutomaticSize,
+    Axis,
+    BinType,
+    BodyPart,
+    BorderMode,
+    ButtonStyle,
+    CameraType,
+    ClientAnimatorThrottlingMode,
+    DialogBehaviorType,
+    DialogPurpose,
+    DialogTone,
+    DominantAxis,
+    EasingDirection,
+    EasingStyle,
+    ElasticBehavior,
+    ExplosionType,
+    FieldOfViewMode,
+    FillDirection,
+    Font,
+    FormFactor,
+    FrameStyle,
+    HandlesStyle,
+    HorizontalAlignment,
+    HumanoidCollisionType,
+    HumanoidDisplayDistanceType,
+    HumanoidHealthDisplayType,
+    HumanoidOnlySetCollisionsOnStateChange,
+    HumanoidRigType,
+    InOut,
+    InputType,
+    InterpolationThrottlingMode,
+    KeyCode,
+    LeftRight,
+    LevelOfDetailSetting,
+    LineJoinMode,
+    Material,
+    MeshPartHeadsAndAccessories,
+    MeshType,
+    ModelLevelOfDetail,
+    NameOcclusion,
+    NewAnimationRuntimeSettings,
+    NormalId,
+    ParticleOrientation,
+    PartType,
+    PhysicsSimulationRate,
+    PhysicsSteppingMethod,
+    PoseEasingDirection,
+    PoseEasingStyle,
+    ProximityPromptExclusivity,
+    ProximityPromptStyle,
+    RenderFidelity,
+    RenderingTestComparisonMethod,
+    ResamplerMode,
+    RollOffMode,
+    ScaleType,
+    ScrollBarInset,
+    ScrollingDirection,
+    SignalBehavior,
+    SizeConstraint,
+    SortOrder,
+    StartCorner,
+    StreamingPauseMode,
+    StreamOutBehavior,
+    SurfaceGuiSizingMode,
+    SurfaceType,
+    TableMajorAxis,
+    TerrainAcquisitionMethod,
+    TextTruncate,
+    TextureMode,
+    TextXAlignment,
+    TextYAlignment,
+    TopBottom,
+    TrussStyle,
+    VerticalAlignment,
+    VerticalScrollBarPosition,
+    ZIndexBehavior
 }
 
-pub(crate) fn make_instance(
+pub fn make_instance(
     kind: &str,
     mut properties: BTreeMap<String, Property>,
 ) -> Result<Instance> {
@@ -364,6 +492,7 @@ pub(crate) fn make_instance(
         }
         "ArcHandles" => Instance::ArcHandles(ArcHandles::from_properties(&mut properties)?),
         "Atmosphere" => Instance::Atmosphere(Atmosphere::from_properties(&mut properties)?),
+        "Attachment" => Instance::Attachment(Attachment::from_properties(&mut properties)?),
         "Backpack" => Instance::Backpack(Backpack::from_properties(&mut properties)?),
         "BallSocketConstraint" => {
             Instance::BallSocketConstraint(BallSocketConstraint::from_properties(&mut properties)?)
@@ -732,8 +861,10 @@ pub(crate) fn make_instance(
         "WeldConstraint" => {
             Instance::WeldConstraint(WeldConstraint::from_properties(&mut properties)?)
         }
+        "Workspace" => Instance::Workspace(Workspace::from_properties(&mut properties)?),
         "WorldModel" => Instance::WorldModel(WorldModel::from_properties(&mut properties)?),
         _ => {
+            // println!("Other! {}", kind);
             let kind = Instance::Other(
                 kind.to_string(),
                 properties
@@ -746,17 +877,17 @@ pub(crate) fn make_instance(
         }
     };
 
-    if !properties.is_empty() {
+    if properties.is_empty() {
+        Ok(out)
+    } else {
         Err(Error::unconsumed_properties(
             out.class_name(),
             properties.into_iter().map(|(keys, _)| keys).collect(),
         ))
-    } else {
-        Ok(out)
     }
 }
 
-pub(crate) fn break_instance(kind: &Instance) -> BTreeMap<String, Property> {
+pub fn break_instance(kind: &Instance) -> BTreeMap<String, Property> {
     let mut properties = BTreeMap::new();
 
     match kind {
@@ -770,6 +901,7 @@ pub(crate) fn break_instance(kind: &Instance) -> BTreeMap<String, Property> {
         Instance::AnimationController(data) => data.to_properties(&mut properties),
         Instance::ArcHandles(data) => data.to_properties(&mut properties),
         Instance::Atmosphere(data) => data.to_properties(&mut properties),
+        Instance::Attachment(data) => data.to_properties(&mut properties),
         Instance::Backpack(data) => data.to_properties(&mut properties),
         Instance::BallSocketConstraint(data) => data.to_properties(&mut properties),
         Instance::Beam(data) => data.to_properties(&mut properties),
@@ -966,6 +1098,7 @@ pub(crate) fn break_instance(kind: &Instance) -> BTreeMap<String, Property> {
         Instance::WedgePart(data) => data.to_properties(&mut properties),
         Instance::Weld(data) => data.to_properties(&mut properties),
         Instance::WeldConstraint(data) => data.to_properties(&mut properties),
+        Instance::Workspace(data) => data.to_properties(&mut properties),
         Instance::WorldModel(data) => data.to_properties(&mut properties),
         Instance::Other(_, data) => properties.extend(data.clone()),
     }

@@ -2,19 +2,21 @@
 
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
+use alloc::format;
 use core::fmt;
+use crate::model::property::PropertyType;
 
 /// A result used for all ser/de methods that return a result
 pub type Result<T> = core::result::Result<T, Error>;
 
 /// A common error handling type for ser/de.
 #[derive(Debug)]
+#[non_exhaustive]
 pub struct Error {
     #[cfg(all(feature = "std", feature = "unstable"))]
     backtrace: std::backtrace::Backtrace,
     /// The kind of this error, exposed for ease of matching by users
     pub kind: ErrorKind,
-    _priv: (),
 }
 
 impl Error {
@@ -23,7 +25,6 @@ impl Error {
             #[cfg(all(feature = "std", feature = "unstable"))]
             backtrace: std::backtrace::Backtrace::capture(),
             kind,
-            _priv: (),
         }
     }
 
@@ -60,8 +61,8 @@ impl Error {
         Error::from_kind(ErrorKind::UnknownMesh(id))
     }
 
-    pub(crate) fn wrong_property_type(name: String) -> Error {
-        Error::from_kind(ErrorKind::WrongPropertyType(name))
+    pub(crate) fn wrong_property_type(name: String, extra: Option<(PropertyType, PropertyType)>) -> Error {
+        Error::from_kind(ErrorKind::WrongPropertyType(name, extra))
     }
 
     pub(crate) fn missing_property(name: String) -> Error {
@@ -142,7 +143,7 @@ pub enum ErrorKind {
 
     /// A property successfully parse, but was an unexpected type for the Instance it
     /// was attached to
-    WrongPropertyType(String),
+    WrongPropertyType(String, Option<(PropertyType, PropertyType)>),
     /// An instance successfully parsed, but was missing an expected property
     MissingProperty(String),
     /// An instance successfully parsed, but contained more properties than expected
@@ -167,14 +168,21 @@ impl fmt::Display for ErrorKind {
             ErrorKind::BadMagic => "Invalid File Magic".to_string(),
             ErrorKind::UnknownBlock(block) => format!("Unrecognized data-block type `{}`", block),
             ErrorKind::UnknownClass(id) => format!("Reference to unknown class with ID `{}`", id),
-            ErrorKind::UnknownInstance(id) => format!("Reference to unknown instance with ID `{}`", id),
+            ErrorKind::UnknownInstance(id) => {
+                format!("Reference to unknown instance with ID `{}`", id)
+            }
             ErrorKind::UnknownCFrame(id) => format!("Unknown CFrame type `{}`", id),
             ErrorKind::UnknownProperty(id) => format!("Unknown property type `{}`", id),
             ErrorKind::UnknownVariant(id) => format!("Unknown enum variant with ID `{}`", id),
             ErrorKind::UnknownMesh(id) => format!("Unknown physics mesh kind with ID `{}`", id),
 
-            ErrorKind::WrongPropertyType(prop_name) => {
-                format!("Property {} was the wrong type", prop_name)
+            ErrorKind::WrongPropertyType(prop_name, tys) => {
+                match tys {
+                    Some((expected, actual)) => {
+                        format!("Property {} was the wrong type. Expected {}, got {}", prop_name, expected.name(), actual.name())
+                    }
+                    None => format!("Property {} was of a wrong type", prop_name)
+                }
             }
             ErrorKind::MissingProperty(prop_name) => format!("Property {} was missing", prop_name),
             ErrorKind::UnconsumedProperties(class_name, prop_names) => format!(

@@ -11,6 +11,7 @@ use crate::serde::Result;
 use alloc::collections::BTreeMap;
 use alloc::string::String;
 use alloc::vec::Vec;
+use alloc::vec;
 use uuid::Uuid;
 
 #[derive(Debug)]
@@ -55,6 +56,7 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
     let mut shared_strs = Vec::new();
 
     for node in model.nodes.unordered_iter() {
+        let node = node.expect("Couldn't borrow node");
         let index = key_to_id[&node.key()];
         let inst = &*node;
         let next_index = inst_blocks.len();
@@ -94,32 +96,38 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
                     Property::BinaryString(blob) => RawProperty::RawString(blob.clone()),
                     Property::TextString(str) => RawProperty::RawString(str.clone().into_bytes()),
                     Property::SharedBinaryString(blob) => {
-                        let pos = shared_strs.iter().position(|data| data == &blob);
-
-                        match pos {
-                            Some(pos) => RawProperty::RawSharedString(pos as i32),
-                            None => {
+                        let pos = shared_strs
+                            .iter()
+                            .position(|data| data == &blob)
+                            .unwrap_or_else(|| {
                                 shared_strs.push(blob);
-                                RawProperty::RawSharedString((shared_strs.len() - 1) as i32)
-                            }
-                        }
+                                shared_strs.len() - 1
+                            });
+
+                        RawProperty::RawSharedString(pos as i32)
                     }
                     Property::SharedTextString(str) => {
                         let blob = str.into_bytes();
-                        let pos = shared_strs.iter().position(|data| data == &blob);
-
-                        match pos {
-                            Some(pos) => RawProperty::RawSharedString(pos as i32),
-                            None => {
+                        let pos = shared_strs
+                            .iter()
+                            .position(|data| data == &blob)
+                            .unwrap_or_else(|| {
                                 shared_strs.push(blob);
-                                RawProperty::RawSharedString((shared_strs.len() - 1) as i32)
-                            }
-                        }
+                                shared_strs.len() - 1
+                            });
+
+                        RawProperty::RawSharedString(pos as i32)
                     }
-                    Property::InstanceRef(val) => RawProperty::InstanceRef(key_to_id[&val] as i32),
+                    Property::InstanceRef(val) => {
+                        let id = match val {
+                            InstanceRef::Null => -1,
+                            InstanceRef::Item(key) => key_to_id[&key] as i32,
+                        };
+                        RawProperty::InstanceRef(id)
+                    },
                     prop => RawProperty::from_real(prop.clone()),
                 };
-                properties.push(raw)
+                properties.push(raw);
             } else {
                 unreachable!()
             }
@@ -142,7 +150,7 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
 
     let mut out = vec![Block::Meta(model.meta.clone())];
     if !shared_strs.is_empty() {
-        out.push(Block::SharedStr(shared_strs))
+        out.push(Block::SharedStr(shared_strs));
     }
     out.extend(inst_blocks.into_iter().map(|(_, block)| block));
     out.extend(prop_blocks.into_iter().map(|(_, block)| block));
@@ -268,7 +276,7 @@ impl<W: Write> Serializer<W> {
                     RawProperty::Int64(..) => 27,
                     RawProperty::RawSharedString(..) => 28,
                     RawProperty::Pivot(..) => 30,
-                    RawProperty::UUID(..) => 31,
+                    RawProperty::Uuid(..) => 31,
                 };
 
                 u8::print(writer, prop_ty)?;
@@ -407,10 +415,10 @@ impl<W: Write> Serializer<W> {
                         }
                         RawProperty::Vector3Int16(val) => Vector3Int16::print(writer, val.clone())?,
                         RawProperty::NumberSequence(val) => {
-                            NumberSequence::print(writer, val.clone())?
+                            NumberSequence::print(writer, val.clone())?;
                         }
                         RawProperty::ColorSequence(val) => {
-                            ColorSequence::print(writer, val.clone())?
+                            ColorSequence::print(writer, val.clone())?;
                         }
                         RawProperty::NumberRange(val) => NumberRange::print(writer, val.clone())?,
                         RawProperty::Rect(..) => {
@@ -430,7 +438,9 @@ impl<W: Write> Serializer<W> {
                             )?;
                             break;
                         }
-                        RawProperty::PhysicalProperties(val) => PhysicalProperties::print(writer, val.clone())?,
+                        RawProperty::PhysicalProperties(val) => {
+                            PhysicalProperties::print(writer, val.clone())?;
+                        }
                         RawProperty::Color3Uint8(val) => Color3Uint8::print(writer, val.clone())?,
                         RawProperty::Int64(val) => i64::print(writer, *val)?,
                         RawProperty::RawSharedString(..) => {
@@ -467,7 +477,7 @@ impl<W: Write> Serializer<W> {
                             )?;
                             break;
                         }
-                        RawProperty::UUID(uuid) => Uuid::print(writer, uuid.clone())?,
+                        RawProperty::Uuid(uuid) => Uuid::print(writer, *uuid)?,
                     }
                 }
 

@@ -15,7 +15,7 @@ A reader for Roblox model files, implemented in Rust.
 ## Example
 
 ```rust
-use rbxm::from_file;
+use rbxm::{from_file, SerdeError, ModelError};
 
 fn main() {
     // Read a model from a file
@@ -40,9 +40,8 @@ fn main() {
 
 ## TODO
 
-- Better tree implementation, EG slotmap backed
 - Complete instance info documentation
-- RBXMX and RBXL file support
+- RBXMX and RBXL(X) file support
 
 ## License
 Licensed under either of

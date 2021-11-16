@@ -1,9 +1,7 @@
 //! The deserialization implementation for an RBXM
 
 use crate::model::*;
-use crate::serde::encoding::{
-    decode_cumulative, Chomp, ChompInterleaved, ChompInterleavedTransform, ChompTransform,
-};
+use crate::serde::encoding::{decode_cumulative, Chomp, ChompInterleaved, ChompInterleavedTransform, ChompTransform, decode_i32};
 use crate::serde::internal::{make_instance, RawProperty};
 use crate::serde::io::Read;
 use crate::serde::{Error, Result};
@@ -13,14 +11,134 @@ use alloc::collections::BTreeMap;
 use alloc::collections::BTreeSet;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
+use alloc::vec;
 use uuid::Uuid;
 
-#[derive(Default)]
+fn chomp_properties<R: core::fmt::Debug + Read>(
+    reader: &mut R,
+    num_props: usize,
+    prop_ty: u8
+) -> Result<Vec<RawProperty>> {
+    let mut properties = Vec::with_capacity(num_props);
+    for _ in 0..num_props {
+        let prop = match prop_ty {
+            1 => RawProperty::RawString(<Vec<u8>>::chomp(reader)?),
+            2 => RawProperty::Bool(bool::chomp(reader)?),
+            3 => RawProperty::Int32(i32::chomp_transformed(reader)?),
+            4 => RawProperty::Float(f32::chomp_transformed(reader)?),
+            5 => RawProperty::Double(f64::chomp(reader)?),
+            6 => {
+                properties.extend(
+                    UDim::chomp_interleaved(reader, num_props)?
+                        .into_iter()
+                        .map(RawProperty::UDim),
+                );
+                break;
+            }
+            7 => {
+                properties.extend(
+                    UDim2::chomp_interleaved(reader, num_props)?
+                        .into_iter()
+                        .map(RawProperty::UDim2),
+                );
+                break;
+            }
+            8 => {
+                properties.extend(
+                    Ray::chomp_interleaved(reader, num_props)?
+                        .into_iter()
+                        .map(RawProperty::Ray),
+                );
+                break;
+            }
+            9 => RawProperty::Face(Faces::chomp(reader)?),
+            10 => RawProperty::Axis(Axes::chomp(reader)?),
+            11 => {
+                properties.extend(
+                    BrickColor::chomp_interleaved(reader, num_props)?
+                        .into_iter()
+                        .map(RawProperty::BrickColor),
+                );
+                break;
+            }
+            12 => RawProperty::Color3(Color3::chomp_transformed(reader)?),
+            13 => RawProperty::Vector2(Vector2::chomp(reader)?),
+            14 => RawProperty::Vector3(Vector3::chomp(reader)?),
+            16 => {
+                properties.extend(
+                    CFrame::chomp_interleaved(reader, num_props)?
+                        .into_iter()
+                        .map(RawProperty::CFrame),
+                );
+                break;
+            }
+            17 => unimplemented!("Quaternions not supported"),
+            18 => {
+                properties.extend(
+                    i32::chomp_interleaved(reader, num_props)?
+                        .into_iter()
+                        .map(RawProperty::Enum),
+                );
+                break;
+            }
+            19 => {
+                let mut ids = i32::chomp_interleaved(reader, num_props)?;
+                ids.iter_mut().for_each(|i| *i = decode_i32(*i as u32));
+                decode_cumulative(&mut ids);
+                properties.extend(ids.into_iter().map(RawProperty::InstanceRef));
+                break;
+            }
+            20 => RawProperty::Vector3Int16(Vector3Int16::chomp(reader)?),
+            21 => RawProperty::NumberSequence(NumberSequence::chomp(reader)?),
+            22 => RawProperty::ColorSequence(ColorSequence::chomp(reader)?),
+            23 => RawProperty::NumberRange(NumberRange::chomp(reader)?),
+            24 => {
+                properties.extend(
+                    Rect::chomp_interleaved(reader, num_props)?
+                        .into_iter()
+                        .map(RawProperty::Rect),
+                );
+                break;
+            }
+            25 => RawProperty::PhysicalProperties(PhysicalProperties::chomp(
+                reader,
+            )?),
+            26 => RawProperty::Color3Uint8(Color3Uint8::chomp(reader)?),
+            27 => RawProperty::Int64(i64::chomp(reader)?),
+            28 => {
+                properties.extend(
+                    i32::chomp_interleaved(reader, num_props)?
+                        .into_iter()
+                        .map(RawProperty::RawSharedString),
+                );
+                break;
+            }
+            30 => {
+                properties.extend(
+                    Pivot::chomp_interleaved(reader, num_props)?
+                        .into_iter()
+                        .map(RawProperty::Pivot),
+                );
+                break;
+            }
+            31 => RawProperty::Uuid(Uuid::chomp(reader)?),
+            _ => {
+                return Err(Error::unknown_property(prop_ty));
+            }
+        };
+
+        properties.push(prop);
+    }
+
+    Ok(properties)
+}
+
+#[derive(Default, Debug)]
 struct RawInfo {
     meta: BTreeMap<String, String>,
     shared_strs: Vec<Vec<u8>>,
     class_ids: BTreeMap<i32, Vec<i32>>,
-    instances: BTreeMap<i32, String>, // BTreeMap<i32, (String, Rc<RefCell<Instance>>)>,
+    instances: BTreeMap<i32, String>,
     raw_props: BTreeMap<i32, BTreeMap<String, RawProperty>>,
     parent_info: BTreeMap<i32, i32>,
     child_info: BTreeMap<i32, Vec<i32>>,
@@ -36,8 +154,11 @@ impl<R: Read> Deserializer<R> {
     // "<roblox!" followed by 0x89FF (unknown), 0x0D0A (crlf), 0x1A0A (sublf?), 0x0000 (null)
     const BINARY_MAGIC_START: [u8; 16] = [
         0x3C, 0x72, 0x6F, 0x62, 0x6C, 0x6F, 0x78, 0x21, 0x89, 0xFF, 0x0D, 0x0A, 0x1A, 0x0A, 0x00,
-        0x00
+        0x00,
     ];
+
+    // "</roblox>"
+    const BINARY_MAGIC_END: [u8; 9] = [0x3C, 0x2F, 0x72, 0x6F, 0x62, 0x6C, 0x6F, 0x78, 0x3E];
 
     /// Create a new deserializer from a reader and if necessary any other state
     pub fn new(reader: R) -> Deserializer<R> {
@@ -66,7 +187,7 @@ impl<R: Read> Deserializer<R> {
 
         let magic_end = <[u8; 9]>::chomp(&mut self.reader)?;
 
-        if magic_end != [0x3C, 0x2F, 0x72, 0x6F, 0x62, 0x6C, 0x6F, 0x78, 0x3E] {
+        if magic_end != Self::BINARY_MAGIC_END {
             return Err(Error::bad_magic());
         }
 
@@ -77,6 +198,8 @@ impl<R: Read> Deserializer<R> {
     }
 
     fn make_model(self) -> Result<RbxModel> {
+        // println!("{:?}", self.raw_info);
+
         let RawInfo {
             meta,
             shared_strs,
@@ -102,28 +225,36 @@ impl<R: Read> Deserializer<R> {
         instances
             .iter()
             .try_for_each::<_, Result<()>>(|(&id, class_name)| {
-                let raw_props = raw_props.remove(&id).ok_or(Error::unknown_instance(id))?;
+                let raw_props = raw_props
+                    .remove(&id)
+                    .ok_or_else(|| Error::unknown_instance(id))?;
 
                 let props = raw_props
                     .into_iter()
                     .map(|(name, value)| {
                         let prop = match value {
-                            RawProperty::RawString(blob) => String::from_utf8(blob)
-                                .map(Property::TextString)
-                                .unwrap_or_else(|err| Property::BinaryString(err.into_bytes())),
+                            RawProperty::RawString(blob) => String::from_utf8(blob).map_or_else(
+                                |err| Property::BinaryString(err.into_bytes()),
+                                Property::TextString,
+                            ),
                             RawProperty::RawSharedString(shared_id) => {
                                 let blob = &shared_strs[shared_id as usize];
-                                String::from_utf8(blob.clone())
-                                    .map(Property::SharedTextString)
-                                    .unwrap_or_else(|err| {
-                                        Property::SharedBinaryString(err.into_bytes())
-                                    })
+                                String::from_utf8(blob.clone()).map_or_else(
+                                    |err| Property::SharedBinaryString(err.into_bytes()),
+                                    Property::SharedTextString,
+                                )
                             }
                             RawProperty::InstanceRef(ref_id) => {
-                                let key =
-                                    id_key.get(&ref_id).ok_or(Error::unknown_instance(ref_id))?;
+                                let inst_ref = if ref_id == -1 {
+                                    InstanceRef::Null
+                                } else {
+                                    let key = id_key
+                                        .get(&ref_id)
+                                        .ok_or_else(|| Error::unknown_instance(ref_id))?;
+                                    InstanceRef::Item(*key)
+                                };
 
-                                Property::InstanceRef(*key)
+                                Property::InstanceRef(inst_ref)
                             }
                             prop => prop.into_real(),
                         };
@@ -139,8 +270,12 @@ impl<R: Read> Deserializer<R> {
             })?;
 
         for (child, parent) in parent_info.into_iter().filter(|&(_, parent)| parent != -1) {
-            let parent_key = *id_key.get(&parent).ok_or(Error::unknown_instance(parent))?;
-            let child_key = *id_key.get(&child).ok_or(Error::unknown_instance(child))?;
+            let parent_key = *id_key
+                .get(&parent)
+                .ok_or_else(|| Error::unknown_instance(parent))?;
+            let child_key = *id_key
+                .get(&child)
+                .ok_or_else(|| Error::unknown_instance(child))?;
             let mut parent = tree.try_get_mut(parent_key).unwrap();
             let child = tree.try_get(child_key).unwrap();
 
@@ -148,12 +283,19 @@ impl<R: Read> Deserializer<R> {
         }
 
         for (parent, children) in child_info.into_iter().filter(|&(parent, _)| parent != -1) {
-            let parent_key = *id_key.get(&parent).ok_or(Error::unknown_instance(parent))?;
+            let parent_key = *id_key
+                .get(&parent)
+                .ok_or_else(|| Error::unknown_instance(parent))?;
             let parent = tree.try_get(parent_key).unwrap();
 
             let expected_children = children
                 .into_iter()
-                .map(|i| id_key.get(&i).copied().ok_or(Error::unknown_instance(i)))
+                .map(|i| {
+                    id_key
+                        .get(&i)
+                        .copied()
+                        .ok_or_else(|| Error::unknown_instance(i))
+                })
                 .collect::<Result<BTreeSet<_>>>()?;
 
             let real_children = parent
@@ -237,120 +379,13 @@ impl<R: Read> Deserializer<R> {
                     .raw_info
                     .class_ids
                     .get(&class_index)
-                    .ok_or(Error::unknown_class(class_index))?;
+                    .ok_or_else(|| Error::unknown_class(class_index))?;
 
                 let num_props = class_ids.len();
 
-                let mut properties = Vec::with_capacity(num_props);
-                for _ in 0..num_props {
-                    let prop = match prop_ty {
-                        1 => RawProperty::RawString(<Vec<u8>>::chomp(block_reader)?),
-                        2 => RawProperty::Bool(bool::chomp(block_reader)?),
-                        3 => RawProperty::Int32(i32::chomp_transformed(block_reader)?),
-                        4 => RawProperty::Float(f32::chomp_transformed(block_reader)?),
-                        5 => RawProperty::Double(f64::chomp(block_reader)?),
-                        6 => {
-                            properties.extend(
-                                UDim::chomp_interleaved(block_reader, num_props)?
-                                    .into_iter()
-                                    .map(RawProperty::UDim),
-                            );
-                            break;
-                        }
-                        7 => {
-                            properties.extend(
-                                UDim2::chomp_interleaved(block_reader, num_props)?
-                                    .into_iter()
-                                    .map(RawProperty::UDim2),
-                            );
-                            break;
-                        }
-                        8 => {
-                            properties.extend(
-                                Ray::chomp_interleaved(block_reader, num_props)?
-                                    .into_iter()
-                                    .map(RawProperty::Ray),
-                            );
-                            break;
-                        }
-                        9 => RawProperty::Face(Faces::chomp(block_reader)?),
-                        10 => RawProperty::Axis(Axes::chomp(block_reader)?),
-                        11 => {
-                            properties.extend(
-                                BrickColor::chomp_interleaved(block_reader, num_props)?
-                                    .into_iter()
-                                    .map(RawProperty::BrickColor),
-                            );
-                            break;
-                        }
-                        12 => RawProperty::Color3(Color3::chomp_transformed(block_reader)?),
-                        13 => RawProperty::Vector2(Vector2::chomp(block_reader)?),
-                        14 => RawProperty::Vector3(Vector3::chomp(block_reader)?),
-                        16 => {
-                            properties.extend(
-                                CFrame::chomp_interleaved(block_reader, num_props)?
-                                    .into_iter()
-                                    .map(RawProperty::CFrame),
-                            );
-                            break;
-                        }
-                        17 => unimplemented!("Quaternions not supported"),
-                        18 => {
-                            properties.extend(
-                                i32::chomp_interleaved(block_reader, num_props)?
-                                    .into_iter()
-                                    .map(RawProperty::Enum),
-                            );
-                            break;
-                        }
-                        19 => {
-                            let mut ids = i32::chomp_interleaved(block_reader, num_props)?;
-                            decode_cumulative(&mut ids);
-                            properties.extend(ids.into_iter().map(RawProperty::InstanceRef));
-                            break;
-                        }
-                        20 => RawProperty::Vector3Int16(Vector3Int16::chomp(block_reader)?),
-                        21 => RawProperty::NumberSequence(NumberSequence::chomp(block_reader)?),
-                        22 => RawProperty::ColorSequence(ColorSequence::chomp(block_reader)?),
-                        23 => RawProperty::NumberRange(NumberRange::chomp(block_reader)?),
-                        24 => {
-                            properties.extend(
-                                Rect::chomp_interleaved(block_reader, num_props)?
-                                    .into_iter()
-                                    .map(RawProperty::Rect),
-                            );
-                            break;
-                        }
-                        25 => RawProperty::PhysicalProperties(PhysicalProperties::chomp(block_reader)?),
-                        26 => RawProperty::Color3Uint8(Color3Uint8::chomp(block_reader)?),
-                        27 => RawProperty::Int64(i64::chomp(block_reader)?),
-                        28 => {
-                            properties.extend(
-                                i32::chomp_interleaved(block_reader, num_props)?
-                                    .into_iter()
-                                    .map(RawProperty::RawSharedString),
-                            );
-                            break;
-                        }
-                        30 => {
-                            properties.extend(
-                                Pivot::chomp_interleaved(block_reader, num_props)?
-                                    .into_iter()
-                                    .map(RawProperty::Pivot),
-                            );
-                            break;
-                        }
-                        31 => RawProperty::UUID(Uuid::chomp(block_reader)?),
-                        _ => {
-                            // println!("Name: {}", property_name);
-                            return Err(Error::unknown_property(prop_ty));
-                        }
-                    };
+                let properties = chomp_properties(block_reader, num_props, prop_ty)?;
 
-                    properties.push(prop)
-                }
-
-                assert_eq!(
+                debug_assert_eq!(
                     *block_reader,
                     [],
                     "Property {} didn't consume whole buffer",
@@ -445,21 +480,22 @@ mod tests {
 
     #[test]
     fn test_place() {
-        let level = from_file("testing_place.rbxl")
+        from_file("testing_place.rbxl")
             .map_err(|e| println!("{}", e))
             .unwrap();
-        dbg!(level);
     }
 
     #[test]
-    fn whiteboard() -> Result<()> {
+    fn whiteboard() {
         from_file("whiteboard.rbxm")
-            .map(|_| ())
+            .map_err(|e| println!("{}", e))
+            .unwrap();
     }
 
     #[test]
-    fn attrs() -> Result<()> {
+    fn attrs() {
         from_file("attrs.rbxm")
-            .map(|_| ())
+            .map_err(|e| println!("{}", e))
+            .unwrap();
     }
 }

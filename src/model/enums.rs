@@ -78,6 +78,13 @@ pub enum AnimationPriority {
     Core = 1000,
 }
 
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum AnimatorRetargetingMode {
+    Default = 0,
+    Disabled = 1,
+    Enabled = 2,
+}
+
 /// How to apply this UI stroke
 ///
 /// **Reference Link**: [enum/ApplyStrokeMode](https://developer.roblox.com/en-us/api-reference/enum/ApplyStrokeMode)
@@ -154,6 +161,12 @@ pub enum BorderMode {
     Inset = 2,
 }
 
+impl Default for BorderMode {
+    fn default() -> Self {
+        BorderMode::Outline
+    }
+}
+
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum ButtonStyle {
     Custom = 0,
@@ -174,6 +187,13 @@ pub enum CameraType {
     Custom = 5,
     Scriptable = 6,
     Orbital = 7,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum ClientAnimatorThrottlingMode {
+    Default = 0,
+    Disabled = 1,
+    Enabled = 2,
 }
 
 #[derive(Debug, Copy, Clone, EnumConvert)]
@@ -353,6 +373,13 @@ pub enum HumanoidHealthDisplayType {
 }
 
 #[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum HumanoidOnlySetCollisionsOnStateChange {
+    Default = 0,
+    Disabled = 1,
+    Enabled = 2,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum HumanoidRigType {
     R6 = 0,
     R15 = 1,
@@ -370,6 +397,19 @@ pub enum InputType {
     NoInput = 0,
     Constant = 12,
     Sin = 13,
+}
+
+impl Default for InputType {
+    fn default() -> Self {
+        InputType::NoInput
+    }
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum InterpolationThrottlingMode {
+    Default = 0,
+    Disabled = 1,
+    Enabled = 2,
 }
 
 #[derive(Debug, Copy, Clone, EnumConvert)]
@@ -692,6 +732,19 @@ pub enum Material {
     Water = 2048,
 }
 
+impl Default for Material {
+    fn default() -> Self {
+        Material::Plastic
+    }
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum MeshPartHeadsAndAccessories {
+    Default = 0,
+    Disabled = 1,
+    Enabled = 2,
+}
+
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum MeshType {
     Head = 0,
@@ -715,11 +768,24 @@ pub enum ModelLevelOfDetail {
     Disabled = 2,
 }
 
+impl Default for ModelLevelOfDetail {
+    fn default() -> Self {
+        ModelLevelOfDetail::Automatic
+    }
+}
+
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum NameOcclusion {
     NoOcclusion = 0,
     EnemyOcclusion = 1,
     OccludeAll = 2,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum NewAnimationRuntimeSettings {
+    Default = 0,
+    Disabled = 1,
+    Enabled = 2,
 }
 
 #[derive(Debug, Copy, Clone, EnumConvert)]
@@ -745,6 +811,20 @@ pub enum PartType {
     Ball = 0,
     Block = 1,
     Cylinder = 2,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum PhysicsSimulationRate {
+    Fixed240Hz = 0,
+    Fixed120Hz = 1,
+    Fixed60Hz = 2,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum PhysicsSteppingMethod {
+    Default = 0,
+    Fixed = 1,
+    Adaptive = 2,
 }
 
 #[derive(Debug, Copy, Clone, EnumConvert)]
@@ -790,6 +870,12 @@ pub enum RenderingTestComparisonMethod {
 }
 
 #[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum ResamplerMode {
+    Default = 0,
+    Pixelated = 1,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum RollOffMode {
     Inverse = 0,
     Linear = 1,
@@ -821,6 +907,13 @@ pub enum ScrollingDirection {
 }
 
 #[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum SignalBehavior {
+    Default = 0,
+    Immediate = 1,
+    Deferred = 2,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum SizeConstraint {
     RelativeXY = 0,
     RelativeXX = 1,
@@ -843,6 +936,20 @@ pub enum StartCorner {
 }
 
 #[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum StreamingPauseMode {
+    Default = 0,
+    Disabled = 1,
+    ClientPhysicsPause = 2,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum StreamOutBehavior {
+    Default = 0,
+    LowMemory = 1,
+    Opportunistic = 2,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum SurfaceGuiSizingMode {
     FixedSize = 0,
     PixelsPerStud = 1,
@@ -860,6 +967,12 @@ pub enum SurfaceType {
     Motor = 7,
     SteppingMotor = 8,
     SmoothNoOutlines = 10,
+}
+
+impl Default for SurfaceType {
+    fn default() -> Self {
+        SurfaceType::Smooth
+    }
 }
 
 #[derive(Debug, Copy, Clone, EnumConvert)]

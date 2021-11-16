@@ -1,10 +1,11 @@
 use crate::model::*;
 use crate::serde::encoding::{encode_f32, encode_i32};
 use crate::serde::io::Write;
-use crate::serde::Result;
+use crate::serde::{Result, Error};
 
 use alloc::string::String;
 use alloc::vec::Vec;
+use alloc::vec;
 use uuid::Uuid;
 
 macro_rules! float_match {
@@ -170,6 +171,14 @@ impl<W: Write> Print<W> for &[u8] {
     }
 }
 
+impl<W: Write> Print<W> for UDim {
+    fn print(writer: &mut W, val: Self) -> Result<()> {
+        f32::print(writer, val.scale)?;
+        i32::print(writer, val.offset)?;
+        Ok(())
+    }
+}
+
 impl<W: Write> PrintInterleaved<W> for UDim {
     fn print_interleaved(writer: &mut W, vals: &[Self]) -> Result<()> {
         let mut scales = Vec::with_capacity(vals.len());
@@ -182,6 +191,14 @@ impl<W: Write> PrintInterleaved<W> for UDim {
 
         f32::print_interleaved(writer, &scales)?;
         i32::print_interleaved(writer, &offsets)?;
+        Ok(())
+    }
+}
+
+impl<W: Write> Print<W> for UDim2 {
+    fn print(writer: &mut W, val: Self) -> Result<()> {
+        UDim::print(writer, val.x)?;
+        UDim::print(writer, val.y)?;
         Ok(())
     }
 }
@@ -269,16 +286,23 @@ impl<W: Write> Print<W> for Axes {
         let mut data = 0;
 
         if val.x {
-            data |= 0b100
+            data |= 0b100;
         }
         if val.y {
-            data |= 0b010
+            data |= 0b010;
         }
         if val.z {
-            data |= 0b001
+            data |= 0b001;
         }
 
         u8::print(writer, data)?;
+        Ok(())
+    }
+}
+
+impl<W: Write> Print<W> for BrickColor {
+    fn print(writer: &mut W, val: Self) -> Result<()> {
+        i32::print(writer, val.index)?;
         Ok(())
     }
 }
@@ -395,7 +419,7 @@ impl<W: Write> PrintInterleaved<W> for CFrame {
             angles.push(angle_ty);
 
             if angle_ty == 0 {
-                for i in cframe.angle.iter() {
+                for i in &cframe.angle {
                     for j in i {
                         f32::print(&mut angles, *j)?;
                     }
@@ -441,6 +465,14 @@ impl<W: Write> Print<W> for NumberRange {
     fn print(writer: &mut W, val: Self) -> Result<()> {
         f32::print(writer, val.low)?;
         f32::print(writer, val.high)?;
+        Ok(())
+    }
+}
+
+impl<W: Write> Print<W> for Rect {
+    fn print(writer: &mut W, val: Self) -> Result<()> {
+        Vector2::print(writer, val.top_left)?;
+        Vector2::print(writer, val.bottom_right)?;
         Ok(())
     }
 }
@@ -502,6 +534,73 @@ impl<W: Write> Print<W> for ConvexHull {
             i32::print(writer, face.0 as i32)?;
             i32::print(writer, face.1 as i32)?;
             i32::print(writer, face.2 as i32)?;
+        }
+        Ok(())
+    }
+}
+
+impl<W: Write> Print<W> for Attributes {
+    fn print(writer: &mut W, val: Self) -> Result<()> {
+        i32::print(writer, val.backing.len() as i32)?;
+        for (name, prop) in val.backing {
+            String::print(writer, name.clone())?;
+            match prop {
+                Property::TextString(val) => {
+                    u8::print(writer, 2)?;
+                    String::print(writer, val)?;
+                }
+                Property::Bool(val) => {
+                    u8::print(writer, 3)?;
+                    bool::print(writer, val)?;
+                }
+                Property::Double(val) => {
+                    u8::print(writer, 6)?;
+                    f64::print(writer, val)?;
+                }
+                Property::UDim(val) => {
+                    u8::print(writer, 9)?;
+                    UDim::print(writer, val)?;
+                }
+                Property::UDim2(val) => {
+                    u8::print(writer, 10)?;
+                    UDim2::print(writer, val)?;
+                }
+                Property::BrickColor(val) => {
+                    u8::print(writer, 14)?;
+                    BrickColor::print(writer, val)?;
+                }
+                Property::Color3(val) => {
+                    u8::print(writer, 15)?;
+                    Color3::print(writer, val)?;
+                }
+                Property::Vector2(val) => {
+                    u8::print(writer, 16)?;
+                    Vector2::print(writer, val)?;
+                }
+                Property::Vector3(val) => {
+                    u8::print(writer, 17)?;
+                    Vector3::print(writer, val)?;
+                }
+                Property::NumberSequence(val) => {
+                    u8::print(writer, 23)?;
+                    NumberSequence::print(writer, val)?;
+                }
+                Property::ColorSequence(val) => {
+                    u8::print(writer, 25)?;
+                    ColorSequence::print(writer, val)?;
+                }
+                Property::NumberRange(val) => {
+                    u8::print(writer, 27)?;
+                    NumberRange::print(writer, val)?;
+                }
+                Property::Rect(val) => {
+                    u8::print(writer, 28)?;
+                    Rect::print(writer, val)?;
+                }
+                _ => {
+                    return Err(Error::wrong_property_type(name, None));
+                }
+            }
         }
         Ok(())
     }

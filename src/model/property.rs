@@ -2,10 +2,83 @@
 
 use crate::model::data::*;
 
-use crate::tree::TreeKey;
 use alloc::string::String;
 use alloc::vec::Vec;
 use uuid::Uuid;
+
+#[derive(Debug, Copy, Clone)]
+#[non_exhaustive]
+#[allow(missing_docs)]
+pub enum PropertyType {
+    BinaryString,
+    TextString,
+    SharedBinaryString,
+    SharedTextString,
+    Bool,
+    Int32,
+    Int64,
+    Float,
+    Double,
+    UDim,
+    UDim2,
+    Ray,
+    Faces,
+    Axes,
+    BrickColor,
+    Color3,
+    Vector2,
+    Vector3,
+    CFrame,
+    Enum,
+    InstanceRef,
+    Vector3Int16,
+    NumberSequence,
+    ColorSequence,
+    NumberRange,
+    Rect,
+    PhysicalProperties,
+    Color3Uint8,
+    Pivot,
+    Uuid,
+}
+
+impl PropertyType {
+    /// Get the human-readable name for this property type
+    pub fn name(&self) -> &'static str {
+        match self {
+            PropertyType::BinaryString => "BinaryString",
+            PropertyType::TextString => "TextString",
+            PropertyType::SharedBinaryString => "SharedBinaryString",
+            PropertyType::SharedTextString => "SharedTextString",
+            PropertyType::Bool => "Bool",
+            PropertyType::Int32 => "Int32",
+            PropertyType::Int64 => "Int64",
+            PropertyType::Float => "Float",
+            PropertyType::Double => "Double",
+            PropertyType::UDim => "UDim",
+            PropertyType::UDim2 => "UDim2",
+            PropertyType::Ray => "Ray",
+            PropertyType::Faces => "Faces",
+            PropertyType::Axes => "Axes",
+            PropertyType::BrickColor => "BrickColor",
+            PropertyType::Color3 => "Color3",
+            PropertyType::Vector2 => "Vector2",
+            PropertyType::Vector3 => "Vector3",
+            PropertyType::CFrame => "CFrame",
+            PropertyType::Enum => "Enum",
+            PropertyType::InstanceRef => "InstanceRef",
+            PropertyType::Vector3Int16 => "Vector3Int16",
+            PropertyType::NumberSequence => "NumberSequence",
+            PropertyType::ColorSequence => "ColorSequence",
+            PropertyType::NumberRange => "NumberRange",
+            PropertyType::Rect => "Rect",
+            PropertyType::PhysicalProperties => "PhysicalProperties",
+            PropertyType::Color3Uint8 => "Color3Uint8",
+            PropertyType::Pivot => "Pivot",
+            PropertyType::Uuid => "Uuid",
+        }
+    }
+}
 
 /// This represents a property with an unknown type, handling any of the possible types.
 /// Should generally only be used if working with an [`Instance`][crate::model::Instance] not
@@ -56,7 +129,7 @@ pub enum Property {
     /// provided and must be known ahead of time.
     Enum(i32),
     /// A reference to an instance
-    InstanceRef(TreeKey),
+    InstanceRef(InstanceRef),
     /// See [`Vector3Int16`]
     Vector3Int16(Vector3Int16),
     /// See [`NumberSequence`]
@@ -74,5 +147,42 @@ pub enum Property {
     /// See [`Pivot`]
     Pivot(Pivot),
     /// A Universal Unique Identifier, or UUID
-    UUID(Uuid),
+    Uuid(Uuid),
+}
+
+impl Property {
+    pub(crate) fn kind(&self) -> PropertyType {
+        match self {
+            Property::BinaryString(..) => PropertyType::BinaryString,
+            Property::TextString(..) => PropertyType::TextString,
+            Property::SharedBinaryString(..) => PropertyType::SharedBinaryString,
+            Property::SharedTextString(..) => PropertyType::SharedTextString,
+            Property::Bool(..) => PropertyType::Bool,
+            Property::Int32(..) => PropertyType::Int32,
+            Property::Int64(..) => PropertyType::Int64,
+            Property::Float(..) => PropertyType::Float,
+            Property::Double(..) => PropertyType::Double,
+            Property::UDim(..) => PropertyType::UDim,
+            Property::UDim2(..) => PropertyType::UDim2,
+            Property::Ray(..) => PropertyType::Ray,
+            Property::Faces(..) => PropertyType::Faces,
+            Property::Axes(..) => PropertyType::Axes,
+            Property::BrickColor(..) => PropertyType::BrickColor,
+            Property::Color3(..) => PropertyType::Color3,
+            Property::Vector2(..) => PropertyType::Vector2,
+            Property::Vector3(..) => PropertyType::Vector3,
+            Property::CFrame(..) => PropertyType::CFrame,
+            Property::Enum(..) => PropertyType::Enum,
+            Property::InstanceRef(..) => PropertyType::InstanceRef,
+            Property::Vector3Int16(..) => PropertyType::Vector3Int16,
+            Property::NumberSequence(..) => PropertyType::NumberSequence,
+            Property::ColorSequence(..) => PropertyType::ColorSequence,
+            Property::NumberRange(..) => PropertyType::NumberRange,
+            Property::Rect(..) => PropertyType::Rect,
+            Property::PhysicalProperties(..) => PropertyType::PhysicalProperties,
+            Property::Color3Uint8(..) => PropertyType::Color3Uint8,
+            Property::Pivot(..) => PropertyType::Pivot,
+            Property::Uuid(..) => PropertyType::Uuid,
+        }
+    }
 }

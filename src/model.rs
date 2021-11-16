@@ -4,8 +4,6 @@
 //! [`Other`][Instance::Other], which contains the classname and a raw set of
 //! [`Properties`][Property].
 
-use crate::tree::TreeKey;
-
 pub mod data;
 pub mod enums;
 pub mod error;
@@ -15,9 +13,11 @@ mod rbx_model;
 
 pub use data::*;
 pub use enums::*;
-pub use error::{InstanceError, ModelError};
+pub use error::Error;
 pub use instance::Instance;
 pub use property::Property;
 pub use rbx_model::RbxModel;
 
-type InstanceRef = TreeKey;
+// type InstanceRef = TreeKey;
+
+// TODO: Move to data types

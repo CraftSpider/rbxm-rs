@@ -7,6 +7,8 @@ use crate::serde::{Error, Result};
 
 use alloc::string::String;
 use alloc::vec::Vec;
+use alloc::vec;
+use alloc::collections::BTreeMap;
 use uuid::Uuid;
 
 /// Types that can be read from a stream that is assumed to match the RBXM encoding format
@@ -186,6 +188,15 @@ impl<R: Read> Chomp<R> for Vec<u8> {
     }
 }
 
+impl<R: Read> Chomp<R> for UDim {
+    fn chomp(reader: &mut R) -> Result<Self> {
+        Ok(UDim {
+            scale: f32::chomp(reader)?,
+            offset: i32::chomp(reader)?,
+        })
+    }
+}
+
 impl<R: Read> ChompInterleaved<R> for UDim {
     fn chomp_interleaved(reader: &mut R, count: usize) -> Result<Vec<Self>> {
         let scales = f32::chomp_interleaved(reader, count)?;
@@ -193,10 +204,19 @@ impl<R: Read> ChompInterleaved<R> for UDim {
 
         let mut out = Vec::with_capacity(count);
         for (scale, offset) in scales.into_iter().zip(offsets.into_iter()) {
-            out.push(UDim { scale, offset })
+            out.push(UDim { scale, offset });
         }
 
         Ok(out)
+    }
+}
+
+impl<R: Read> Chomp<R> for UDim2 {
+    fn chomp(reader: &mut R) -> Result<Self> {
+        Ok(UDim2 {
+            x: UDim::chomp(reader)?,
+            y: UDim::chomp(reader)?,
+        })
     }
 }
 
@@ -223,7 +243,7 @@ impl<R: Read> ChompInterleaved<R> for UDim2 {
                     scale: y_scale,
                     offset: y_offset,
                 },
-            })
+            });
         }
         Ok(out)
     }
@@ -251,7 +271,7 @@ impl<R: Read> ChompInterleaved<R> for Ray {
                     y: y_dir[i],
                     z: z_dir[i],
                 },
-            })
+            });
         }
 
         Ok(out)
@@ -283,12 +303,18 @@ impl<R: Read> Chomp<R> for Axes {
     }
 }
 
+impl<R: Read> Chomp<R> for BrickColor {
+    fn chomp(reader: &mut R) -> Result<Self> {
+        Ok(BrickColor { index: i32::chomp(reader)? })
+    }
+}
+
 impl<R: Read> ChompInterleaved<R> for BrickColor {
     fn chomp_interleaved(reader: &mut R, count: usize) -> Result<Vec<Self>> {
         let mut colors = Vec::with_capacity(count);
         let indices = i32::chomp_interleaved(reader, count)?;
         for index in indices {
-            colors.push(BrickColor { index })
+            colors.push(BrickColor { index });
         }
         Ok(colors)
     }
@@ -427,7 +453,7 @@ impl<R: Read> ChompInterleaved<R> for CFrame {
 
         let mut out = Vec::with_capacity(count);
         for (position, angle) in positions.into_iter().zip(angles.into_iter()) {
-            out.push(CFrame { position, angle })
+            out.push(CFrame { position, angle });
         }
 
         Ok(out)
@@ -446,7 +472,7 @@ impl<R: Read> Chomp<R> for NumberSequence {
                 time,
                 value,
                 envelope,
-            })
+            });
         }
 
         Ok(NumberSequence { keypoints })
@@ -465,7 +491,7 @@ impl<R: Read> Chomp<R> for ColorSequence {
                 time,
                 color,
                 envelope,
-            })
+            });
         }
 
         Ok(ColorSequence { keypoints })
@@ -477,6 +503,15 @@ impl<R: Read> Chomp<R> for NumberRange {
         Ok(NumberRange {
             low: f32::chomp(reader)?,
             high: f32::chomp(reader)?,
+        })
+    }
+}
+
+impl<R: Read> Chomp<R> for Rect {
+    fn chomp(reader: &mut R) -> Result<Self> {
+        Ok(Rect {
+            top_left: Vector2::chomp(reader)?,
+            bottom_right: Vector2::chomp(reader)?,
         })
     }
 }
@@ -499,7 +534,7 @@ impl<R: Read> ChompInterleaved<R> for Rect {
                     x: max_x[i],
                     y: max_y[i],
                 },
-            })
+            });
         }
         Ok(out)
     }
@@ -522,10 +557,40 @@ impl<R: Read> ChompInterleaved<R> for Pivot {
         let mut out = Vec::new();
 
         for (cframe, unknown) in cframes.into_iter().zip(unknown.into_iter()) {
-            out.push(Pivot { cframe, unknown })
+            out.push(Pivot { cframe, unknown });
         }
 
         Ok(out)
+    }
+}
+
+impl<R: Read + core::fmt::Debug> Chomp<R> for Attributes {
+    fn chomp(reader: &mut R) -> Result<Self> {
+        let num_props = i32::chomp(reader)?;
+        let mut backing = BTreeMap::new();
+        for _ in 0..num_props {
+            let name = String::chomp(reader)?;
+            let prop_ty = u8::chomp(reader)?;
+            let prop = match prop_ty {
+                2 => Property::TextString(String::chomp(reader)?),
+                3 => Property::Bool(bool::chomp(reader)?),
+                6 => Property::Double(f64::chomp(reader)?),
+                9 => Property::UDim(UDim::chomp(reader)?),
+                10 => Property::UDim2(UDim2::chomp(reader)?),
+                14 => Property::BrickColor(BrickColor::chomp(reader)?),
+                15 => Property::Color3(Color3::chomp(reader)?),
+                16 => Property::Vector2(Vector2::chomp(reader)?),
+                17 => Property::Vector3(Vector3::chomp(reader)?),
+                23 => Property::NumberSequence(NumberSequence::chomp(reader)?),
+                25 => Property::ColorSequence(ColorSequence::chomp(reader)?),
+                27 => Property::NumberRange(NumberRange::chomp(reader)?),
+                28 => Property::Rect(Rect::chomp(reader)?),
+                _ => return Err(Error::unknown_property(prop_ty)),
+            };
+
+            backing.insert(name, prop);
+        }
+        Ok(Attributes { backing })
     }
 }
 
@@ -616,7 +681,10 @@ impl<R: Read> Chomp<R> for TriMesh {
                 loop {
                     match ConvexHull::chomp(reader) {
                         Ok(mesh) => meshes.push(mesh),
-                        Err(Error { kind: ErrorKind::IoError(_), ..}) => break,
+                        Err(Error {
+                            kind: ErrorKind::IoError(_),
+                            ..
+                        }) => break,
                         Err(e) => return Err(e),
                     }
                 }

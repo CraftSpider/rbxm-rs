@@ -12,7 +12,7 @@
 //! Parse a model from a file, find an [`Instance`] by path, and print the instance's class.
 //!
 //! ```ignore
-//! use rbxm::{SerdeError, ModelError, from_file};
+//! use rbxm::{SerdeError, ModelError};
 //!
 //! let model = match rbxm::from_file("./examples/BrickBase.rbxm") {
 //!     Ok(model) => model,
@@ -47,22 +47,21 @@
     clippy::doc_markdown,
     clippy::ptr_as_ptr,
     clippy::cloned_instead_of_copied,
-    clippy::unreadable_literal
+    clippy::unreadable_literal,
 )]
 #![cfg_attr(docsrs, features(doc_cfg))]
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(feature = "unstable", feature(unsize))]
 #![cfg_attr(all(feature = "std", feature = "unstable"), feature(backtrace))]
 
-#[macro_use]
 extern crate alloc;
-
-mod __external {}
 
 pub mod model;
 pub mod serde;
 mod tree;
 
-pub use model::{InstanceError, ModelError, RbxModel};
+pub use model::RbxModel;
+pub use model::Error as ModelError;
 pub use serde::Error as SerdeError;
 #[cfg(feature = "std")]
 pub use serde::{from_file, to_file};

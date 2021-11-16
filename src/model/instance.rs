@@ -1,4 +1,11 @@
 //! Crate for items related to Roblox Instances, the base components of all models.
+//!
+//! As the types here are based off of Lua classes with an inheritance structure,
+//! `Deref`/`DerefMut` is used to emulate inheritance by allowing access to fields on the parent.
+//!
+//! This was chosen despite normally being bad practice due to the fact that these structs are
+//! intentionally copying an inheritance structure, which would also normally be bad practice in
+//! Rust, but is also the cleanest way to map the structure we are given.
 
 #![allow(missing_docs)]
 
@@ -14,7 +21,9 @@ use alloc::collections::BTreeMap;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-/// Represent the kind of an [`Instance`]. This is not meant to be matched exhaustively, more often
+use uuid::Uuid;
+
+/// An Instance in a Roblox model. This is not meant to be matched exhaustively, more often
 /// only checking if an Instance is of a specific kind, otherwise performing some default activity
 /// or erroring out.
 #[non_exhaustive]
@@ -30,6 +39,7 @@ pub enum Instance {
     AnimationController(AnimationController),
     ArcHandles(ArcHandles),
     Atmosphere(Atmosphere),
+    Attachment(Attachment),
     Backpack(Backpack),
     BallSocketConstraint(BallSocketConstraint),
     Beam(Beam),
@@ -226,6 +236,7 @@ pub enum Instance {
     WedgePart(WedgePart),
     Weld(Weld),
     WeldConstraint(WeldConstraint),
+    Workspace(Workspace),
     WorldModel(WorldModel),
 
     Other(String, BTreeMap<String, Property>),
@@ -234,6 +245,7 @@ pub enum Instance {
 #[warn(missing_docs)]
 impl Instance {
     /// Get the name of the class for this kind
+    #[must_use]
     pub fn class_name(&self) -> String {
         String::from(match self {
             Instance::Accessory(..) => "Accessory",
@@ -246,6 +258,7 @@ impl Instance {
             Instance::AnimationController(..) => "AnimationController",
             Instance::ArcHandles(..) => "ArcHandles",
             Instance::Atmosphere(..) => "Atmosphere",
+            Instance::Attachment(..) => "Attachment",
             Instance::Backpack(..) => "Backpack",
             Instance::BallSocketConstraint(..) => "BallSocketConstraint",
             Instance::Beam(..) => "Beam",
@@ -442,6 +455,7 @@ impl Instance {
             Instance::WedgePart(..) => "WedgePart",
             Instance::Weld(..) => "Weld",
             Instance::WeldConstraint(..) => "WeldConstraint",
+            Instance::Workspace(..) => "Workspace",
             Instance::WorldModel(..) => "WorldModel",
             Instance::Other(name, ..) => name,
         })
@@ -452,6 +466,7 @@ impl Instance {
     /// # Panics
     ///
     /// If the instance is of an unrecognized type which doesn't have a name.
+    #[must_use]
     pub fn name(&self) -> &str {
         match self {
             Instance::Accessory(data) => &data.name,
@@ -464,6 +479,7 @@ impl Instance {
             Instance::AnimationController(data) => &data.name,
             Instance::ArcHandles(data) => &data.name,
             Instance::Atmosphere(data) => &data.name,
+            Instance::Attachment(data) => &data.name,
             Instance::Backpack(data) => &data.name,
             Instance::BallSocketConstraint(data) => &data.name,
             Instance::Beam(data) => &data.name,
@@ -660,6 +676,7 @@ impl Instance {
             Instance::WedgePart(data) => &data.name,
             Instance::Weld(data) => &data.name,
             Instance::WeldConstraint(data) => &data.name,
+            Instance::Workspace(data) => &data.name,
             Instance::WorldModel(data) => &data.name,
             Instance::Other(_, props) => {
                 if let Property::TextString(name) = props.get("Name").unwrap() {
@@ -673,7 +690,10 @@ impl Instance {
 }
 
 /// Information common to all instances, presumably part of Instance itself.
-#[derive(Debug, Clone, Default, PropertyConvert)]
+///
+/// **Reference Link**: [class/Instance](https://developer.roblox.com/en-us/api-reference/class/Instance)
+#[derive(Debug, Clone, PropertyConvert)]
+#[non_exhaustive]
 pub struct Base {
     /// The name of this instance
     pub name: String,
@@ -681,13 +701,15 @@ pub struct Base {
     // FIXME(CraftSpider) This is most likely actually a map of some kind
     pub tags: String,
     /// The ID of the asset source for this instance
-    // FIXME(CraftSpider)
     pub source_asset_id: i64,
     /// Serialized custom attributes on the instance
-    // FIXME(CraftSpider) Deserialize this correctly, probably into a custom type?
-    pub attributes_serialize: String,
+    #[propname = "AttributesSerialize"]
+    pub attributes: Attributes,
+    /// A UUID identifying this instance in a world. Generally not present in model files
+    pub unique_id: Option<Uuid>,
 }
 
+/// **Reference Link**: [class/Accessory](https://developer.roblox.com/en-us/api-reference/class/Accessory)
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
 pub struct Accessory {
     #[delegate]
@@ -777,6 +799,24 @@ pub struct Atmosphere {
     pub glare: f32,
     pub haze: f32,
     pub offset: f32,
+}
+
+#[derive(Debug, Clone, Inherits, PropertyConvert)]
+pub struct Attachment {
+    #[delegate]
+    pub base: Base,
+    pub axis: Option<Vector3>,
+    #[propname = "CFrame"]
+    pub cframe: Option<CFrame>,
+    pub orientation: Option<Vector3>,
+    pub position: Option<Vector3>,
+    pub secondary_axis: Option<Vector3>,
+    pub visible: bool,
+    pub world_axis: Option<Vector3>,
+    #[propname = "WorldCFrame"]
+    pub world_cframe: Option<CFrame>,
+    pub world_position: Option<Vector3>,
+    pub world_secondary_axis: Option<Vector3>,
 }
 
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
@@ -887,6 +927,7 @@ pub struct Beam {
 
     pub color: ColorSequence,
     pub transparency: NumberSequence,
+    pub brightness: f32,
 
     pub curve_size_0: f32,
     pub curve_size_1: f32,
@@ -1099,6 +1140,14 @@ pub struct CharacterMesh {
 }
 
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
+pub struct Chat {
+    #[delegate]
+    pub base: Base,
+    pub bubble_chat_enabled: bool,
+    pub load_default_chat: bool,
+}
+
+#[derive(Debug, Clone, Inherits, PropertyConvert)]
 pub struct ChorusSoundEffect {
     #[delegate]
     pub sound_effect: SoundEffect,
@@ -1259,6 +1308,7 @@ pub struct Decal {
     pub color3: Color3,
     pub texture: String,
     pub transparency: f32,
+    pub z_index: i32,
 }
 
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
@@ -1692,6 +1742,7 @@ pub struct ImageButton {
     pub image_rect_offset: Vector2,
     pub image_rect_size: Vector2,
     pub image_transparency: f32,
+    pub resample_mode: ResamplerMode,
     pub scale_type: ScaleType,
     pub slice_center: Rect,
     pub slice_scale: f32,
@@ -1715,6 +1766,7 @@ pub struct ImageLabel {
     pub image_rect_offset: Vector2,
     pub image_rect_size: Vector2,
     pub image_transparency: f32,
+    pub resample_mode: ResamplerMode,
     pub scale_type: ScaleType,
     pub slice_center: Rect,
     pub slice_scale: f32,
@@ -1881,6 +1933,10 @@ pub struct Message {
     pub text: String,
 }
 
+/// A model represents a group of objects in space, for example all the parts that make up a chair.
+/// If looking for a non-geometric collection, use [`Folder`]
+///
+/// **Reference Link**: [class/Model](https://developer.roblox.com/en-us/api-reference/class/Model)
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
 pub struct Model {
     #[delegate]
@@ -2628,6 +2684,7 @@ pub struct SurfaceGui {
     pub face: NormalId,
     pub light_influence: f32,
     pub pixels_per_stud: f32,
+    pub brightness: f32,
     pub sizing_mode: SurfaceGuiSizingMode,
     pub tool_punch_through_distance: f32,
     pub z_offset: f32,
@@ -3087,6 +3144,34 @@ pub struct WeldConstraint {
     pub state: i32,
     #[propname = "CFrame0"]
     pub c_frame: CFrame,
+}
+
+#[derive(Debug, Clone, Inherits, PropertyConvert)]
+pub struct Workspace {
+    #[delegate]
+    pub model: Model,
+    pub allow_third_party_sales: bool,
+    pub animation_weighted_blend_fix: NewAnimationRuntimeSettings,
+    pub client_animator_throttling: ClientAnimatorThrottlingMode,
+    pub current_camera: InstanceRef,
+    pub distributed_game_time: f64,
+    pub fallen_parts_destroy_height: f32,
+    pub gravity: f32,
+    pub humanoid_only_set_collisions_on_state_change: HumanoidOnlySetCollisionsOnStateChange,
+    pub interpolation_throttling: InterpolationThrottlingMode,
+    pub mesh_part_heads_and_accessories: MeshPartHeadsAndAccessories,
+    pub physics_stepping_method: PhysicsSteppingMethod,
+    pub retargeting: AnimatorRetargetingMode,
+    pub signal_behavior: SignalBehavior,
+    pub stream_out_behavior: StreamOutBehavior,
+    pub streaming_enabled: bool,
+    pub streaming_min_radius: i32,
+    pub streaming_pause_mode: StreamingPauseMode,
+    pub streaming_target_radius: i32,
+    pub touches_use_collision_groups: bool,
+    pub collision_groups: Vec<u8>,
+    pub explicit_auto_joints: bool,
+    pub terrain_welds_fixed: bool,
 }
 
 #[derive(Debug, Clone, Inherits, PropertyConvert)]

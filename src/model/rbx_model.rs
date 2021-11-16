@@ -1,4 +1,4 @@
-use crate::model::{Instance, ModelError};
+use crate::model::{Instance, Error};
 use crate::tree::{NodeRef, Tree};
 
 use alloc::collections::BTreeMap;
@@ -10,9 +10,9 @@ enum PathSegment<'a> {
     Name(&'a str),
 }
 
-fn split_path(path: &str) -> Result<Vec<PathSegment<'_>>, ModelError> {
+fn split_path(path: &str) -> Result<Vec<PathSegment<'_>>, Error> {
     if path.is_empty() {
-        return Err(ModelError::InvalidPath);
+        return Err(Error::InvalidPath);
     }
 
     path.split('.')
@@ -22,7 +22,7 @@ fn split_path(path: &str) -> Result<Vec<PathSegment<'_>>, ModelError> {
                 if segment.chars().all(char::is_alphanumeric) {
                     Ok(PathSegment::Name(segment))
                 } else {
-                    Err(ModelError::InvalidPath)
+                    Err(Error::InvalidPath)
                 }
             }
         })
@@ -38,6 +38,7 @@ pub struct RbxModel {
 
 impl RbxModel {
     /// Create a new empty model
+    #[must_use]
     pub fn new() -> RbxModel {
         RbxModel {
             meta: BTreeMap::new(),
@@ -53,7 +54,7 @@ impl RbxModel {
     /// - A component can be either an index or a name
     /// - An index component is a usize representing the Nth child
     /// - A name component is any non-number string matching a possible instance name
-    pub fn get_path(&self, path: &str) -> Result<NodeRef<'_, '_, Instance>, ModelError> {
+    pub fn get_path(&self, path: &str) -> Result<NodeRef<'_, '_, Instance>, Error> {
         let parts = split_path(path)?;
 
         let mut nodes = self
@@ -67,20 +68,21 @@ impl RbxModel {
         for segment in parts {
             let new_next = match segment {
                 PathSegment::Index(index) => {
-                    nodes?.into_iter().nth(index).ok_or(ModelError::NotFound)?
+                    nodes?.into_iter().nth(index).ok_or(Error::NotFound)?
                 }
                 PathSegment::Name(name) => {
                     let mut results = nodes?
                         .into_iter()
                         .filter(|inst| inst.name() == name)
                         .collect::<Vec<_>>();
+
                     if results.len() > 1 {
-                        return Err(ModelError::AmbiguousPath);
+                        return Err(Error::AmbiguousPath);
                     } else if results.is_empty() {
-                        return Err(ModelError::NotFound);
-                    } else {
-                        results.remove(0)
+                        return Err(Error::NotFound);
                     }
+
+                    results.remove(0)
                 }
             };
 
@@ -92,7 +94,7 @@ impl RbxModel {
             out = Some(new_next);
         }
 
-        out.ok_or(ModelError::InvalidPath)
+        out.ok_or(Error::InvalidPath)
     }
 
     /// Get a reference to the set of meta values for this model

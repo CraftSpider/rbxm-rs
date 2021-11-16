@@ -10,6 +10,7 @@ pub use print::{Print, PrintInterleaved, PrintInterleavedTransform, PrintTransfo
 // Decode/Encode the special formats used to store some values
 
 /// Convert a u32 into an i32, using the special Roblox encoding
+#[must_use]
 pub fn decode_i32(mut raw: u32) -> i32 {
     let sign = raw & 1;
     raw >>= 1;
@@ -22,6 +23,7 @@ pub fn decode_i32(mut raw: u32) -> i32 {
 }
 
 /// Convert an i32 into a u32, using the special Roblox encoding
+#[must_use]
 pub fn encode_i32(mut val: i32) -> u32 {
     let sign = (val < 0) as u32;
     if val < 0 {
@@ -35,6 +37,7 @@ pub fn encode_i32(mut val: i32) -> u32 {
 }
 
 /// Convert a u32 to an f32, using the special Roblox encoding
+#[must_use]
 pub fn decode_f32(mut raw: u32) -> f32 {
     let sign = raw & 1;
     raw >>= 1;
@@ -43,6 +46,7 @@ pub fn decode_f32(mut raw: u32) -> f32 {
 }
 
 /// Convert an f32 into a u32, using the special Roblox encoding
+#[must_use]
 pub fn encode_f32(val: f32) -> u32 {
     let mut raw = u32::from_ne_bytes(val.to_ne_bytes());
 
