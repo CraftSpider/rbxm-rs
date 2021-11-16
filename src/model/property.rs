@@ -6,39 +6,71 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use uuid::Uuid;
 
+/// An enum of the different possible property types.
+/// Used largely for diagnostics, being able to pass around expected/actual types without needing
+/// actual property data.
 #[derive(Debug, Copy, Clone)]
 #[non_exhaustive]
-#[allow(missing_docs)]
 pub enum PropertyType {
+    /// A string of bytes
     BinaryString,
+    /// A string of UTF8 characters
     TextString,
+    /// An interned string of bytes
     SharedBinaryString,
+    /// An interned string of UTF8 characters
     SharedTextString,
+    /// A boolean
     Bool,
+    /// A 32-bit integer
     Int32,
+    /// A 64-bit integer
     Int64,
+    /// A 32-bit floating point
     Float,
+    /// A 64-bit floating point
     Double,
+    /// A [`UDim`]
     UDim,
+    /// A [`UDim2`]
     UDim2,
+    /// A [`Ray`]
     Ray,
+    /// A set of [`Faces`]
     Faces,
+    /// A set of [`Axes`]
     Axes,
+    /// A [`BrickColor`]
     BrickColor,
+    /// A [`Color3`]
     Color3,
+    /// A [`Vector2`]
     Vector2,
+    /// A [`Vector3`]
     Vector3,
+    /// A [`CFrame`]
     CFrame,
+    /// Any enumeration, see [`crate::model::enums`]
     Enum,
+    /// An [`InstanceRef`]
     InstanceRef,
+    /// A [`Vector3Int16`]
     Vector3Int16,
+    /// A [`NumberSequence`]
     NumberSequence,
+    /// A [`ColorSequence`]
     ColorSequence,
+    /// A [`NumberRange`]
     NumberRange,
+    /// A [`Rect`]
     Rect,
+    /// A set of [`PhysicalProperties`]
     PhysicalProperties,
+    /// A [`Color3Uint8`]
     Color3Uint8,
+    /// A [`Pivot`]
     Pivot,
+    /// A [`Uuid`]
     Uuid,
 }
 

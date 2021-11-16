@@ -42,7 +42,6 @@ pub struct Serializer<W> {
 }
 
 fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
-    #[allow(clippy::mutable_key_type)]
     let key_to_id: BTreeMap<_, _> = model
         .nodes
         .unordered_keys()

@@ -250,7 +250,7 @@ pub enum Instance {
 
 /// Information common to all instances, presumably part of Instance itself.
 ///
-/// **Reference Link**: [class/Instance](https://developer.roblox.com/en-us/api-reference/class/Instance)
+#[doc = doc_link!("class/Instance")]
 #[derive(Debug, Clone, PropertyConvert)]
 #[non_exhaustive]
 pub struct Base {
@@ -268,7 +268,7 @@ pub struct Base {
     pub unique_id: Option<Uuid>,
 }
 
-/// **Reference Link**: [class/Accessory](https://developer.roblox.com/en-us/api-reference/class/Accessory)
+#[doc = doc_link!("class/Accessory")]
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
 pub struct Accessory {
     #[delegate]
@@ -1520,7 +1520,7 @@ pub struct Message {
 /// A model represents a group of objects in space, for example all the parts that make up a chair.
 /// If looking for a non-geometric collection, use [`Folder`]
 ///
-/// **Reference Link**: [class/Model](https://developer.roblox.com/en-us/api-reference/class/Model)
+#[doc = doc_link!("class/Model")]
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
 pub struct Model {
     #[delegate]

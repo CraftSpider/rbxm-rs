@@ -17,7 +17,7 @@ exclude = [
 ]
 
 [package.metadata.docs.rs]
-rustdoc-args = ["--all-features", "--cfg", "docsrs"]
+rustdoc-args = ["--all-features", "--cfg", "docsrs", "-e", "./static/custom.css"]
 
 [features]
 default = ["std"]

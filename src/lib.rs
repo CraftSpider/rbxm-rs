@@ -50,16 +50,34 @@
     clippy::cloned_instead_of_copied,
     clippy::unreadable_literal
 )]
-#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(feature = "unstable", feature(unsize))]
 #![cfg_attr(all(feature = "std", feature = "unstable"), feature(backtrace))]
+
+macro_rules! doc_link {
+    ($link:literal) => {
+        concat!(
+            r#"
+<div class="information">
+    <div class="tooltip tracked" style="">&#10149;</div>
+</div>
+<div class="example-wrap" style="display:inline-block">
+    <pre class = "tracked">
+        <a href="https://developer.roblox.com/en-us/api-reference/"#, $link, "\">",
+            $link,
+r#"     </a>
+    </pre>
+</div>"#,
+        )
+    }
+}
 
 extern crate alloc;
 
 pub mod model;
 pub mod serde;
-mod tree;
+pub mod tree;
 
 pub use model::Error as ModelError;
 pub use model::RbxModel;

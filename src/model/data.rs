@@ -38,7 +38,7 @@ impl fmt::Debug for Attributes {
 
 /// A dimensional component representing a scale and an offset
 ///
-/// **Reference Link**: [datatype/UDim](https://developer.roblox.com/en-us/api-reference/datatype/UDim)
+#[doc = doc_link!("datatype/UDim")]
 #[derive(Debug, Clone, Default)]
 pub struct UDim {
     /// The scale of this component
@@ -50,7 +50,7 @@ pub struct UDim {
 /// A type of coordinate representing a scale and an offset in XY space, most often
 /// used in GUI objects
 ///
-/// **Reference Link**: [datatype/UDim2](https://developer.roblox.com/en-us/api-reference/datatype/UDim2)
+#[doc = doc_link!("datatype/UDim2")]
 #[derive(Debug, Clone, Default)]
 pub struct UDim2 {
     /// The x component of this coordinate
@@ -61,7 +61,7 @@ pub struct UDim2 {
 
 /// A ray in 3D space, from origin extending along a unit axis
 ///
-/// **Reference Link**: [datatype/Ray](https://developer.roblox.com/en-us/api-reference/datatype/Ray)
+#[doc = doc_link!("datatype/Ray")]
 #[derive(Debug, Clone, Default)]
 pub struct Ray {
     /// The origin point
@@ -72,7 +72,7 @@ pub struct Ray {
 
 /// A set of faces an Instance is applied to
 ///
-/// **Reference Link**: [datatype/Faces](https://developer.roblox.com/en-us/api-reference/datatype/Faces)
+#[doc = doc_link!("datatype/Faces")]
 #[derive(Debug, Clone, Default)]
 pub struct Faces {
     /// Applied to front face
@@ -91,7 +91,7 @@ pub struct Faces {
 
 /// A set of XYZ axes an Instance is applied to
 ///
-/// **Reference Link**: [datatype/Axes](https://developer.roblox.com/en-us/api-reference/datatype/Axes)
+#[doc = doc_link!("datatype/Axes")]
 #[derive(Debug, Clone, Default)]
 pub struct Axes {
     /// Applied to X axis
@@ -105,7 +105,7 @@ pub struct Axes {
 /// A color for an Instance, picked from a static palette. This type is deprecated, and only used
 /// in a few places.
 ///
-/// **Reference Link**: [datatype/BrickColor](https://developer.roblox.com/en-us/api-reference/datatype/BrickColor)
+#[doc = doc_link!("datatype/BrickColor")]
 #[derive(Debug, Clone, Default)]
 pub struct BrickColor {
     /// The palette index of this BrickColor
@@ -114,7 +114,7 @@ pub struct BrickColor {
 
 /// A 2D vector, most often used in GUI
 ///
-/// **Reference Link**: [datatype/Vector2](https://developer.roblox.com/en-us/api-reference/datatype/Vector2)
+#[doc = doc_link!("datatype/Vector2")]
 #[derive(Debug, Clone, Default)]
 pub struct Vector2 {
     /// X component
@@ -169,7 +169,7 @@ impl Div for Vector2 {
 
 /// A 3D vector, used for most physical things
 ///
-/// **Reference Link**: [datatype/Vector3](https://developer.roblox.com/en-us/api-reference/datatype/Vector3)
+#[doc = doc_link!("datatype/Vector3")]
 #[derive(Debug, Clone, Default)]
 pub struct Vector3 {
     /// X component
@@ -231,7 +231,7 @@ impl Div for Vector3 {
 /// A representation of a point in space plus a rotation. This is basically a [`Vector3`] and a
 /// rotation matrix.
 ///
-/// **Reference Link**: [datatype/CFrame](https://developer.roblox.com/en-us/api-reference/datatype/CFrame)
+#[doc = doc_link!("datatype/CFrame")]
 #[derive(Debug, Clone)]
 pub struct CFrame {
     /// The position in space this CFrame represents
@@ -260,7 +260,7 @@ pub enum InstanceRef {
 
 /// A 3D vector, with an underlying unsigned integer datatype.
 ///
-/// **Reference Link**: [datatype/Vector3int16](https://developer.roblox.com/en-us/api-reference/datatype/Vector3int16)
+#[doc = doc_link!("datatype/Vector3int16")]
 #[derive(Debug, Clone, Default)]
 pub struct Vector3Int16 {
     /// X component
@@ -274,7 +274,7 @@ pub struct Vector3Int16 {
 /// A keypoint in a [`NumberSequence`], a value at a time, and the amount of variance that might
 /// occur at that time.
 ///
-/// **Reference Link**: [datatype/NumberSequenceKeypoint](https://developer.roblox.com/en-us/api-reference/datatype/NumberSequenceKeypoint)
+#[doc = doc_link!("datatype/NumberSequenceKeypoint")]
 #[derive(Debug, Clone, Default)]
 pub struct NumberKeypoint {
     /// The time of this keypoint
@@ -287,7 +287,7 @@ pub struct NumberKeypoint {
 
 /// A sequence of values, often used for particles or over-time effects
 ///
-/// **Reference Link**: [datatype/NumberSequence](https://developer.roblox.com/en-us/api-reference/datatype/NumberSequence)
+#[doc = doc_link!("datatype/NumberSequence")]
 #[derive(Debug, Clone, Default)]
 pub struct NumberSequence {
     /// The keypoints contained in this sequence
@@ -297,7 +297,7 @@ pub struct NumberSequence {
 /// A keypoint in a [`ColorSequence`], a color value at a time, and the amount of variance that
 /// might occur at that time.
 ///
-/// **Reference Link**: [datatype/ColorSequenceKeypoint](https://developer.roblox.com/en-us/api-reference/datatype/ColorSequenceKeypoint)
+#[doc = doc_link!("datatype/ColorSequenceKeypoint")]
 #[derive(Debug, Clone, Default)]
 pub struct ColorKeypoint {
     /// The time of this keypoint
@@ -310,7 +310,7 @@ pub struct ColorKeypoint {
 
 /// A sequence of color values, often used for particles or over-time effects
 ///
-/// **Reference Links**: [datatype/ColorSequence](https://developer.roblox.com/en-us/api-reference/datatype/ColorSequence)
+#[doc = doc_link!("datatype/ColorSequence")]
 #[derive(Debug, Clone, Default)]
 pub struct ColorSequence {
     /// The keypoints contained in this sequence
@@ -319,7 +319,7 @@ pub struct ColorSequence {
 
 /// A range of possible values
 ///
-/// **Reference Links**: [datatype/NumberRange](https://developer.roblox.com/en-us/api-reference/datatype/NumberRange)
+#[doc = doc_link!("datatype/NumberRange")]
 #[derive(Debug, Clone, Default)]
 pub struct NumberRange {
     /// Low point of the range
@@ -330,7 +330,7 @@ pub struct NumberRange {
 
 /// A rectangle in a 2D plane
 ///
-/// **Reference Links**: [datatype/Rect](https://developer.roblox.com/en-us/api-reference/datatype/Rect)
+#[doc = doc_link!("datatype/Rect")]
 #[derive(Debug, Clone, Default)]
 pub struct Rect {
     /// The top-left corner
@@ -341,7 +341,7 @@ pub struct Rect {
 
 /// A color with floating point RGB components, in the range of \[0-1\].
 ///
-/// **Reference Links**: [datatype/Color3](https://developer.roblox.com/en-us/api-reference/datatype/Color3)
+#[doc = doc_link!("datatype/Color3")]
 #[derive(Debug, Clone, Default)]
 pub struct Color3 {
     /// Red component
@@ -409,7 +409,6 @@ impl Default for PhysicalProperties {
 }
 
 /// A full triangle mesh, used for collision or display
-#[cfg_attr(docsrs, doc(cfg(feature = "mesh-format")))]
 #[cfg(feature = "mesh-format")]
 #[derive(Debug, Clone)]
 #[non_exhaustive]
@@ -439,7 +438,6 @@ impl Default for TriMesh {
 }
 
 /// A single convex hull, with relevant data
-#[cfg_attr(docsrs, doc(cfg(feature = "mesh-format")))]
 #[cfg(feature = "mesh-format")]
 #[derive(Debug, Clone)]
 #[non_exhaustive]

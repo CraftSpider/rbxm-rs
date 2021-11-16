@@ -1,3 +1,6 @@
+//! Implementation of a nicely traversable tree that supports mutable references to multiple
+//! nodes concurrently
+
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 use core::borrow::{Borrow, BorrowMut};
@@ -16,10 +19,12 @@ type Result<T> = core::result::Result<T, Error>;
 macro_rules! ref_common {
     ($ty:ty) => {
         impl<'a, 'b, T: ?Sized> $ty {
+            /// Get the key of this node
             pub fn key(&self) -> TreeKey {
                 self.mykey
             }
 
+            /// Attempt to get a reference to the parent of this node
             pub fn parent(&self) -> Result<Option<NodeRef<'a, 'b, T>>> {
                 self.tree
                     .inner
@@ -30,6 +35,7 @@ macro_rules! ref_common {
                     .transpose()
             }
 
+            /// Attempt to get a mutable reference to the parent of this node
             pub fn parent_mut(&self) -> Result<Option<NodeRefMut<'a, 'b, T>>> {
                 self.tree
                     .inner
@@ -40,6 +46,7 @@ macro_rules! ref_common {
                     .transpose()
             }
 
+            /// Attempt to get references to the children of this node
             pub fn children(&self) -> impl Iterator<Item = Result<NodeRef<'a, 'b, T>>> {
                 self.tree
                     .inner
@@ -53,6 +60,7 @@ macro_rules! ref_common {
                     .into_iter()
             }
 
+            /// Attempt to get mutable references to the children of this node
             pub fn children_mut(&self) -> impl Iterator<Item = Result<NodeRefMut<'a, 'b, T>>> {
                 self.tree
                     .inner
@@ -90,12 +98,17 @@ macro_rules! ref_common {
 }
 
 new_key_type! {
+    /// Key for a node in a tree. Altering the tree will not invalidate the key, as long
+    /// as the node it references isn't removed
     pub struct TreeKey;
 }
 
+/// Possible failures for tree operations
 #[derive(Debug)]
 pub enum Error {
+    /// Node doesn't exist
     Missing,
+    /// Node can't be borrowed as requested
     CantBorrow,
 }
 
@@ -120,45 +133,73 @@ impl From<BorrowMutError> for Error {
     }
 }
 
+/// An implementation of a tree data structure, with the ability to get mutable references to
+/// multiple nodes at once. Supports access via slot keys, or by traversing immutable or mutable
+/// node references.
 #[derive(Clone)]
 pub struct Tree<T: ?Sized> {
     inner: RefCell<InnerTree<T>>,
 }
 
 impl<T: ?Sized> Tree<T> {
+    /// Create a new tree
     pub fn new() -> Tree<T> {
         Tree::default()
     }
 
+    /// Get the length of this tree, the total number of nodes
     pub fn len(&self) -> usize {
         self.inner.borrow().nodes.len()
     }
 
+    /// Add a new root from a type that unsizes into the type of the tree
+    #[cfg(feature = "unstable")]
+    pub fn add_root_from<U: Unsize<T>>(&self, item: U) -> TreeKey {
+        let mut rc = self.inner.borrow_mut();
+
+        let new_node = RefCell::new(item);
+
+        let new_node = unsafe {
+            NonNull::new_unchecked(Box::into_raw(Box::new(new_node) as Box<RefCell<T>>))
+        };
+
+        let new_key = rc.nodes.insert(new_node);
+        rc.roots.push(new_key);
+        new_key
+    }
+
+    /// Create a new child of a node from a type that unsizes into the type of the tree
     #[cfg(feature = "unstable")]
     pub fn new_child_from<U: Unsize<T>>(&self, item: U, parent: TreeKey) {
         self.inner.borrow_mut().new_child_from(item, parent);
     }
 
+    /// Set the first node as the parent of the second node,
+    /// unsetting the current parent if there is one
     pub fn set_child(&self, parent: TreeKey, child: TreeKey) {
         self.inner.borrow_mut().set_child(parent, child);
     }
 
+    /// Remove the second node as a child of the first node
     pub fn remove_child(&self, parent: TreeKey, child: TreeKey) {
         self.inner.borrow_mut().remove_child(parent, child);
     }
 
+    /// Try to get an immutable reference to a node identified by the provided key
     pub fn try_get<'a, 'b>(&'a self, key: TreeKey) -> Result<NodeRef<'a, 'b, T>> {
         let inner = self.inner.borrow();
         let rc = inner.nodes.get(key).ok_or(Error::Missing)?;
         NodeRef::try_borrow(self, key, rc)
     }
 
+    /// Try to get a mutable reference to a node identified by the provided key
     pub fn try_get_mut<'a, 'b>(&'a self, key: TreeKey) -> Result<NodeRefMut<'a, 'b, T>> {
         let inner = self.inner.borrow();
         let rc = inner.nodes.get(key).ok_or(Error::Missing)?;
         NodeRefMut::try_borrow(self, key, rc)
     }
 
+    /// Iterate over all nodes in this tree, in no particular order
     pub fn unordered_iter(&self) -> impl Iterator<Item = Result<NodeRef<'_, '_, T>>> {
         self.inner
             .borrow()
@@ -169,6 +210,7 @@ impl<T: ?Sized> Tree<T> {
             .into_iter()
     }
 
+    /// Iterate over all nodes in this tree mutably, in no particular order
     pub fn unordered_iter_mut(&self) -> impl Iterator<Item = Result<NodeRefMut<'_, '_, T>>> {
         self.inner
             .borrow()
@@ -179,7 +221,8 @@ impl<T: ?Sized> Tree<T> {
             .into_iter()
     }
 
-    pub fn unordered_keys(&self) -> impl Iterator<Item = TreeKey> + '_ {
+    /// Iterator over the keys of all nodes in this tree, in no particular order
+    pub fn unordered_keys(&self) -> impl Iterator<Item = TreeKey> {
         self.inner
             .borrow()
             .nodes
@@ -188,6 +231,9 @@ impl<T: ?Sized> Tree<T> {
             .into_iter()
     }
 
+    /// Iterate over the roots of this tree.
+    ///
+    /// A root is any node that has no parent
     pub fn roots<'a>(&'a self) -> impl Iterator<Item = Result<NodeRef<'a, '_, T>>> {
         let inner = self.inner.borrow();
 
@@ -202,6 +248,9 @@ impl<T: ?Sized> Tree<T> {
             .into_iter()
     }
 
+    /// Iterator over the roots of this tree mutable
+    ///
+    /// A root is any node that has no parent
     pub fn roots_mut<'a>(&'a self) -> impl Iterator<Item = Result<NodeRefMut<'a, '_, T>>> {
         let inner = self.inner.borrow();
 
@@ -216,6 +265,9 @@ impl<T: ?Sized> Tree<T> {
             .into_iter()
     }
 
+    /// Iterate over the keys of all the roots in this tree
+    ///
+    /// A root is any node that has no parent
     pub fn root_keys(&self) -> impl Iterator<Item = TreeKey> {
         self.inner
             .borrow()
@@ -225,13 +277,35 @@ impl<T: ?Sized> Tree<T> {
             .collect::<Vec<_>>()
             .into_iter()
     }
+
+    /// Get the parent key of a node identified by the provided key
+    pub fn parent_key_of(&self, child: TreeKey) -> Option<TreeKey> {
+        self.inner
+            .borrow()
+            .parents
+            .get(child)
+            .cloned()
+    }
+
+    /// Get the child keys of a node identified by the provided key
+    pub fn child_keys_of(&self, parent: TreeKey) -> impl Iterator<Item = TreeKey> {
+        self.inner
+            .borrow()
+            .children
+            .get(parent)
+            .unwrap_or(&Vec::new())
+            .clone()
+            .into_iter()
+    }
 }
 
 impl<T> Tree<T> {
-    fn inner_new_child(&self, item: T, parent: TreeKey) {
+    /// Create a new child of a node from the provided value
+    pub fn new_child(&self, item: T, parent: TreeKey) {
         self.inner.borrow_mut().new_child(item, parent);
     }
 
+    /// Add a new root to the tree initialized with the provided value
     pub fn add_root(&self, item: T) -> TreeKey {
         let mut rc = self.inner.borrow_mut();
 
@@ -280,7 +354,7 @@ impl<T: ?Sized> Default for Tree<T> {
 }
 
 #[derive(Clone, Debug)]
-pub struct InnerTree<T: ?Sized> {
+struct InnerTree<T: ?Sized> {
     nodes: SlotMap<TreeKey, NonNull<RefCell<T>>>,
     parents: SecondaryMap<TreeKey, TreeKey>,
     children: SecondaryMap<TreeKey, Vec<TreeKey>>,
@@ -369,6 +443,7 @@ impl<T: ?Sized> Drop for InnerTree<T> {
     }
 }
 
+/// A reference to a node in a [`Tree`], with helpers to traverse nodes relative to this one
 pub struct NodeRef<'a, 'b, T: ?Sized> {
     tree: &'a Tree<T>,
     mykey: TreeKey,
@@ -393,6 +468,8 @@ impl<'a, 'b, T: ?Sized> NodeRef<'a, 'b, T> {
     }
 }
 
+/// A mutable reference to a node in a [`Tree`], with helpers to traverse nodes relative to this
+/// one as well as alter the node's relationships.
 pub struct NodeRefMut<'a, 'b, T: ?Sized> {
     tree: &'a Tree<T>,
     mykey: TreeKey,
@@ -416,27 +493,32 @@ impl<'a, 'b, T: ?Sized> NodeRefMut<'a, 'b, T> {
         })
     }
 
+    /// Create a new child of this node from a type that unsizes into the type of the tree
     #[cfg(feature = "unstable")]
     pub fn new_child_from<U: Unsize<T>>(&mut self, child: U) {
         self.tree.new_child_from(child, self.key());
     }
 
+    /// Set the parent of this node, unsetting the current one as necessary
     pub fn set_parent(&mut self, parent: &NodeRef<'_, '_, T>) {
         self.tree.set_child(parent.key(), self.key());
     }
 
+    /// Add a node as a child of this node, replacing its existing parent as necessary
     pub fn add_child(&mut self, child: &NodeRef<'_, '_, T>) {
         self.tree.set_child(self.key(), child.key());
     }
 
+    /// Remove a node as a child of this node, turning it into a root node
     pub fn remove_child(&mut self, child: &NodeRef<'_, '_, T>) {
         self.tree.remove_child(self.key(), child.key());
     }
 }
 
 impl<T> NodeRefMut<'_, '_, T> {
+    /// Create a new child of this node from the provided value
     pub fn new_child(&mut self, child: T) {
-        self.tree.inner_new_child(child, self.key());
+        self.tree.new_child(child, self.key());
     }
 }
 

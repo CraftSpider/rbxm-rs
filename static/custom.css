@@ -1,0 +1,26 @@
+
+.information>.tracked:hover {
+    color: rgb(0, 150, 0);
+}
+
+.tooltip.tracked {
+    color: rgba(0, 150, 0, .8);
+    font-size: 20px;
+}
+
+.tooltip.tracked::after {
+    content: "This item matches a type from the Roblox API";
+}
+
+pre.tracked {
+    border-left: 2px solid rgba(0, 150, 0, .8);
+    white-space: normal;
+    /* font: inherit; */
+    padding: 5px 10px;
+}
+
+pre.tracked:hover {
+    border-left: 2px solid rgb(0, 150, 0);
+}
+
+

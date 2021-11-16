@@ -191,10 +191,9 @@ pub fn enum_convert(item: TokenStream) -> TokenStream {
             }
         }
 
-        #[allow(clippy::from_over_into)]
-        impl core::convert::Into<i32> for #item_name {
-            fn into(self) -> i32 {
-                self as i32
+        impl core::convert::From<#item_name> for i32 {
+            fn from(i: #item_name) -> Self {
+                i as i32
             }
         }
     };
