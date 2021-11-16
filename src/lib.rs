@@ -50,7 +50,7 @@
     clippy::cloned_instead_of_copied,
     clippy::unreadable_literal
 )]
-#![cfg_attr(docsrs, features(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(feature = "unstable", feature(unsize))]
 #![cfg_attr(all(feature = "std", feature = "unstable"), feature(backtrace))]
