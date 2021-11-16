@@ -29,7 +29,7 @@ unstable = []
 mesh-format = []
 
 [dependencies]
-rbxm-proc = { version = "0.1.0", path = "./rbxm-proc" }
+rbxm-proc = { version = "0.2.0", path = "./rbxm-proc" }
 slotmap = { version = "1.0", default-features = false }
 lz4_flex = { version = "0.9", default-features = false, features = ["safe-decode", "safe-encode"] }
 uuid = { version = "0.8", default-features = false }
