@@ -493,14 +493,12 @@ mod tests {
                 Some(ext) => {
                     let ext = ext.to_str().unwrap();
                     ext == "rbxm" || ext == "rbxl"
-                },
+                }
                 None => false,
             };
 
             if is_rbxm {
-                from_file(i.path())
-                    .map_err(|e| println!("{}", e))
-                    .unwrap();
+                from_file(i.path()).map_err(|e| println!("{}", e)).unwrap();
             }
         }
     }
