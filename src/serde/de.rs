@@ -475,28 +475,33 @@ pub fn from_bytes(bytes: &[u8]) -> Result<RbxModel> {
     from_reader(bytes)
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_place() {
-        from_file("testing_place.rbxl")
-            .map_err(|e| println!("{}", e))
-            .unwrap();
-    }
+    fn test_files() {
+        let read_dir = match std::fs::read_dir("examples") {
+            Ok(rd) => rd,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return,
+            Err(e) => panic!("{}", e),
+        };
 
-    #[test]
-    fn whiteboard() {
-        from_file("whiteboard.rbxm")
-            .map_err(|e| println!("{}", e))
-            .unwrap();
-    }
+        for i in read_dir {
+            let i = i.unwrap();
+            let is_rbxm = match i.path().extension() {
+                Some(ext) => {
+                    let ext = ext.to_str().unwrap();
+                    ext == "rbxm" || ext == "rbxl"
+                },
+                None => false,
+            };
 
-    #[test]
-    fn attrs() {
-        from_file("attrs.rbxm")
-            .map_err(|e| println!("{}", e))
-            .unwrap();
+            if is_rbxm {
+                from_file(i.path())
+                    .map_err(|e| println!("{}", e))
+                    .unwrap();
+            }
+        }
     }
 }
