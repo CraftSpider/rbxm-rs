@@ -4,14 +4,14 @@ use crate::model::*;
 use crate::serde::encoding::{
     encode_cumulative, Print, PrintInterleaved, PrintInterleavedTransform, PrintTransform,
 };
-use crate::serde::internal::{break_instance, RawProperty};
+use crate::serde::internal::RawProperty;
 use crate::serde::io::Write;
 use crate::serde::Result;
 
 use alloc::collections::BTreeMap;
 use alloc::string::String;
-use alloc::vec::Vec;
 use alloc::vec;
+use alloc::vec::Vec;
 use uuid::Uuid;
 
 #[derive(Debug)]
@@ -83,7 +83,7 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
             unreachable!()
         };
 
-        for (prop_name, prop_value) in break_instance(inst) {
+        for (prop_name, prop_value) in Instance::break_instance(inst) {
             let prop_block = prop_blocks
                 .entry((class_index, prop_name.clone()))
                 .or_insert(Block::Property {
@@ -124,7 +124,7 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
                             InstanceRef::Item(key) => key_to_id[&key] as i32,
                         };
                         RawProperty::InstanceRef(id)
-                    },
+                    }
                     prop => RawProperty::from_real(prop.clone()),
                 };
                 properties.push(raw);

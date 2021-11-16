@@ -61,10 +61,7 @@ pub fn inherits(item: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-#[proc_macro_derive(
-    PropertyConvert,
-    attributes(delegate, shared, propname)
-)]
+#[proc_macro_derive(PropertyConvert, attributes(delegate, shared, propname))]
 pub fn property_convert(item: TokenStream) -> TokenStream {
     let item = parse_macro_input!(item as DeriveInput);
     let item_name = &item.ident;
@@ -198,6 +195,159 @@ pub fn enum_convert(item: TokenStream) -> TokenStream {
         impl core::convert::Into<i32> for #item_name {
             fn into(self) -> i32 {
                 self as i32
+            }
+        }
+    };
+
+    TokenStream::from(expanded)
+}
+
+struct InstanceResult {
+    class_name: proc_macro2::TokenStream,
+    name: proc_macro2::TokenStream,
+    from_props: proc_macro2::TokenStream,
+    to_props: proc_macro2::TokenStream,
+}
+
+impl InstanceResult {
+    fn unzip(
+        results: Vec<InstanceResult>,
+    ) -> (
+        Vec<proc_macro2::TokenStream>,
+        Vec<proc_macro2::TokenStream>,
+        Vec<proc_macro2::TokenStream>,
+        Vec<proc_macro2::TokenStream>,
+    ) {
+        results.into_iter().fold(
+            (Vec::new(), Vec::new(), Vec::new(), Vec::new()),
+            |(mut classes, mut names, mut from_props, mut to_props), this| {
+                classes.push(this.class_name);
+                names.push(this.name);
+                from_props.push(this.from_props);
+                to_props.push(this.to_props);
+                (classes, names, from_props, to_props)
+            },
+        )
+    }
+}
+
+#[proc_macro_derive(InstanceExtra)]
+pub fn instance_extra(item: TokenStream) -> TokenStream {
+    let item = parse_macro_input!(item as DeriveInput);
+    let item_name = &item.ident;
+
+    let variants = match &item.data {
+        syn::Data::Enum(data) => &data.variants,
+        _ => panic!("InstanceExtra not supported on non-enums"),
+    };
+
+    let results = variants
+        .iter()
+        .map(|variant| {
+            let variant_name = &variant.ident;
+
+            // Other is assumed to be the last variant in the enum
+            if &variant_name.to_string() == "Other" {
+                return InstanceResult {
+                    class_name: quote!(#item_name::Other(class_name, _) => return class_name.clone()),
+                    name: quote!(#item_name::Other(_, attrs) => {
+                        if let Property::TextString(name) = attrs.get("Name").expect("Instance didn't have a name") {
+                            name
+                        } else {
+                            panic!("Instance didn't have a Name")
+                        }
+                    }),
+                    from_props: quote!(_ => {
+                        // eprintln!("Other ty: {}", kind);
+                        let kind = Instance::Other(
+                            String::from(kind),
+                            properties
+                                .iter()
+                                .map(|(key, val)| (key.clone(), val.clone()))
+                                .collect(),
+                        );
+                        properties.clear();
+                        kind
+                    }),
+                    to_props: quote!(#item_name::Other(_, attrs) => properties.extend(attrs.clone())),
+                };
+            }
+
+            let fields = if let syn::Fields::Unnamed(fields) = &variant.fields {
+                fields
+            } else {
+                panic!("Expected unnamed enum fields");
+            };
+
+            let class_name_str = variant_name.to_string();
+            let is_boxed = match &fields.unnamed[0].ty {
+                syn::Type::Path(path) => path.path.segments[0].ident.to_string() == "Box",
+                _ => panic!("Unexpected type in Variant"),
+            };
+
+            let class_name = quote!(#item_name::#variant_name(..) => #class_name_str);
+            let name = quote!(#item_name::#variant_name(data) => &data.name);
+            let from_props = if is_boxed {
+                quote!(#class_name_str => #item_name::#variant_name(alloc::boxed::Box::new(#variant_name::from_properties(&mut properties)?)))
+            } else {
+                quote!(#class_name_str => #item_name::#variant_name(#variant_name::from_properties(&mut properties)?))
+            };
+            let to_props = quote!(#item_name::#variant_name(data) => data.to_properties(&mut properties));
+
+            InstanceResult {
+                class_name,
+                name,
+                from_props,
+                to_props
+            }
+        })
+        .collect();
+
+    let (class_names, names, from_props, to_props) = InstanceResult::unzip(results);
+
+    let expanded = quote! {
+        impl #item_name {
+            /// Get the name of the class for this kind
+            #[must_use]
+            pub fn class_name(&self) -> String {
+                String::from(match self {
+                    #(#class_names),*
+                })
+            }
+
+            /// Get the name of this kind
+            ///
+            /// # Panics
+            ///
+            /// If the instance is of an unrecognized type which doesn't have a name.
+            #[must_use]
+            pub fn name(&self) -> &str {
+                match self {
+                    #(#names),*
+                }
+            }
+
+            pub(crate) fn make_instance(kind: &str, mut properties: BTreeMap<String, Property>) -> Result<Instance, crate::SerdeError> {
+                let out = match kind {
+                    #(#from_props),*
+                };
+
+                if properties.is_empty() {
+                    Ok(out)
+                } else {
+                    Err(crate::SerdeError::unconsumed_properties(
+                        out.class_name(),
+                        properties.into_iter().map(|(keys, _)| keys).collect(),
+                    ))
+                }
+            }
+
+            pub(crate) fn break_instance(&self) -> BTreeMap<String, Property> {
+                let mut properties = BTreeMap::new();
+                match self {
+                    #(#to_props),*
+                }
+                properties
             }
         }
     };

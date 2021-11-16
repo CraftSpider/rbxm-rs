@@ -3,16 +3,17 @@
 use crate::model::Property;
 use crate::tree::TreeKey;
 
-use alloc::vec::Vec;
 use alloc::collections::BTreeMap;
+use alloc::string::String;
+use alloc::vec::Vec;
 use core::fmt;
-use std::ops::{Deref, DerefMut};
+use core::ops::{Add, Deref, DerefMut, Div, Mul, Sub};
 
 /// A set of named attributes for an instance. Wrapper type for a mapping of
 /// string to property,
 #[derive(Clone, Default)]
 pub struct Attributes {
-    pub(crate) backing: BTreeMap<String, Property>
+    pub(crate) backing: BTreeMap<String, Property>,
 }
 
 impl Deref for Attributes {
@@ -122,6 +123,50 @@ pub struct Vector2 {
     pub y: f32,
 }
 
+impl Add for Vector2 {
+    type Output = Vector2;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Vector2 {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
+    }
+}
+
+impl Sub for Vector2 {
+    type Output = Vector2;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Vector2 {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+        }
+    }
+}
+
+impl Mul for Vector2 {
+    type Output = Vector2;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Vector2 {
+            x: self.x * rhs.x,
+            y: self.y * rhs.y,
+        }
+    }
+}
+
+impl Div for Vector2 {
+    type Output = Vector2;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        Vector2 {
+            x: self.x / rhs.x,
+            y: self.y / rhs.y,
+        }
+    }
+}
+
 /// A 3D vector, used for most physical things
 ///
 /// **Reference Link**: [datatype/Vector3](https://developer.roblox.com/en-us/api-reference/datatype/Vector3)
@@ -133,6 +178,54 @@ pub struct Vector3 {
     pub y: f32,
     /// Z component
     pub z: f32,
+}
+
+impl Add for Vector3 {
+    type Output = Vector3;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Vector3 {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
+    }
+}
+
+impl Sub for Vector3 {
+    type Output = Vector3;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Vector3 {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z,
+        }
+    }
+}
+
+impl Mul for Vector3 {
+    type Output = Vector3;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Vector3 {
+            x: self.x * rhs.x,
+            y: self.y * rhs.y,
+            z: self.z * rhs.z,
+        }
+    }
+}
+
+impl Div for Vector3 {
+    type Output = Vector3;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        Vector3 {
+            x: self.x / rhs.x,
+            y: self.y / rhs.y,
+            z: self.z / rhs.z,
+        }
+    }
 }
 
 /// A representation of a point in space plus a rotation. This is basically a [`Vector3`] and a
@@ -151,11 +244,7 @@ impl Default for CFrame {
     fn default() -> Self {
         CFrame {
             position: Vector3::default(),
-            angle: [
-                [1., 0., 0.],
-                [0., 1., 0.],
-                [0., 0., 1.],
-            ]
+            angle: [[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]],
         }
     }
 }
@@ -369,6 +458,7 @@ pub struct ConvexHull {
 
 #[cfg(feature = "mesh-format")]
 impl ConvexHull {
+    /// Create a new ConvexHull from a set of vertices and faces
     pub fn new(vertices: Vec<Vector3>, faces: Vec<(usize, usize, usize)>) -> ConvexHull {
         ConvexHull {
             unknown_1: Vec::new(),

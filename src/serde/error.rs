@@ -1,10 +1,10 @@
 //! Common error handling machinery for serialization/deserialization
 
+use crate::model::property::PropertyType;
+use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use alloc::format;
 use core::fmt;
-use crate::model::property::PropertyType;
 
 /// A result used for all ser/de methods that return a result
 pub type Result<T> = core::result::Result<T, Error>;
@@ -61,7 +61,10 @@ impl Error {
         Error::from_kind(ErrorKind::UnknownMesh(id))
     }
 
-    pub(crate) fn wrong_property_type(name: String, extra: Option<(PropertyType, PropertyType)>) -> Error {
+    pub(crate) fn wrong_property_type(
+        name: String,
+        extra: Option<(PropertyType, PropertyType)>,
+    ) -> Error {
         Error::from_kind(ErrorKind::WrongPropertyType(name, extra))
     }
 
@@ -176,14 +179,17 @@ impl fmt::Display for ErrorKind {
             ErrorKind::UnknownVariant(id) => format!("Unknown enum variant with ID `{}`", id),
             ErrorKind::UnknownMesh(id) => format!("Unknown physics mesh kind with ID `{}`", id),
 
-            ErrorKind::WrongPropertyType(prop_name, tys) => {
-                match tys {
-                    Some((expected, actual)) => {
-                        format!("Property {} was the wrong type. Expected {}, got {}", prop_name, expected.name(), actual.name())
-                    }
-                    None => format!("Property {} was of a wrong type", prop_name)
+            ErrorKind::WrongPropertyType(prop_name, tys) => match tys {
+                Some((expected, actual)) => {
+                    format!(
+                        "Property {} was the wrong type. Expected {}, got {}",
+                        prop_name,
+                        expected.name(),
+                        actual.name()
+                    )
                 }
-            }
+                None => format!("Property {} was of a wrong type", prop_name),
+            },
             ErrorKind::MissingProperty(prop_name) => format!("Property {} was missing", prop_name),
             ErrorKind::UnconsumedProperties(class_name, prop_names) => format!(
                 "Instance type {} had unexpected properties with names {:?}",

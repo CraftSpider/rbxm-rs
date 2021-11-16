@@ -41,7 +41,9 @@ fn main() {
 ## TODO
 
 - Complete instance info documentation
-- RBXMX and RBXL(X) file support
+- XML file support
+- More helper methods on data
+- Instance new methods + `#[non_exhaustive]` for better future compat
 
 ## License
 Licensed under either of

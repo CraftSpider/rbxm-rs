@@ -5,10 +5,10 @@ use crate::serde::encoding::{decode_f32, decode_i32};
 use crate::serde::io::Read;
 use crate::serde::{Error, Result};
 
-use alloc::string::String;
-use alloc::vec::Vec;
-use alloc::vec;
 use alloc::collections::BTreeMap;
+use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;
 use uuid::Uuid;
 
 /// Types that can be read from a stream that is assumed to match the RBXM encoding format
@@ -305,7 +305,9 @@ impl<R: Read> Chomp<R> for Axes {
 
 impl<R: Read> Chomp<R> for BrickColor {
     fn chomp(reader: &mut R) -> Result<Self> {
-        Ok(BrickColor { index: i32::chomp(reader)? })
+        Ok(BrickColor {
+            index: i32::chomp(reader)?,
+        })
     }
 }
 

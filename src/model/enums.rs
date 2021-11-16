@@ -982,6 +982,15 @@ pub enum TableMajorAxis {
 }
 
 #[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum Technology {
+    Legacy = 0,
+    Voxel = 1,
+    Compatibility = 2,
+    ShadowMap = 3,
+    Future = 4,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum TerrainAcquisitionMethod {
     None = 0,
     Legacy = 1,

@@ -1,8 +1,11 @@
 //! The deserialization implementation for an RBXM
 
 use crate::model::*;
-use crate::serde::encoding::{decode_cumulative, Chomp, ChompInterleaved, ChompInterleavedTransform, ChompTransform, decode_i32};
-use crate::serde::internal::{make_instance, RawProperty};
+use crate::serde::encoding::{
+    decode_cumulative, decode_i32, Chomp, ChompInterleaved, ChompInterleavedTransform,
+    ChompTransform,
+};
+use crate::serde::internal::RawProperty;
 use crate::serde::io::Read;
 use crate::serde::{Error, Result};
 use crate::tree::Tree;
@@ -10,14 +13,14 @@ use crate::tree::Tree;
 use alloc::collections::BTreeMap;
 use alloc::collections::BTreeSet;
 use alloc::string::{String, ToString};
-use alloc::vec::Vec;
 use alloc::vec;
+use alloc::vec::Vec;
 use uuid::Uuid;
 
 fn chomp_properties<R: core::fmt::Debug + Read>(
     reader: &mut R,
     num_props: usize,
-    prop_ty: u8
+    prop_ty: u8,
 ) -> Result<Vec<RawProperty>> {
     let mut properties = Vec::with_capacity(num_props);
     for _ in 0..num_props {
@@ -100,9 +103,7 @@ fn chomp_properties<R: core::fmt::Debug + Read>(
                 );
                 break;
             }
-            25 => RawProperty::PhysicalProperties(PhysicalProperties::chomp(
-                reader,
-            )?),
+            25 => RawProperty::PhysicalProperties(PhysicalProperties::chomp(reader)?),
             26 => RawProperty::Color3Uint8(Color3Uint8::chomp(reader)?),
             27 => RawProperty::Int64(i64::chomp(reader)?),
             28 => {
@@ -264,7 +265,7 @@ impl<R: Read> Deserializer<R> {
                     .collect::<Result<_>>()?;
 
                 let mut inst = tree.try_get_mut(id_key[&id]).unwrap();
-                *inst = make_instance(class_name, props)?;
+                *inst = Instance::make_instance(class_name, props)?;
 
                 Ok(())
             })?;

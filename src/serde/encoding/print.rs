@@ -1,11 +1,11 @@
 use crate::model::*;
 use crate::serde::encoding::{encode_f32, encode_i32};
 use crate::serde::io::Write;
-use crate::serde::{Result, Error};
+use crate::serde::{Error, Result};
 
 use alloc::string::String;
-use alloc::vec::Vec;
 use alloc::vec;
+use alloc::vec::Vec;
 use uuid::Uuid;
 
 macro_rules! float_match {

@@ -1,4 +1,4 @@
-use crate::model::{Instance, Error};
+use crate::model::{Error, Instance};
 use crate::tree::{NodeRef, Tree};
 
 use alloc::collections::BTreeMap;

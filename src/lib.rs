@@ -47,7 +47,7 @@
     clippy::doc_markdown,
     clippy::ptr_as_ptr,
     clippy::cloned_instead_of_copied,
-    clippy::unreadable_literal,
+    clippy::unreadable_literal
 )]
 #![cfg_attr(docsrs, features(doc_cfg))]
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -60,8 +60,8 @@ pub mod model;
 pub mod serde;
 mod tree;
 
-pub use model::RbxModel;
 pub use model::Error as ModelError;
+pub use model::RbxModel;
 pub use serde::Error as SerdeError;
 #[cfg(feature = "std")]
 pub use serde::{from_file, to_file};
