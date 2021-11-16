@@ -81,7 +81,7 @@ impl PropertyType {
 }
 
 /// This represents a property with an unknown type, handling any of the possible types.
-/// Should generally only be used if working with an [`Instance`][crate::model::Instance] not
+/// Should generally only be used if working with an [`Instance`](crate::model::Instance) not
 /// recognized by the crate.
 #[non_exhaustive]
 #[derive(Debug, Clone)]

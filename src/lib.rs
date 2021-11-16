@@ -9,7 +9,8 @@
 //!
 //! # Examples
 //!
-//! Parse a model from a file, find an [`Instance`] by path, and print the instance's class.
+//! Parse a model from a file, find an [`Instance`](crate::model::Instance) by path, and print the
+//! instance's class.
 //!
 //! ```ignore
 //! use rbxm::{SerdeError, ModelError};

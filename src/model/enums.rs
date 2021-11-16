@@ -4,7 +4,7 @@
 
 use rbxm_proc::EnumConvert;
 
-/// The [`CFrame`][crate::model::CFrame] that this Instance is relative to
+/// The [`CFrame`](crate::model::CFrame) that this Instance is relative to
 ///
 /// **Reference Link**: [enum/ActuatorRelativeTo](https://developer.roblox.com/en-us/api-reference/enum/ActuatorRelativeTo)
 #[derive(Debug, Copy, Clone, EnumConvert)]
