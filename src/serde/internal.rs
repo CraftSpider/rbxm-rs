@@ -34,32 +34,6 @@ macro_rules! prop_ty_impl {
     }
 }
 
-macro_rules! prop_enum_impl {
-    ($($ty:ty),+ $(,)?) => {
-        $(
-        impl FieldFromProperties for $ty {
-            fn from_properties(attrs: FieldAttrs, properties: &mut BTreeMap<String, Property>) -> Result<Self> {
-                match properties.remove(attrs.prop_name) {
-                    Some(Property::Enum(val)) => <$ty>::try_from(val)
-                        .map_err(|_| $crate::SerdeError::unknown_variant(val)),
-                    Some(prop) => Err($crate::SerdeError::wrong_property_type(
-                        attrs.prop_name.to_string(),
-                        Some((PropertyType::Enum, prop.kind())),
-                    )),
-                    None => Err($crate::SerdeError::missing_property(attrs.prop_name.to_string())),
-                }
-            }
-        }
-
-        impl FieldToProperties for $ty {
-            fn to_properties(self, attrs: FieldAttrs, properties: &mut BTreeMap<String, Property>) {
-                properties.insert(attrs.prop_name.to_string(), Property::Enum(self.into()));
-            }
-        }
-        )*
-    }
-}
-
 #[derive(Debug, Clone)]
 pub enum RawProperty {
     RawString(Vec<u8>), // This may or may not be a 'real' string, it can also be just a data blob
@@ -165,11 +139,11 @@ impl RawProperty {
     }
 }
 
-pub trait FromProperty: Sized {
+pub trait FromProperties: Sized {
     fn from_properties(properties: &mut BTreeMap<String, Property>) -> Result<Self>;
 }
 
-pub trait ToProperty: Sized {
+pub trait ToProperties: Sized {
     fn to_properties(&self, properties: &mut BTreeMap<String, Property>);
 }
 
@@ -184,6 +158,12 @@ pub trait FieldFromProperties: Sized {
         attrs: FieldAttrs,
         properties: &mut BTreeMap<String, Property>,
     ) -> Result<Self>;
+}
+
+impl<T: FromProperties> FieldFromProperties for T {
+    fn from_properties(_: FieldAttrs, properties: &mut BTreeMap<String, Property>) -> Result<Self> {
+        T::from_properties(properties)
+    }
 }
 
 impl FieldFromProperties for String {
@@ -308,6 +288,12 @@ pub trait FieldToProperties: Sized {
     fn to_properties(self, attrs: FieldAttrs, properties: &mut BTreeMap<String, Property>);
 }
 
+impl<T: ToProperties> FieldToProperties for T {
+    fn to_properties(self, _: FieldAttrs, properties: &mut BTreeMap<String, Property>) {
+        T::to_properties(&self, properties)
+    }
+}
+
 impl FieldToProperties for String {
     fn to_properties(self, attrs: FieldAttrs, properties: &mut BTreeMap<String, Property>) {
         let prop = if attrs.shared {
@@ -383,93 +369,4 @@ prop_ty_impl! {
     Color3Uint8 : Color3Uint8,
     Pivot : Pivot,
     Uuid : Uuid,
-}
-
-prop_enum_impl! {
-    ActuatorRelativeTo,
-    ActuatorType,
-    AdornCullingMode,
-    AlignType,
-    AlphaMode,
-    AnimationPriority,
-    AnimatorRetargetingMode,
-    ApplyStrokeMode,
-    AspectType,
-    AutomaticSize,
-    Axis,
-    BinType,
-    BodyPart,
-    BorderMode,
-    ButtonStyle,
-    CameraType,
-    ClientAnimatorThrottlingMode,
-    DialogBehaviorType,
-    DialogPurpose,
-    DialogTone,
-    DominantAxis,
-    EasingDirection,
-    EasingStyle,
-    ElasticBehavior,
-    ExplosionType,
-    FieldOfViewMode,
-    FillDirection,
-    Font,
-    FormFactor,
-    FrameStyle,
-    HandlesStyle,
-    HorizontalAlignment,
-    HumanoidCollisionType,
-    HumanoidDisplayDistanceType,
-    HumanoidHealthDisplayType,
-    HumanoidOnlySetCollisionsOnStateChange,
-    HumanoidRigType,
-    InOut,
-    InputType,
-    InterpolationThrottlingMode,
-    KeyCode,
-    LeftRight,
-    LevelOfDetailSetting,
-    LineJoinMode,
-    Material,
-    MeshPartHeadsAndAccessories,
-    MeshType,
-    ModelLevelOfDetail,
-    NameOcclusion,
-    NewAnimationRuntimeSettings,
-    NormalId,
-    ParticleOrientation,
-    PartType,
-    PhysicsSimulationRate,
-    PhysicsSteppingMethod,
-    PoseEasingDirection,
-    PoseEasingStyle,
-    ProximityPromptExclusivity,
-    ProximityPromptStyle,
-    RenderFidelity,
-    RenderingTestComparisonMethod,
-    ResamplerMode,
-    RollOffMode,
-    ScaleType,
-    ScrollBarInset,
-    ScrollingDirection,
-    SignalBehavior,
-    SizeConstraint,
-    SortOrder,
-    StartCorner,
-    StreamingPauseMode,
-    StreamOutBehavior,
-    SurfaceGuiSizingMode,
-    SurfaceType,
-    TableMajorAxis,
-    Technology,
-    TerrainAcquisitionMethod,
-    TextTruncate,
-    TextureMode,
-    TextXAlignment,
-    TextYAlignment,
-    TopBottom,
-    TrussStyle,
-    VerticalAlignment,
-    VerticalScrollBarPosition,
-    ZIndexBehavior
 }

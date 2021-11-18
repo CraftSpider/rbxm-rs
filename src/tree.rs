@@ -20,6 +20,7 @@ macro_rules! ref_common {
     ($ty:ty) => {
         impl<'a, 'b, T: ?Sized> $ty {
             /// Get the key of this node
+            #[must_use]
             pub fn key(&self) -> TreeKey {
                 self.mykey
             }
@@ -143,6 +144,7 @@ pub struct Tree<T: ?Sized> {
 
 impl<T: ?Sized> Tree<T> {
     /// Create a new tree
+    #[must_use]
     pub fn new() -> Tree<T> {
         Tree::default()
     }
@@ -150,6 +152,11 @@ impl<T: ?Sized> Tree<T> {
     /// Get the length of this tree, the total number of nodes
     pub fn len(&self) -> usize {
         self.inner.borrow().nodes.len()
+    }
+
+    /// Check whether this tree is empty (contains no nodes)
+    pub fn is_empty(&self) -> bool {
+        self.inner.borrow().nodes.is_empty()
     }
 
     /// Add a new root from a type that unsizes into the type of the tree
@@ -284,7 +291,7 @@ impl<T: ?Sized> Tree<T> {
             .borrow()
             .parents
             .get(child)
-            .cloned()
+            .copied()
     }
 
     /// Get the child keys of a node identified by the provided key
@@ -468,6 +475,15 @@ impl<'a, 'b, T: ?Sized> NodeRef<'a, 'b, T> {
     }
 }
 
+impl<T: ?Sized + fmt::Debug> fmt::Debug for NodeRef<'_, '_, T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("NodeRef")
+            .field("mykey", &self.mykey)
+            .field("node", &self.node)
+            .finish()
+    }
+}
+
 /// A mutable reference to a node in a [`Tree`], with helpers to traverse nodes relative to this
 /// one as well as alter the node's relationships.
 pub struct NodeRefMut<'a, 'b, T: ?Sized> {
@@ -519,6 +535,15 @@ impl<T> NodeRefMut<'_, '_, T> {
     /// Create a new child of this node from the provided value
     pub fn new_child(&mut self, child: T) {
         self.tree.new_child(child, self.key());
+    }
+}
+
+impl<T: ?Sized + fmt::Debug> fmt::Debug for NodeRefMut<'_, '_, T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("NodeRefMut")
+            .field("mykey", &self.mykey)
+            .field("node", &self.node)
+            .finish()
     }
 }
 

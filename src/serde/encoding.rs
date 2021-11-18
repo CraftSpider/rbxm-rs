@@ -11,7 +11,7 @@ pub use print::{Print, PrintInterleaved, PrintInterleavedTransform, PrintTransfo
 
 /// Convert a u32 into an i32, using the special Roblox encoding
 #[must_use]
-pub fn decode_i32(mut raw: u32) -> i32 {
+pub const fn decode_i32(mut raw: u32) -> i32 {
     let sign = raw & 1;
     raw >>= 1;
     let mut out = i32::from_ne_bytes(raw.to_ne_bytes());
@@ -24,7 +24,7 @@ pub fn decode_i32(mut raw: u32) -> i32 {
 
 /// Convert an i32 into a u32, using the special Roblox encoding
 #[must_use]
-pub fn encode_i32(mut val: i32) -> u32 {
+pub const fn encode_i32(mut val: i32) -> u32 {
     let sign = (val < 0) as u32;
     if val < 0 {
         val = -val;

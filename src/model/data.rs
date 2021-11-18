@@ -47,6 +47,14 @@ pub struct UDim {
     pub offset: i32,
 }
 
+impl UDim {
+    /// Create a new `UDim` from components
+    #[must_use]
+    pub const fn new(scale: f32, offset: i32) -> UDim {
+        UDim { scale, offset }
+    }
+}
+
 /// A type of coordinate representing a scale and an offset in XY space, most often
 /// used in GUI objects
 ///
@@ -59,6 +67,23 @@ pub struct UDim2 {
     pub y: UDim,
 }
 
+impl UDim2 {
+    /// Create a new `UDim2` from an x, y pair of [`UDims`](UDim)
+    #[must_use]
+    pub const fn new(x: UDim, y: UDim) -> UDim2 {
+        UDim2 { x, y }
+    }
+
+    /// Create a new `UDim2` from x and y scale and offset components.
+    #[must_use]
+    pub const fn new_components(x_scale: f32, x_offset: i32, y_scale: f32, y_offset: i32) -> UDim2 {
+        UDim2 {
+            x: UDim::new(x_scale, x_offset),
+            y: UDim::new(y_scale, y_offset),
+        }
+    }
+}
+
 /// A ray in 3D space, from origin extending along a unit axis
 ///
 #[doc = doc_link!("datatype/Ray")]
@@ -68,6 +93,18 @@ pub struct Ray {
     pub origin: Vector3,
     /// The unit direction
     pub direction: Vector3,
+}
+
+impl Ray {
+    /// Create a new ray from components. The direction vector will be converted to a unit vector
+    /// if necessary.
+    #[must_use]
+    pub fn new(origin: Vector3, direction: Vector3) -> Ray {
+        Ray {
+            origin,
+            direction: direction.unit(),
+        }
+    }
 }
 
 /// A set of faces an Instance is applied to
@@ -89,6 +126,64 @@ pub struct Faces {
     pub right: bool,
 }
 
+impl Faces {
+    /// Get a value with no faces selected
+    #[must_use]
+    pub const fn none() -> Faces {
+        Faces {
+            front: false,
+            back: false,
+            top: false,
+            bottom: false,
+            left: false,
+            right: false,
+        }
+    }
+
+    /// Get a value with the front and back faces selected
+    #[must_use]
+    pub const fn front_back() -> Faces {
+        Faces {
+            front: true,
+            back: true,
+            ..Faces::none()
+        }
+    }
+
+    /// Get a value with the top and bottom faces selected
+    #[must_use]
+    pub const fn top_bottom() -> Faces {
+        Faces {
+            top: true,
+            bottom: true,
+            ..Faces::none()
+        }
+    }
+
+    /// Get a value with the left and right faces selected
+    #[must_use]
+    pub const fn left_right() -> Faces {
+        Faces {
+            left: true,
+            right: true,
+            ..Faces::none()
+        }
+    }
+
+    /// Get a value with all faces selected
+    #[must_use]
+    pub const fn all() -> Faces {
+        Faces {
+            front: true,
+            back: true,
+            top: true,
+            bottom: true,
+            left: true,
+            right: true,
+        }
+    }
+}
+
 /// A set of XYZ axes an Instance is applied to
 ///
 #[doc = doc_link!("datatype/Axes")]
@@ -100,6 +195,28 @@ pub struct Axes {
     pub y: bool,
     /// Applied to Z axis
     pub z: bool,
+}
+
+impl Axes {
+    /// Get a value with no axes selected
+    #[must_use]
+    pub const fn none() -> Axes {
+        Axes {
+            x: false,
+            y: false,
+            z: false,
+        }
+    }
+
+    /// Get a value with all axes selected
+    #[must_use]
+    pub const fn all() -> Axes {
+        Axes {
+            x: true,
+            y: true,
+            z: true,
+        }
+    }
 }
 
 /// A color for an Instance, picked from a static palette. This type is deprecated, and only used
@@ -115,12 +232,43 @@ pub struct BrickColor {
 /// A 2D vector, most often used in GUI
 ///
 #[doc = doc_link!("datatype/Vector2")]
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct Vector2 {
     /// X component
     pub x: f32,
     /// Y component
     pub y: f32,
+}
+
+impl Vector2 {
+    /// Zero-vector, all components zeroed
+    pub const ZERO: Vector2 = Vector2::new(0.0, 0.0);
+    /// Unit vector in the X direction
+    pub const UNIT_X: Vector2 = Vector2::new(1.0, 0.0);
+    /// Unit vector in the Y direction
+    pub const UNIT_Y: Vector2 = Vector2::new(0.0, 1.0);
+    /// One-vector, all components are 1.0.
+    pub const ONE: Vector2 = Vector2::new(1.0, 1.0);
+
+    /// Create a new `Vector2` from components
+    #[must_use]
+    pub const fn new(x: f32, y: f32) -> Vector2 {
+        Vector2 { x, y }
+    }
+
+    /// Get the length of this vector
+    #[must_use]
+    #[inline]
+    pub fn len(&self) -> f32 {
+        f32::sqrt(self.len_squared())
+    }
+
+    /// Get the length squared of this vector
+    #[must_use]
+    #[inline]
+    pub fn len_squared(&self) -> f32 {
+        self.x * self.x + self.y * self.y
+    }
 }
 
 impl Add for Vector2 {
@@ -170,7 +318,7 @@ impl Div for Vector2 {
 /// A 3D vector, used for most physical things
 ///
 #[doc = doc_link!("datatype/Vector3")]
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct Vector3 {
     /// X component
     pub x: f32,
@@ -178,6 +326,51 @@ pub struct Vector3 {
     pub y: f32,
     /// Z component
     pub z: f32,
+}
+
+impl Vector3 {
+    /// Zero-vector, all components zeroed
+    pub const ZERO: Vector3 = Vector3::new(0.0, 0.0, 0.0);
+    /// Unit vector in the X direction
+    pub const UNIT_X: Vector3 = Vector3::new(1.0, 0.0, 0.0);
+    /// Unit vector in the Y direction
+    pub const UNIT_Y: Vector3 = Vector3::new(0.0, 1.0, 0.0);
+    /// Unit vector in the Z direction
+    pub const UNIT_Z: Vector3 = Vector3::new(0.0, 0.0, 1.0);
+    /// One-vector, all components are 1.0.
+    pub const ONE: Vector3 = Vector3::new(1.0, 1.0, 1.0);
+
+    /// Create a new `Vector3` from components
+    #[must_use]
+    pub const fn new(x: f32, y: f32, z: f32) -> Vector3 {
+        Vector3 { x, y, z }
+    }
+
+    /// Get the length of this vector
+    #[must_use]
+    #[inline]
+    pub fn len(&self) -> f32 {
+        f32::sqrt(self.len_squared())
+    }
+
+    /// Get the length squared of this vector
+    #[must_use]
+    #[inline]
+    pub fn len_squared(&self) -> f32 {
+        self.x * self.x + self.y * self.y + self.z * self.z
+    }
+
+    /// Get the vector pointing the same direction as this vector, with a length of one, also known
+    /// as a unit vector.
+    #[must_use]
+    pub fn unit(&self) -> Vector3 {
+        let len = self.len();
+        Vector3 {
+            x: self.x / len,
+            y: self.y / len,
+            z: self.z / len,
+        }
+    }
 }
 
 impl Add for Vector3 {
@@ -238,6 +431,14 @@ pub struct CFrame {
     pub position: Vector3,
     /// The rotation angle this CFrame represents
     pub angle: [[f32; 3]; 3],
+}
+
+impl CFrame {
+    /// Create a new `CFrame` from components
+    #[must_use]
+    pub const fn new(position: Vector3, angle: [[f32; 3]; 3]) -> CFrame {
+        CFrame { position, angle }
+    }
 }
 
 impl Default for CFrame {
@@ -352,6 +553,21 @@ pub struct Color3 {
     pub b: f32,
 }
 
+impl Color3 {
+    /// Create a new `Color3` from components
+    ///
+    /// # Panics
+    ///
+    /// In debug mode, if any component isn't within the range `[0.0, 1.0]`.
+    #[must_use]
+    pub fn new(r: f32, g: f32, b: f32) -> Color3 {
+        debug_assert!((0.0..=1.0).contains(&r), "r value not in (0.0..=1.0)");
+        debug_assert!((0.0..=1.0).contains(&g), "g value not in (0.0..=1.0)");
+        debug_assert!((0.0..=1.0).contains(&b), "b value not in (0.0..=1.0)");
+        Color3 { r, g, b }
+    }
+}
+
 impl From<Color3Uint8> for Color3 {
     fn from(col: Color3Uint8) -> Self {
         Color3 {
@@ -374,6 +590,14 @@ pub struct Color3Uint8 {
     pub b: u8,
 }
 
+impl Color3Uint8 {
+    /// Create a new `Color3Uint8` from an (r, g, b) set
+    #[must_use]
+    pub const fn new(r: u8, g: u8, b: u8) -> Color3Uint8 {
+        Color3Uint8 { r, g, b }
+    }
+}
+
 impl From<Color3> for Color3Uint8 {
     fn from(col: Color3) -> Self {
         Color3Uint8 {
@@ -381,6 +605,12 @@ impl From<Color3> for Color3Uint8 {
             g: (col.g * 255.) as u8,
             b: (col.b * 255.) as u8,
         }
+    }
+}
+
+impl From<(u8, u8, u8)> for Color3Uint8 {
+    fn from((r, g, b): (u8, u8, u8)) -> Self {
+        Color3Uint8 { r, g, b }
     }
 }
 
@@ -400,6 +630,19 @@ pub struct Pivot {
 pub enum PhysicalProperties {
     /// No custom physical properties, use default from part material
     Default,
+    /// Custom physical properties
+    Custom {
+        /// The density of this part
+        density: f32,
+        /// The elasticity of collisions
+        elasticity: f32,
+        /// How much this parts elasticity affects the collision
+        elasticity_weight: f32,
+        /// The friction of collisions
+        friction: f32,
+        /// How much this parts friction affects the collision
+        friction_weight: f32,
+    }
 }
 
 impl Default for PhysicalProperties {

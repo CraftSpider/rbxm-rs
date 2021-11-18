@@ -17,7 +17,3 @@ pub use error::Error;
 pub use instance::Instance;
 pub use property::Property;
 pub use rbx_model::RbxModel;
-
-// type InstanceRef = TreeKey;
-
-// TODO: Move to data types

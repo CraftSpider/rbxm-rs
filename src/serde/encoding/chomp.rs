@@ -336,7 +336,13 @@ impl<R: Read> Chomp<R> for PhysicalProperties {
     fn chomp(reader: &mut R) -> Result<Self> {
         let custom = bool::chomp(reader)?;
         if custom {
-            todo!("Custom physical properties")
+            Ok(PhysicalProperties::Custom {
+                density: f32::chomp(reader)?,
+                friction: f32::chomp(reader)?,
+                elasticity: f32::chomp(reader)?,
+                friction_weight: f32::chomp(reader)?,
+                elasticity_weight: f32::chomp(reader)?,
+            })
         } else {
             Ok(PhysicalProperties::Default)
         }
@@ -400,22 +406,24 @@ impl<R: Read> ChompInterleaved<R> for CFrame {
             let angle: [[f32; 3]; 3] = match angle_type {
                 0 => {
                     let mut data = [[0f32; 3]; 3];
-                    for i in &mut data {
-                        for j in i {
-                            *j = f32::chomp(reader)?;
+                    for i in 0..3 {
+                        for row in &mut data {
+                            row[i] = f32::chomp(reader)?;
                         }
                     }
                     data
                 }
+                // TODO: Double check these. They may be flipped around, due to reading order wrong
+                //       previously
                 2 => [[1f32, 0f32, 0f32], [0f32, 1f32, 0f32], [0f32, 0f32, 1f32]],
                 3 => [[1f32, 0f32, 0f32], [0f32, 0f32, -1f32], [0f32, 1f32, 0f32]],
                 5 => [[1f32, 0f32, 0f32], [0f32, -1f32, 0f32], [0f32, 0f32, -1f32]],
                 6 => [[1f32, 0f32, 0f32], [0f32, 0f32, 1f32], [0f32, -1f32, 0f32]],
                 7 => [[0f32, 1f32, 0f32], [1f32, 0f32, 0f32], [0f32, 0f32, -1f32]],
-                9 => [[0f32, 0f32, 1f32], [1f32, 0f32, 0f32], [0f32, 1f32, 0f32]],
+                9 => [[0f32, 1f32, 0f32], [0f32, 0f32, 1f32], [1f32, 0f32, 0f32]],
                 10 => [[0f32, -1f32, 0f32], [1f32, 0f32, 0f32], [0f32, 0f32, 1f32]],
                 12 => [[0f32, 0f32, -1f32], [1f32, 0f32, 0f32], [0f32, -1f32, 0f32]],
-                13 => [[0f32, 1f32, 0f32], [0f32, 0f32, 1f32], [1f32, 0f32, 0f32]],
+                13 => [[0f32, 0f32, 1f32], [1f32, 0f32, 0f32], [0f32, 1f32, 0f32]],
                 14 => [[0f32, 0f32, -1f32], [0f32, 1f32, 0f32], [1f32, 0f32, 0f32]],
                 16 => [[0f32, -1f32, 0f32], [0f32, 0f32, -1f32], [1f32, 0f32, 0f32]],
                 17 => [[0f32, 0f32, 1f32], [0f32, -1f32, 0f32], [1f32, 0f32, 0f32]],
@@ -449,8 +457,11 @@ impl<R: Read> ChompInterleaved<R> for CFrame {
             angles.push(angle);
         }
         let mut positions = Vec::with_capacity(count);
-        for _ in 0..count {
-            positions.push(Vector3::chomp(reader)?);
+        let xs = f32::chomp_interleaved(reader, count)?;
+        let ys = f32::chomp_interleaved(reader, count)?;
+        let zs = f32::chomp_interleaved(reader, count)?;
+        for i in 0..count {
+            positions.push(Vector3::new(xs[i], ys[i], zs[i]));
         }
 
         let mut out = Vec::with_capacity(count);
@@ -545,10 +556,12 @@ impl<R: Read> ChompInterleaved<R> for Rect {
 impl<R: Read> ChompInterleaved<R> for Pivot {
     fn chomp_interleaved(reader: &mut R, count: usize) -> Result<Vec<Self>> {
         let _first = u8::chomp(reader)?;
+        debug_assert_eq!(_first, 16, "Unexpected pivot first unknown");
 
         let cframes = CFrame::chomp_interleaved(reader, count)?;
 
         let _second = u8::chomp(reader)?;
+        debug_assert_eq!(_second, 2, "Unexpected pivot second unknown");
 
         let mut unknown = Vec::new();
 
@@ -566,7 +579,7 @@ impl<R: Read> ChompInterleaved<R> for Pivot {
     }
 }
 
-impl<R: Read + core::fmt::Debug> Chomp<R> for Attributes {
+impl<R: Read> Chomp<R> for Attributes {
     fn chomp(reader: &mut R) -> Result<Self> {
         let num_props = i32::chomp(reader)?;
         let mut backing = BTreeMap::new();
@@ -706,5 +719,100 @@ impl<R: Read> Chomp<R> for TriMesh {
 impl<R: Read> Chomp<R> for Uuid {
     fn chomp(reader: &mut R) -> Result<Self> {
         Ok(Uuid::from_bytes(<[u8; 16]>::chomp(reader)?))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_cframe_123() {
+        let bytes: &[u8] = &[2, 127, 0, 0, 0, 128, 0, 0, 0, 128, 128, 0, 0];
+        let cframe = CFrame::chomp_interleaved(&mut &*bytes, 1)
+            .unwrap()
+            .remove(0);
+
+        assert_eq!(cframe.position, Vector3::new(1.0, 2.0, 3.0));
+        assert_eq!(cframe.angle, [
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+        ]);
+    }
+
+    #[test]
+    fn test_cframe_321() {
+        let bytes: &[u8] = &[2, 128, 128, 0, 1, 128, 0, 0, 1, 127, 0, 0, 1];
+        let cframe = CFrame::chomp_interleaved(&mut &*bytes, 1)
+            .unwrap()
+            .remove(0);
+
+        assert_eq!(cframe.position, Vector3::new(-3.0, -2.0, -1.0));
+        assert_eq!(cframe.angle, [
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+        ]);
+    }
+
+    #[test]
+    fn test_cframe_matrix() {
+        let bytes: &[u8] = &[
+            0, 0, 0, 0, 63, 0, 0, 0, 191, 0, 0, 0, 0, 0, 0, 128, 63, 0, 0, 128, 191, 0, 0, 0, 0, 0,
+            0, 192, 63, 0, 0, 192, 191, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        ];
+        let cframe = CFrame::chomp_interleaved(&mut &*bytes, 1)
+            .unwrap()
+            .remove(0);
+
+        assert_eq!(cframe.position, Vector3::ZERO);
+        assert_eq!(cframe.angle, [
+            [0.5, 1.0, 1.5],
+            [-0.5, -1.0, -1.5],
+            [0.0, 0.0, 0.0],
+        ]);
+    }
+
+    #[test]
+    fn test_cframe_multi() {
+        let bytes: &[u8] = &[
+            0, 0, 0, 192, 64, 0, 0, 192, 64, 0, 0, 192, 64, 0, 0, 160, 64, 0, 0, 160, 64, 0, 0, 160,
+            64, 0, 0, 128, 64, 0, 0, 128, 64, 0, 0, 128, 64, 13, 35, 0, 0, 0, 128, 63, 0, 0, 128,
+            63, 0, 0, 128, 63, 0, 0, 0, 64, 0, 0, 0, 64, 0, 0, 0, 64, 0, 0, 64, 64, 0, 0, 64, 64, 0,
+            0, 64, 64, 129, 127, 129, 127, 128, 0, 64, 0, 0, 0, 0, 0, 0, 1, 1, 0, 129, 127, 129,
+            128, 64, 0, 64, 0, 0, 0, 0, 0, 0, 1, 1, 0, 129, 127, 129, 128, 0, 0, 64, 128, 0, 0, 0,
+            0, 0, 1, 1, 0
+        ];
+        let cframes = CFrame::chomp_interleaved(&mut &*bytes, 4)
+            .unwrap();
+
+        assert_eq!(cframes[3].position, Vector3::new(1.0, 2.0, 3.0));
+        assert_eq!(cframes[3].angle, [
+            [1.0, 2.0, 3.0],
+            [1.0, 2.0, 3.0],
+            [1.0, 2.0, 3.0],
+        ]);
+
+        assert_eq!(cframes[0].position, Vector3::new(6.0, 5.0, 4.0));
+        assert_eq!(cframes[0].angle, [
+            [6.0, 5.0, 4.0],
+            [6.0, 5.0, 4.0],
+            [6.0, 5.0, 4.0],
+        ]);
+
+        assert_eq!(cframes[1].position, Vector3::new(-1.0, -1.0, -1.0));
+        assert_eq!(cframes[1].angle, [
+            [0.0, 0.0, 1.0],
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+        ]);
+
+        assert_eq!(cframes[2].position, Vector3::new(-5.0, -5.0, -5.0));
+        assert_eq!(cframes[2].angle, [
+            [0.0, 0.0, -1.0],
+            [0.0, -1.0, 0.0],
+            [-1.0, 0.0, 0.0],
+        ]);
     }
 }

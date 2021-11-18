@@ -61,18 +61,18 @@ pub fn inherits(item: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-#[proc_macro_derive(PropertyConvert, attributes(delegate, shared, propname))]
+#[proc_macro_derive(PropertyConvert, attributes(shared, propname))]
 pub fn property_convert(item: TokenStream) -> TokenStream {
     let item = parse_macro_input!(item as DeriveInput);
     let item_name = &item.ident;
 
     let fields = match &item.data {
         syn::Data::Struct(data) => &data.fields,
-        _ => panic!("FromProperty not supported on non-structs"),
+        _ => panic!("PropertyConvert not supported on non-structs"),
     };
     let named_fields = match fields {
         syn::Fields::Named(fields) => fields,
-        _ => panic!("FromProperty requires named fields"),
+        _ => panic!("PropertyConvert requires named fields"),
     };
 
     let (constructor, destructor): (Vec<_>, Vec<_>) = named_fields
@@ -80,7 +80,6 @@ pub fn property_convert(item: TokenStream) -> TokenStream {
         .iter()
         .map(|field| {
             let field_name = &field.ident;
-            let delegate = has_attr(&field.attrs, "delegate");
             let shared = has_attr(&field.attrs, "shared");
             let prop_name = field.attrs.iter().find(|attr| match_path(&attr.path, "propname")).map(|attr| {
                 let meta = if let syn::Meta::NameValue(value) = attr.parse_meta().unwrap() {
@@ -95,36 +94,28 @@ pub fn property_convert(item: TokenStream) -> TokenStream {
                 }
             }).unwrap_or(to_pascal_case(&field.ident.as_ref().unwrap()));
 
-            let (getter, setter) = if delegate {
-                let field_ty = &field.ty;
-                (
-                    quote!(<#field_ty as FromProperty>::from_properties(properties)?),
-                    quote!(<#field_ty as ToProperty>::to_properties(&self.#field_name, properties)),
-                )
-            } else {
-                (
-                    quote!(
-                        crate::serde::internal::FieldFromProperties::from_properties(
-                            crate::serde::internal::FieldAttrs { field_name: stringify!(#field_name), prop_name: #prop_name, shared: #shared },
-                            properties,
-                        )?
-                    ),
-                    quote!(
-                        crate::serde::internal::FieldToProperties::to_properties(
-                            self.#field_name.clone(),
-                            crate::serde::internal::FieldAttrs { field_name: stringify!(#field_name), prop_name: #prop_name, shared: #shared },
-                            properties,
-                        );
-                    ),
-                )
-            };
+            let (getter, setter) = (
+                quote!(
+                    crate::serde::internal::FieldFromProperties::from_properties(
+                        crate::serde::internal::FieldAttrs { field_name: stringify!(#field_name), prop_name: #prop_name, shared: #shared },
+                        properties,
+                    )?
+                ),
+                quote!(
+                    crate::serde::internal::FieldToProperties::to_properties(
+                        self.#field_name.clone(),
+                        crate::serde::internal::FieldAttrs { field_name: stringify!(#field_name), prop_name: #prop_name, shared: #shared },
+                        properties,
+                    );
+                ),
+            );
 
             (quote!(#field_name: #getter), quote!(#setter))
         })
         .unzip();
 
     let expanded = quote! {
-        impl FromProperty for #item_name {
+        impl FromProperties for #item_name {
             fn from_properties(properties: &mut alloc::collections::BTreeMap<String, Property>) -> core::result::Result<Self, crate::SerdeError> {
                 Ok(Self {
                     #(#constructor),*
@@ -132,7 +123,7 @@ pub fn property_convert(item: TokenStream) -> TokenStream {
             }
         }
 
-        impl ToProperty for #item_name {
+        impl ToProperties for #item_name {
             fn to_properties(&self, properties: &mut alloc::collections::BTreeMap<String, Property>) {
                 #(#destructor;)*
             }
@@ -194,6 +185,33 @@ pub fn enum_convert(item: TokenStream) -> TokenStream {
         impl core::convert::From<#item_name> for i32 {
             fn from(i: #item_name) -> Self {
                 i as i32
+            }
+        }
+
+        impl crate::serde::internal::FieldFromProperties for #item_name {
+            fn from_properties(
+                attrs: crate::serde::internal::FieldAttrs,
+                properties: &mut alloc::collections::BTreeMap<alloc::string::String, crate::model::Property>
+            ) -> crate::serde::error::Result<Self> {
+                match properties.remove(attrs.prop_name) {
+                    Some(crate::model::Property::Enum(val)) => Self::try_from(val)
+                        .map_err(|_| crate::SerdeError::unknown_variant(val)),
+                    Some(prop) => Err(crate::SerdeError::wrong_property_type(
+                        attrs.prop_name.to_string(),
+                        Some((crate::model::property::PropertyType::Enum, prop.kind())),
+                    )),
+                    None => Err(crate::SerdeError::missing_property(attrs.prop_name.to_string())),
+                }
+            }
+        }
+
+        impl crate::serde::internal::FieldToProperties for #item_name {
+            fn to_properties(
+                self,
+                attrs: crate::serde::internal::FieldAttrs,
+                properties: &mut alloc::collections::BTreeMap<alloc::string::String, crate::model::Property>
+            ) {
+                properties.insert(attrs.prop_name.to_string(), crate::model::Property::Enum(self.into()));
             }
         }
     };
@@ -258,6 +276,7 @@ pub fn instance_extra(item: TokenStream) -> TokenStream {
                     }),
                     from_props: quote!(_ => {
                         // eprintln!("Other ty: {}", kind);
+                        // eprintln!("    Properties: {:?}", properties);
                         let kind = Instance::Other(
                             String::from(kind),
                             properties

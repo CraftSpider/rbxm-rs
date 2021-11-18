@@ -44,6 +44,7 @@ fn main() {
 - XML file support
 - More helper methods on data
 - Instance new methods + `#[non_exhaustive]` for better future compat
+- Improve parsing modularity, add a low-level API for it maybe
 
 ## License
 Licensed under either of

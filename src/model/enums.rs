@@ -217,6 +217,17 @@ pub enum ButtonStyle {
     RobloxRoundDropdownButton = 5,
 }
 
+/// Mode for the user camera
+///
+#[doc = doc_link!("enum/CameraMode")]
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum CameraMode {
+    /// Classic camera, can be zoomed between first and third person
+    Classic = 0,
+    /// Camera is locked into first-person mode
+    LockFirstPersion = 1,
+}
+
 /// Control the behavior of a [`Camera`](super::instance::Camera)
 ///
 #[doc = doc_link!("enum/CameraType")]
@@ -240,71 +251,210 @@ pub enum CameraType {
     Orbital = 7,
 }
 
+/// Client animator throttling behavior
+///
+#[doc = doc_link!("enum/ClientAnimatorThrottlingMode")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum ClientAnimatorThrottlingMode {
+    /// Default settings
     Default = 0,
+    /// Disable throttling
     Disabled = 1,
+    /// Enable throttling
     Enabled = 2,
 }
 
+/// How the camera handles objects between it and the subject
+///
+#[doc = doc_link!("enum/DevCameraOcclusionMode")]
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum DevCameraOcclusionMode {
+    /// Zoom in until there's nothing obscuring the subject
+    Zoom = 0,
+    /// Any objects between the player and the subject will become translucent
+    Invisicam = 1,
+}
+
+/// Override for the player's camera movement mode if they're on a computer
+///
+#[doc = doc_link!("enum/DevComputerCameraMovementMode")]
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum DevComputerCameraMovementMode {
+    /// Use the user's settings
+    UserChoice = 0,
+    /// Force classic camera movement
+    Classic = 1,
+    /// Force follow camera movement
+    Follow = 2,
+    /// Force orbital camera movement
+    Orbital = 3,
+    /// Force camera toggle mode
+    CameraToggle = 4,
+}
+
+/// Override for the player's movement mode if they're on a computer
+///
+#[doc = doc_link!("enum/DevComputerMovementMode")]
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum DevComputerMovementMode {
+    /// Use the user's settings
+    UserChoice = 0,
+    /// Force keyboard+mouse movement
+    KeyboardMouse = 1,
+    /// Force click-based movement
+    ClickToMove = 2,
+    /// Disable all default movement, all character movement will be handled by custom scripts
+    Scriptable = 3,
+}
+
+/// Override for the player's camera movement mode if they're on mobile
+///
+#[doc = doc_link!("enum/DevTouchCameraMovementMode")]
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum DevTouchCameraMovementMode {
+    /// Use the user's settings
+    UserChoice = 0,
+    /// Force classic camera movement
+    Classic = 1,
+    /// Force follow camera movement
+    Follow = 2,
+    /// Force orbital camera movement
+    Orbital = 3,
+}
+
+/// Override for the player's movement mode if they're on mobile
+///
+#[doc = doc_link!("enum/DevTouchMovementMode")]
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum DevTouchMovementMode {
+    /// Use the user's settings
+    UserChoice = 0,
+    /// Force virtual thumbstick based movement (stick that moves with the player's finger)
+    Thumbstick = 1,
+    /// Force virtual dpad based movement
+    DPad = 2,
+    /// Force virtual thumbpad based movement (stick that stays stationary)
+    Thumbpad = 3,
+    /// Force click-based movement
+    ClickToMove = 4,
+    /// Disable all default movement, all character movement will be handled by custom scripts
+    Scriptable = 5,
+    /// Force control via portrait-mode dynamic stick controls
+    DynamicThumbstick = 6,
+}
+
+/// Controls whether multiple people can use a dialog at once
+///
+#[doc = doc_link!("enum/DialogBehaviorType")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum DialogBehaviorType {
+    /// Only one player can use dialog at a time. Everyone can see the current dialog
     SinglePlayer = 0,
+    /// Many players can use the dialog at once. Everyone sees their own dialog
     MultiplePlayers = 1,
 }
 
+/// Set the icon used by the dialog
+///
+#[doc = doc_link!("enum/DialogPurpose")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum DialogPurpose {
+    /// Shows an exclamation point - `!`
     Quest = 0,
+    /// Shows a question mark - `?`
     Help = 1,
+    /// Shows a dollar sign - `$`
     Shop = 2,
 }
 
+/// Set the color of the bar along the side of a dialog
+///
+#[doc = doc_link!("enum/DialogTone")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum DialogTone {
+    /// Dialog has a blue bar
     Neutral = 0,
+    /// Dialog has a green bar
     Friendly = 1,
+    /// Dialog has a red bar
     Enemy = 2,
 }
 
+/// Choose the axis used when setting a new GUI size in an aspect ratio constraint
+///
+#[doc = doc_link!("enum/DominantAxis")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum DominantAxis {
+    /// Constrain along X axis
     Width = 0,
+    /// Constrain along Y axis
     Height = 1,
 }
 
+/// Choose the direction of a [`Tween`](super::instance::Tween)
+///
+#[doc = doc_link!("enum/EasingDirection")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum EasingDirection {
+    /// Ease 'in', start slowly and speed up
     In = 0,
+    /// Ease 'out', start quickly and slow down
     Out = 1,
+    /// Easy both in and out, speeding up towards the middle and slowing at either end
     InOut = 2,
 }
 
+/// Choose how a [`Tween`](super::instance::Tween) will move an object over its lifetime
+///
+#[doc = doc_link!("enum/EasingStyle")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum EasingStyle {
+    /// Linear motion, LERP
     Linear = 0,
+    /// Sine motion, smooth curve
     Sine = 1,
+    /// Back motion, slightly overshoots then retreats
     Back = 2,
+    /// Quad motion, smooth curve
     Quad = 3,
+    /// Quart motion, starts very fast and slows rapidly
     Quart = 4,
+    /// Quint motion, starts very fast and slows rapidly
     Quint = 5,
+    /// Bounce motion, 'hit' the endpoint and bounce
     Bounce = 6,
+    /// Elastic motion, like a rubber band is pulling it in
     Elastic = 7,
+    /// Exponential motion, like quart or quint but even more so
     Exponential = 8,
+    /// Circular motion, very smooth
     Circular = 9,
+    /// Cubic motion, smooth curve
     Cubic = 10,
 }
 
+/// When a scrollbar in a [`ScrollingFrame`](super::instance::ScrollingFrame) will behave
+/// elastically
+///
+#[doc = doc_link!("enum/ElasticBehavior")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum ElasticBehavior {
+    /// Elastic when there is content scrollable
     WhenScrollable = 0,
+    /// Elastic all the time, content or not
     Always = 1,
+    /// Elastic never
     Never = 2,
 }
 
+/// Whether an explosion should generate craters
+///
+#[doc = doc_link!("enum/ExplosionType")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum ExplosionType {
+    /// Explosion won't generate craters
     NoCraters = 0,
+    /// Explosion will generate craters
     Craters = 1,
 }
 
@@ -388,6 +538,13 @@ pub enum FrameStyle {
     ChatGreen = 4,
     ChatRed = 5,
     DropShadow = 6,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum GameAvatarType {
+    R6 = 0,
+    R15 = 1,
+    PlayerChoice = 2,
 }
 
 #[derive(Debug, Copy, Clone, EnumConvert)]
@@ -1001,6 +1158,13 @@ pub enum LineJoinMode {
     Miter = 2,
 }
 
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum LoadCharacterLayeredClothing {
+    Default = 0,
+    Disabled = 1,
+    Enabled = 2,
+}
+
 /// The material of some [`part`](super::instance::BasePart) or [`terrain`](super::instance::Terrain)
 ///
 #[doc = doc_link!("enum/Material")]
@@ -1281,6 +1445,12 @@ pub enum ProximityPromptStyle {
 }
 
 #[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum R15CollisionType {
+    OuterBox = 0,
+    InnerBox = 1,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum RenderFidelity {
     Automatic = 0,
     Precise = 1,
@@ -1300,6 +1470,34 @@ pub enum ResamplerMode {
 }
 
 #[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum ReverbType {
+    NoReverb = 0,
+    GenericReverb = 1,
+    PaddedCell = 2,
+    Room = 3,
+    Bathroom = 4,
+    LivingRoom = 5,
+    StoneRoom = 6,
+    Auditorium = 7,
+    ConcertHall = 8,
+    Cave = 9,
+    Arena = 10,
+    Hangar = 11,
+    CarpettedHallway = 12,
+    Hallway = 13,
+    StoneCorridor = 14,
+    Alley = 15,
+    Forest = 16,
+    City = 17,
+    Mountains = 18,
+    Quarry = 19,
+    Plain = 20,
+    ParkingLot = 21,
+    SewerPipe = 22,
+    UnderWater = 23,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum RollOffMode {
     Inverse = 0,
     Linear = 1,
@@ -1314,6 +1512,15 @@ pub enum ScaleType {
     Tile = 2,
     Fit = 3,
     Crop = 4,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum ScreenOrientation {
+    LandscapeLeft = 0,
+    LandscapeRight = 1,
+    LandscapeSensor = 2,
+    Portrait = 3,
+    Sensor = 4,
 }
 
 #[derive(Debug, Copy, Clone, EnumConvert)]
@@ -1482,6 +1689,13 @@ pub enum VerticalAlignment {
 pub enum VerticalScrollBarPosition {
     Right = 0,
     Left = 1,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum VirtualCursorMode {
+    Default = 0,
+    Disabled = 1,
+    Enabled = 2,
 }
 
 #[derive(Debug, Copy, Clone, EnumConvert)]

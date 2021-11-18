@@ -17,7 +17,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use uuid::Uuid;
 
-fn chomp_properties<R: core::fmt::Debug + Read>(
+fn chomp_properties<R: Read>(
     reader: &mut R,
     num_props: usize,
     prop_ty: u8,
@@ -498,6 +498,7 @@ mod tests {
             };
 
             if is_rbxm {
+                println!("File: {:?}", i.path());
                 from_file(i.path()).map_err(|e| println!("{}", e)).unwrap();
             }
         }

@@ -342,6 +342,14 @@ impl<W: Write> Print<W> for PhysicalProperties {
     fn print(writer: &mut W, val: Self) -> Result<()> {
         match val {
             PhysicalProperties::Default => bool::print(writer, false)?,
+            PhysicalProperties::Custom { density, elasticity, elasticity_weight, friction, friction_weight } => {
+                bool::print(writer, true)?;
+                f32::print(writer, density)?;
+                f32::print(writer, friction)?;
+                f32::print(writer, elasticity)?;
+                f32::print(writer, friction_weight)?;
+                f32::print(writer, elasticity_weight)?;
+            }
         }
         Ok(())
     }

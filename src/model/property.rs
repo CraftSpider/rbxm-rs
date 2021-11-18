@@ -76,7 +76,8 @@ pub enum PropertyType {
 
 impl PropertyType {
     /// Get the human-readable name for this property type
-    pub fn name(&self) -> &'static str {
+    #[must_use]
+    pub const fn name(&self) -> &'static str {
         match self {
             PropertyType::BinaryString => "BinaryString",
             PropertyType::TextString => "TextString",
@@ -183,7 +184,7 @@ pub enum Property {
 }
 
 impl Property {
-    pub(crate) fn kind(&self) -> PropertyType {
+    pub(crate) const fn kind(&self) -> PropertyType {
         match self {
             Property::BinaryString(..) => PropertyType::BinaryString,
             Property::TextString(..) => PropertyType::TextString,

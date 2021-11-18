@@ -5,7 +5,7 @@ use crate::tree;
 use core::fmt;
 
 /// The error type returned by model operations that may fail
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Error {
     /// Model path doesn't match expected syntax
     InvalidPath,
