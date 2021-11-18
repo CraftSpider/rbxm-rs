@@ -260,7 +260,7 @@ impl Vector2 {
     #[must_use]
     #[inline]
     pub fn len(&self) -> f32 {
-        f32::sqrt(self.len_squared())
+        num::Float::sqrt(self.len_squared())
     }
 
     /// Get the length squared of this vector
@@ -350,7 +350,7 @@ impl Vector3 {
     #[must_use]
     #[inline]
     pub fn len(&self) -> f32 {
-        f32::sqrt(self.len_squared())
+        num::Float::sqrt(self.len_squared())
     }
 
     /// Get the length squared of this vector

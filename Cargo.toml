@@ -23,7 +23,7 @@ rustdoc-args = ["--cfg", "docsrs", "-e", "./static/custom.css"]
 [features]
 default = ["std"]
 # Enable support for features that require the standard library
-std = ["lz4_flex/std", "uuid/std"]
+std = ["lz4_flex/std", "uuid/std", "num/std"]
 # Enable support for features that require the nightly compiler
 unstable = []
 # Enable understanding of mesh data, instead of treating it as a binary blob
@@ -34,3 +34,5 @@ rbxm-proc = { version = "0.2.0", path = "./rbxm-proc" }
 slotmap = { version = "1.0", default-features = false }
 lz4_flex = { version = "0.9", default-features = false, features = ["safe-decode", "safe-encode"] }
 uuid = { version = "0.8", default-features = false }
+# Needed for no_std float math
+num = { version = "0.4", default-features = false, features = ["libm"] }

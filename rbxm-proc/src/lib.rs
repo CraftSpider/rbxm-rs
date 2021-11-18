@@ -197,10 +197,10 @@ pub fn enum_convert(item: TokenStream) -> TokenStream {
                     Some(crate::model::Property::Enum(val)) => Self::try_from(val)
                         .map_err(|_| crate::SerdeError::unknown_variant(val)),
                     Some(prop) => Err(crate::SerdeError::wrong_property_type(
-                        attrs.prop_name.to_string(),
+                        alloc::string::String::from(attrs.prop_name),
                         Some((crate::model::property::PropertyType::Enum, prop.kind())),
                     )),
-                    None => Err(crate::SerdeError::missing_property(attrs.prop_name.to_string())),
+                    None => Err(crate::SerdeError::missing_property(alloc::string::String::from(attrs.prop_name))),
                 }
             }
         }
@@ -211,7 +211,7 @@ pub fn enum_convert(item: TokenStream) -> TokenStream {
                 attrs: crate::serde::internal::FieldAttrs,
                 properties: &mut alloc::collections::BTreeMap<alloc::string::String, crate::model::Property>
             ) {
-                properties.insert(attrs.prop_name.to_string(), crate::model::Property::Enum(self.into()));
+                properties.insert(alloc::string::String::from(attrs.prop_name), crate::model::Property::Enum(self.into()));
             }
         }
     };
