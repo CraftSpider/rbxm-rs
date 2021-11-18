@@ -64,13 +64,15 @@ macro_rules! doc_link {
 </div>
 <div class="example-wrap" style="display:inline-block">
     <pre class = "tracked">
-        <a href="https://developer.roblox.com/en-us/api-reference/"#, $link, "\">",
+        <a href="https://developer.roblox.com/en-us/api-reference/"#,
             $link,
-r#"     </a>
+            "\">",
+            $link,
+            r#"     </a>
     </pre>
 </div>"#,
         )
-    }
+    };
 }
 
 extern crate alloc;

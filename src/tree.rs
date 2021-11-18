@@ -166,9 +166,8 @@ impl<T: ?Sized> Tree<T> {
 
         let new_node = RefCell::new(item);
 
-        let new_node = unsafe {
-            NonNull::new_unchecked(Box::into_raw(Box::new(new_node) as Box<RefCell<T>>))
-        };
+        let new_node =
+            unsafe { NonNull::new_unchecked(Box::into_raw(Box::new(new_node) as Box<RefCell<T>>)) };
 
         let new_key = rc.nodes.insert(new_node);
         rc.roots.push(new_key);
@@ -287,11 +286,7 @@ impl<T: ?Sized> Tree<T> {
 
     /// Get the parent key of a node identified by the provided key
     pub fn parent_key_of(&self, child: TreeKey) -> Option<TreeKey> {
-        self.inner
-            .borrow()
-            .parents
-            .get(child)
-            .copied()
+        self.inner.borrow().parents.get(child).copied()
     }
 
     /// Get the child keys of a node identified by the provided key

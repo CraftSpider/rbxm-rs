@@ -127,16 +127,15 @@ impl Default for RbxModel {
 
 #[cfg(test)]
 mod tests {
-    use crate::model::instance::{Model, Part};
     use super::*;
+    use crate::model::instance::{Model, Part};
 
     #[test]
     fn test_get_path() {
         let model = RbxModel::new();
         let tree = model.tree();
 
-        let new_root = tree
-            .add_root(Instance::Model(Model::new()));
+        let new_root = tree.add_root(Instance::Model(Model::new()));
 
         {
             let mut new_root = tree.try_get_mut(new_root).unwrap();
@@ -150,13 +149,11 @@ mod tests {
             new_root.new_child(Instance::Part(part2));
         }
 
-        let part = model.get_path("Model/Part1")
-            .unwrap();
+        let part = model.get_path("Model/Part1").unwrap();
 
         assert_eq!(part.name(), "Part1");
 
-        let part = model.get_path("0/1")
-            .unwrap();
+        let part = model.get_path("0/1").unwrap();
 
         assert_eq!(part.name(), "Part2");
     }
@@ -166,8 +163,7 @@ mod tests {
         let model = RbxModel::new();
         let tree = model.tree();
 
-        let new_root = tree
-            .add_root(Instance::Model(Model::new()));
+        let new_root = tree.add_root(Instance::Model(Model::new()));
 
         {
             let mut new_root = tree.try_get_mut(new_root).unwrap();
@@ -175,8 +171,7 @@ mod tests {
             new_root.new_child(Instance::Part(Part::new()));
         }
 
-        let err = model.get_path("Model/Part")
-            .unwrap_err();
+        let err = model.get_path("Model/Part").unwrap_err();
 
         assert_eq!(err, Error::AmbiguousPath);
     }
@@ -184,13 +179,11 @@ mod tests {
     #[test]
     fn test_invalid_path() {
         let model = RbxModel::new();
-        let err = model.get_path("")
-            .unwrap_err();
+        let err = model.get_path("").unwrap_err();
 
         assert_eq!(err, Error::InvalidPath);
 
-        let err = model.get_path("Bad&Part$Name")
-            .unwrap_err();
+        let err = model.get_path("Bad&Part$Name").unwrap_err();
 
         assert_eq!(err, Error::InvalidPath);
     }

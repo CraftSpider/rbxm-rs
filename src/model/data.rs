@@ -642,7 +642,7 @@ pub enum PhysicalProperties {
         friction: f32,
         /// How much this parts friction affects the collision
         friction_weight: f32,
-    }
+    },
 }
 
 impl Default for PhysicalProperties {
