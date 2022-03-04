@@ -184,7 +184,8 @@ pub enum Property {
 }
 
 impl Property {
-    pub(crate) const fn kind(&self) -> PropertyType {
+    /// Get the [`PropertyType`] of this property
+    pub const fn kind(&self) -> PropertyType {
         match self {
             Property::BinaryString(..) => PropertyType::BinaryString,
             Property::TextString(..) => PropertyType::TextString,

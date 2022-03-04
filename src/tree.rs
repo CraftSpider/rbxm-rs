@@ -278,9 +278,7 @@ impl<T: ?Sized> Tree<T> {
         self.inner
             .borrow()
             .roots
-            .iter()
-            .copied()
-            .collect::<Vec<_>>()
+            .clone()
             .into_iter()
     }
 

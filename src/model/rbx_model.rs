@@ -140,12 +140,10 @@ mod tests {
         {
             let mut new_root = tree.try_get_mut(new_root).unwrap();
 
-            let mut part1 = Part::new();
-            part1.name = String::from("Part1");
+            let part1 = Part::new_named(String::from("Part1"));
             new_root.new_child(Instance::Part(part1));
 
-            let mut part2 = Part::new();
-            part2.name = String::from("Part2");
+            let part2 = Part::new_named(String::from("Part2"));
             new_root.new_child(Instance::Part(part2));
         }
 

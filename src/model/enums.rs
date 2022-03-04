@@ -458,152 +458,291 @@ pub enum ExplosionType {
     Craters = 1,
 }
 
+/// Field of view style for a [`Camera`](super::instance::Camera)
+///
+#[doc = doc_link!("enum/FieldOfViewMode")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum FieldOfViewMode {
+    /// FoV is measured verticaly
     Vertical = 0,
+    /// FoV is measured diagonally
     Diagonal = 1,
+    /// FoV is measured along the larger axis
     MaxAxis = 2,
 }
 
+/// Direction in which a UI [grid layout](super::instance::UIGridStyleLayout) is filled
+///
+#[doc = doc_link!("enum/FillDirection")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum FillDirection {
+    /// Fill horizontal/row first
     Horizontal = 0,
+    /// Fill vertical/column first
     Vertical = 1,
 }
 
+/// The font for a UI text object
+///
+#[doc = doc_link!("enum/FillDirection")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum Font {
+    /// Legacy mode, use old default
     Legacy = 0,
+    /// Arial font
     Arial = 1,
+    /// Arial font bolded
     ArialBold = 2,
+    /// Source sans font
     SourceSans = 3,
+    /// Source sans font bolded
     SourceSansBold = 4,
+    /// Source sans font with light stroke
     SourceSansLight = 5,
+    /// Source sans font italicized
     SourceSansItalic = 6,
+    /// Bodoni font
     Bodoni = 7,
+    /// Garamond font
     Garamond = 8,
+    /// Cartoon font
     Cartoon = 9,
+    /// Code font
     Code = 10,
+    /// Highway font
     Highway = 11,
+    /// SciFi font
     SciFi = 12,
+    /// Arcade font
     Arcade = 13,
+    /// Fantasy font
     Fantasy = 14,
+    /// Antique font
     Antique = 15,
+    /// Source sans font semi-bolded
     SourceSansSemibold = 16,
+    /// Gotham font
     Gotham = 17,
+    /// Gotham font semi-bolded
     GothamSemibold = 18,
+    /// Gotham font bolded
     GothamBold = 19,
+    /// Gotham font very bolded
     GothamBlack = 20,
+    /// AmaticSC font
     AmaticSC = 21,
+    /// Bangers font
     Bangers = 22,
+    /// Creepster font
     Creepster = 23,
+    /// DenkOne font
     DenkOne = 24,
+    /// Fondamento font
     Fondamento = 25,
+    /// Fredoka one font
     FredokaOne = 26,
+    /// Grenze gotisch font
     GrenzeGotisch = 27,
+    /// Indie flower font
     IndieFlower = 28,
+    /// Josefin sans font
     JosefinSans = 29,
+    /// Jura font
     Jura = 30,
+    /// Kalam font
     Kalam = 31,
+    /// Luckiest guy font
     LuckiestGuy = 32,
+    /// Merriweather font
     Merriweather = 33,
+    /// Michroma font
     Michroma = 34,
+    /// Nunito font
     Nunito = 35,
+    /// Oswald font
     Oswald = 36,
+    /// Patrick hand font
     PatrickHand = 37,
+    /// Permament marker font
     PermanentMarker = 38,
+    /// Roboto font
     Roboto = 39,
+    /// Roboto condensed font
     RobotoCondensed = 40,
+    /// Roboto font monospaced
     RobotoMono = 41,
+    /// Sarpanch font
     Sarpanch = 42,
+    /// Special elite font
     SpecialElite = 43,
+    /// Titillium web font
     TitilliumWeb = 44,
+    /// Ubuntu font
     Ubuntu = 45,
 }
 
+/// Set the form-factor of a [`Part`](super::instance::Part). This controls
+/// how the part scales along different axis
+///
+#[doc = doc_link!("enum/FormFactor")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum FormFactor {
+    /// Increase by a rate of 1 along all axis
     Symmetric = 0,
+    /// 1 along x and z, 1.2 along y
     Brick = 1,
+    /// 1 along x and z, .4 along y
     Plate = 2,
+    /// Variable scale along each axis, as low as .001
     Custom = 3,
 }
 
+/// Set the border/background style of a [`Frame`](super::instance::Frame)
+///
+#[doc = doc_link!("enum/FrameStyle")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum FrameStyle {
+    /// Use the frame's custom colors and transparency, no padding
     Custom = 0,
+    /// Make the frame look like a neutral dialog, with 15px padding
     ChatBlue = 1,
+    /// Translucent dark grey, with 5px padding
     RobloxSquare = 2,
+    /// Translucent dark grey, with rounded edges and 5px padding
     RobloxRound = 3,
+    /// Make the frame look like a positive dialog, with 15px padding
     ChatGreen = 4,
+    /// Make the frame look like a negative dialog, with 15px padding
     ChatRed = 5,
+    /// Translucent grey rectangle with blurred sides, with 8px padding
     DropShadow = 6,
 }
 
+/// The type of character avatar to use in this world
+///
+#[doc = doc_link!("enum/GameAvatarType")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum GameAvatarType {
+    /// Use R6 character rig
     R6 = 0,
+    /// Use R15 character rig
     R15 = 1,
+    /// Use the rig chosen by the player's settings
     PlayerChoice = 2,
 }
 
+/// The style of a set of [`Handles`](super::instance::Handles)
+///
+#[doc = doc_link!("enum/HandlesStyle")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum HandlesStyle {
+    /// Rounded handles
     Resize = 0,
+    /// Cone-shaped handles
     Movement = 1,
 }
 
+/// Determine how a [grid layout](super::instance::UIGridStyleLayout) will be centered in its
+/// parent
+///
+#[doc = doc_link!("enum/HorizontalAlignment")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum HorizontalAlignment {
+    /// Center in parent
     Center = 0,
+    /// Left-align in parent
     Left = 1,
+    /// Right-align in parent
     Right = 2,
 }
 
+/// Determine how collision is handled for non-player [`Humanoids`](super::instance::Humanoid)
+///
+#[doc = doc_link!("enum/HumanoidCollisionType")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum HumanoidCollisionType {
+    /// Dynamic collision based on mesh sizes
     OuterBox = 0,
+    /// Constant collision based on classic avatar
     InnerBox = 1,
 }
 
+/// The perspective display distances of a [`Humanoid`](super::instance::Humanoid) will be
+/// interpreted relative to
+///
+#[doc = doc_link!("enum/HumanoidDisplayDistanceType")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum HumanoidDisplayDistanceType {
+    /// Will use display distance of the viewer
     Viewer = 0,
+    /// Will use display distance of the subject
     Subject = 1,
+    /// Name and Healthbar will never display
     None = 2,
 }
 
+/// When to display the health bar for this [`Humanoid`](super::instance::Humanoid)
+///
+#[doc = doc_link!("enum/HumanoidHealthDisplayType")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum HumanoidHealthDisplayType {
+    /// Display health bar when Humanoid is damaged
     DisplayWhenDamaged = 0,
+    /// Always display health bar
     AlwaysOn = 1,
+    /// Never display health bar
     AlwaysOff = 2,
 }
 
+/// Whether to only set collisions for [`Humanoids`](super::instance::Humanoid) on a state change
+///
+#[doc = doc_link!("enum/HumanoidOnlySetCollisionsOnStateChange")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum HumanoidOnlySetCollisionsOnStateChange {
+    /// Use default settings
     Default = 0,
+    /// Do not only set on state change
     Disabled = 1,
+    /// Set only on state change
     Enabled = 2,
 }
 
+/// Which humanoid rig style is in use
+///
+#[doc = doc_link!("enum/HumanoidRigType")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum HumanoidRigType {
+    /// R6 Rig, 'classic' style
     R6 = 0,
+    /// R15 Rig, 'new' style
     R15 = 1,
 }
 
+/// Controls how this [`Feature`](super::instance::Feature) is positioned, in concert with
+/// [`LeftRight`] and [`TopBottom`]
+///
+#[doc = doc_link!("enum/InOut")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum InOut {
+    /// Position on an edge of the parent
     Edge = 0,
+    /// Inset from the parent
     Inset = 1,
+    /// Centered on the parent
     Center = 2,
 }
 
+/// Control how a [`Parts`](super::instance::Part) `surface` for a side behaves
+///
+#[doc = doc_link!("enum/InputType")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum InputType {
+    /// Input does nothing, behaves like a weld
     NoInput = 0,
+    /// Rotate at a constant velocity matching the side's `param_b`
     Constant = 12,
+    /// Rotate at a velocity of `param_a * sin(distributed_game_time * param_b)`. This means
+    /// `param_a` controls amplitude, `param_b` controls frequency
     Sin = 13,
 }
 
@@ -613,10 +752,16 @@ impl Default for InputType {
     }
 }
 
+/// Whether interpolation throttling is enabled
+///
+#[doc = doc_link!("enum/InterpolationThrottlingMode")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum InterpolationThrottlingMode {
+    /// Use default settings
     Default = 0,
+    /// Disable interpolation throttling
     Disabled = 1,
+    /// Enable interpolation throttling
     Enabled = 2,
 }
 
@@ -1137,31 +1282,56 @@ pub enum KeyCode {
     Thumbstick2 = 1017,
 }
 
+/// Controls how this [`Feature`](super::instance::Feature) is positioned, in concert with [`InOut`]
+/// and [`TopBottom`]
+///
+#[doc = doc_link!("enum/LeftRight")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum LeftRight {
+    /// Shifted left on the surface
     Left = 0,
+    /// Centered horizontally on the surface
     Center = 1,
+    /// Shifted right on the surface
     Right = 2,
 }
 
+/// Control a mesh model's level of detail
+///
+#[doc = doc_link!("enum/LevelOfDetailSetting")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum LevelOfDetailSetting {
+    /// Low mesh detail
     Low = 0,
+    /// Medium mesh detail
     Medium = 1,
+    /// High mesh detail
     High = 2,
 }
 
+/// Control how corners on a [`UIStroke`](super::instance::UIStroke) are handled
+///
+#[doc = doc_link!("enum/LineJoinMode")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum LineJoinMode {
+    /// Round edges on the stroke
     Round = 0,
+    /// Bevel edges on the stroke
     Bevel = 1,
+    /// Miter edges on the stroke
     Miter = 2,
 }
 
+/// Whether to load layered clothing on a character
+///
+#[doc = doc_link!("enum/LoadCharacterLayeredClothing")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum LoadCharacterLayeredClothing {
+    /// Use default settings
     Default = 0,
+    /// Disable layered clothing
     Disabled = 1,
+    /// Enable layered clothing
     Enabled = 2,
 }
 
@@ -1664,10 +1834,17 @@ pub enum TextYAlignment {
     Bottom = 2,
 }
 
+/// Controls how this [`Feature`](super::instance::Feature) is positioned, in concert with [`InOut`]
+/// and [`LeftRight`]
+///
+#[doc = doc_link!("enum/TopBottom")]
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum TopBottom {
+    /// Shifted up on the surface
     Top = 0,
+    /// Centered vertically on the surface
     Center = 1,
+    /// Shifted down on the surface
     Bottom = 2,
 }
 
