@@ -466,6 +466,12 @@ impl<'a, 'b, T: ?Sized> NodeRef<'a, 'b, T> {
             node: unsafe { ptr.as_ref() }.try_borrow()?,
         })
     }
+
+    /// Attempt to promote this immutable ref into a mutable ref
+    pub fn try_promote(self) -> Result<NodeRefMut<'a, 'b, T>> {
+        std::mem::drop(self.node);
+        self.tree.try_get_mut(self.mykey)
+    }
 }
 
 impl<T: ?Sized + fmt::Debug> fmt::Debug for NodeRef<'_, '_, T> {
@@ -500,6 +506,13 @@ impl<'a, 'b, T: ?Sized> NodeRefMut<'a, 'b, T> {
             mykey: key,
             node: unsafe { ptr.as_ref() }.try_borrow_mut()?,
         })
+    }
+
+    /// Demote this mutable ref to an immutable ref
+    pub fn demote(self) -> NodeRef<'a, 'b, T> {
+        std::mem::drop(self.node);
+        self.tree.try_get(self.mykey)
+            .expect("This should always work, as we have unique access")
     }
 
     /// Create a new child of this node from a type that unsizes into the type of the tree
@@ -600,5 +613,47 @@ mod tests {
         let children = roots[0].children().collect::<Result<Vec<_>>>().unwrap();
 
         assert_eq!(children.len(), 2);
+    }
+
+    #[test]
+    fn test_promote() {
+        let tree = Tree::new();
+        let id = tree.add_root(true);
+
+        {
+            let root = tree.try_get(id)
+                .unwrap();
+
+            let mut root = root.try_promote()
+                .expect("Could promote unique reference");
+
+            root.new_child(false);
+        }
+
+        {
+            let root1 = tree.try_get(id)
+                .unwrap();
+            let _root2 = tree.try_get(id)
+                .unwrap();
+
+            root1.try_promote()
+                .expect_err("Couldn't promote non-unique reference");
+        }
+    }
+
+    #[test]
+    fn test_demote() {
+        let tree = Tree::new();
+        let id = tree.add_root(true);
+
+        {
+            let mut root = tree.try_get_mut(id)
+                .unwrap();
+
+            root.new_child(false);
+
+            let root = root.demote();
+            assert_eq!(*root, true);
+        }
     }
 }
