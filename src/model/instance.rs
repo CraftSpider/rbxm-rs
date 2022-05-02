@@ -495,6 +495,8 @@ pub struct BasePart {
     pub pivot_offset: CFrame,
 
     pub material: Material,
+    #[propname = "MaterialVariantSerialized"]
+    pub material_variant: String,
     pub color3uint8: Color3Uint8,
     pub transparency: f32,
     pub reflectance: f32,
@@ -554,6 +556,7 @@ impl BasePart {
             pivot_offset: CFrame::default(),
 
             material: Material::Plastic,
+            material_variant: String::new(),
             color3uint8: Color3Uint8::default(),
             transparency: 0.0,
             reflectance: 0.0,
