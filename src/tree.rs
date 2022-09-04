@@ -437,7 +437,7 @@ impl<T: ?Sized> Drop for InnerTree<T> {
     fn drop(&mut self) {
         for i in self.nodes.values() {
             unsafe {
-                Box::from_raw(i.as_ptr());
+                let _ = Box::from_raw(i.as_ptr());
             }
         }
     }
