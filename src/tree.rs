@@ -240,7 +240,7 @@ impl<T: ?Sized> Tree<T> {
     /// Iterate over the roots of this tree.
     ///
     /// A root is any node that has no parent
-    pub fn roots<'a>(&'a self) -> impl Iterator<Item = Result<NodeRef<'a, '_, T>>> {
+    pub fn roots(&self) -> impl Iterator<Item = Result<NodeRef<'_, '_, T>>> {
         let inner = self.inner.borrow();
 
         inner
@@ -257,7 +257,7 @@ impl<T: ?Sized> Tree<T> {
     /// Iterator over the roots of this tree mutable
     ///
     /// A root is any node that has no parent
-    pub fn roots_mut<'a>(&'a self) -> impl Iterator<Item = Result<NodeRefMut<'a, '_, T>>> {
+    pub fn roots_mut(&self) -> impl Iterator<Item = Result<NodeRefMut<'_, '_, T>>> {
         let inner = self.inner.borrow();
 
         inner
@@ -555,19 +555,19 @@ impl<T: ?Sized + fmt::Debug> fmt::Debug for NodeRefMut<'_, '_, T> {
 
 impl<T> DerefMut for NodeRefMut<'_, '_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut *self.node
+        &mut self.node
     }
 }
 
 impl<T> AsMut<T> for NodeRefMut<'_, '_, T> {
     fn as_mut(&mut self) -> &mut T {
-        &mut *self.node
+        &mut self.node
     }
 }
 
 impl<T> BorrowMut<T> for NodeRefMut<'_, '_, T> {
     fn borrow_mut(&mut self) -> &mut T {
-        &mut *self.node
+        &mut self.node
     }
 }
 
