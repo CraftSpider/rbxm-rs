@@ -1,6 +1,6 @@
 [package]
 name = "rbxm"
-version = "0.2.1"
+version = "0.3.0"
 authors = ["Rune Tynan <runetynan@gmail.com>"]
 edition = "2021"
 description = "Reader for Roblox model files"
