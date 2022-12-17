@@ -1842,7 +1842,7 @@ pub enum ScrollingDirection {
 #[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum SelectionBehavior {
     Escape = 0,
-    Stop = 1
+    Stop = 1,
 }
 
 #[derive(Debug, Copy, Clone, EnumConvert)]
