@@ -4,6 +4,30 @@
 
 use rbxm_proc::EnumConvert;
 
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum AccessoryType {
+    Unknown = 0,
+    Hat = 1,
+    Hair = 2,
+    Face = 3,
+    Neck = 4,
+    Shoulder = 5,
+    Front = 6,
+    Back = 7,
+    Waist = 8,
+    TShirt = 9,
+    Shirt = 10,
+    Pants = 11,
+    Jacket = 12,
+    Sweater = 13,
+    Shorts = 14,
+    LeftShoe = 15,
+    RightShoe = 16,
+    DressSkirt = 17,
+    Eyebrow = 18,
+    Eyelash = 19,
+}
+
 /// The [`CFrame`](crate::model::CFrame) that this Instance is relative to
 ///
 #[doc = doc_link!("enum/ActuatorRelativeTo")]
@@ -1558,6 +1582,19 @@ impl Default for ModelLevelOfDetail {
 }
 
 #[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum ModelStreamingMode {
+    Default = 0,
+    Atomic = 1,
+    Persistent = 2,
+}
+
+impl Default for ModelStreamingMode {
+    fn default() -> Self {
+        ModelStreamingMode::Default
+    }
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum NameOcclusion {
     NoOcclusion = 0,
     EnemyOcclusion = 1,
@@ -1579,6 +1616,49 @@ pub enum NormalId {
     Left = 3,
     Bottom = 4,
     Front = 5,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum OrientationAlignmentMode {
+    OneAttachment = 0,
+    TwoAttachment = 1,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum ParticleEmitterShape {
+    Box = 0,
+    Sphere = 1,
+    Cylinder = 2,
+    Disc = 3,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum ParticleEmitterShapeInOut {
+    Outward = 0,
+    Inward = 1,
+    InAndOut = 2,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum ParticleEmitterShapeStyle {
+    Volume = 0,
+    Surface = 1,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum ParticleFlipbookLayout {
+    None = 0,
+    Grid2x2 = 1,
+    Grid4x4 = 2,
+    Grid8x8 = 3,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum ParticleFlipbookMode {
+    Loop = 0,
+    OneShot = 1,
+    PingPong = 2,
+    Random = 3,
 }
 
 #[derive(Debug, Copy, Clone, EnumConvert)]
@@ -1624,6 +1704,12 @@ pub enum PoseEasingStyle {
     Elastic = 2,
     Cubic = 3,
     Bounce = 4,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum PositionAlignmentMode {
+    OneAttachment = 0,
+    TwoAttachment = 1,
 }
 
 #[derive(Debug, Copy, Clone, EnumConvert)]
@@ -1701,12 +1787,33 @@ pub enum RollOffMode {
 }
 
 #[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum RunContext {
+    Legacy = 0,
+    Server = 1,
+    Client = 2,
+    Plugin = 3,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum SafeAreaCompatibility {
+    None = 0,
+    FullscreenExtension = 1,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
 pub enum ScaleType {
     Stretch = 0,
     Slice = 1,
     Tile = 2,
     Fit = 3,
     Crop = 4,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum ScreenInsets {
+    None = 0,
+    DeviceSafeInsets = 1,
+    CoreUISafeInsets = 2,
 }
 
 #[derive(Debug, Copy, Clone, EnumConvert)]
@@ -1730,6 +1837,12 @@ pub enum ScrollingDirection {
     X = 1,
     Y = 2,
     XY = 4,
+}
+
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum SelectionBehavior {
+    Escape = 0,
+    Stop = 1
 }
 
 #[derive(Debug, Copy, Clone, EnumConvert)]

@@ -302,6 +302,7 @@ impl Base {
 #[non_exhaustive]
 pub struct Accessory {
     pub accoutrement: Accoutrement,
+    pub accessory_type: AccessoryType,
 }
 
 impl Accessory {
@@ -316,6 +317,7 @@ impl Accessory {
     pub fn new_named(name: String) -> Accessory {
         Accessory {
             accoutrement: Accoutrement::new_named(name),
+            accessory_type: AccessoryType::Unknown,
         }
     }
 }
@@ -368,6 +370,9 @@ pub struct Actor {
 pub struct AlignOrientation {
     pub constraint: Constraint,
 
+    #[propname = "CFrame"]
+    pub cframe: CFrame,
+    pub mode: OrientationAlignmentMode,
     pub primary_axis_only: bool,
     pub reaction_torque_enabled: bool,
     pub rigidity_enabled: bool,
@@ -382,6 +387,9 @@ pub struct AlignOrientation {
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
 pub struct AlignPosition {
     pub constraint: Constraint,
+
+    pub position: Vector3,
+    pub mode: PositionAlignmentMode,
 
     pub apply_at_center_of_mass: bool,
     pub reaction_force_enabled: bool,
@@ -501,6 +509,7 @@ pub struct BasePart {
     pub transparency: f32,
     pub reflectance: f32,
 
+    pub collision_group: String,
     pub collision_group_id: i32,
     pub custom_physical_properties: PhysicalProperties,
     pub root_priority: i32,
@@ -561,6 +570,7 @@ impl BasePart {
             transparency: 0.0,
             reflectance: 0.0,
 
+            collision_group: String::from("Default"),
             collision_group_id: 0,
             custom_physical_properties: PhysicalProperties::Default,
             root_priority: 0,
@@ -603,6 +613,7 @@ pub struct BaseScript {
     pub source_container: LuaSourceContainer,
     pub disabled: bool,
     pub linked_source: String,
+    pub run_context: RunContext,
 }
 
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
@@ -653,6 +664,7 @@ pub struct BillboardGui {
     pub distance_step: f32,
     pub distance_upper_limit: f32,
     pub max_distance: f32,
+    pub brightness: f32,
     pub light_influence: f32,
 
     pub size: UDim2,
@@ -840,6 +852,8 @@ pub struct Clouds {
     pub base: Base,
     pub cover: f32,
     pub density: f32,
+    pub color: Color3,
+    pub enabled: bool,
 }
 
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
@@ -926,6 +940,7 @@ pub struct CylindricalConstraint {
     pub sliding_ball_constraint: SlidingBallConstraint,
     pub angular_limits_enabled: bool,
     pub rotation_axis_visible: bool,
+    pub angular_responsiveness: f32,
     pub angular_actuator_type: ActuatorType,
     pub angular_restitution: f32,
     pub angular_speed: f32,
@@ -1080,6 +1095,7 @@ pub struct Fire {
     pub heat: f32,
     #[propname = "size_xml"]
     pub size: f32,
+    pub time_scale: f32,
 }
 
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
@@ -1153,6 +1169,12 @@ pub struct GuiBase2D {
     pub base: Base,
     pub auto_localize: bool,
     pub root_localization_table: InstanceRef,
+
+    pub selection_group: bool,
+    pub selection_behavior_down: SelectionBehavior,
+    pub selection_behavior_left: SelectionBehavior,
+    pub selection_behavior_right: SelectionBehavior,
+    pub selection_behavior_up: SelectionBehavior,
 }
 
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
@@ -1201,6 +1223,7 @@ pub struct GuiObject {
     pub z_index: i32,
     pub rotation: f32,
 
+    pub selection_order: i32,
     pub selection_image_object: InstanceRef,
     pub next_selection_left: InstanceRef,
     pub next_selection_right: InstanceRef,
@@ -1238,6 +1261,7 @@ pub struct Hat {
 pub struct HingeConstraint {
     pub constraint: Constraint,
     pub limits_enabled: bool,
+    pub angular_responsiveness: f32,
     pub angular_speed: f32,
     pub angular_velocity: f32,
     pub lower_angle: f32,
@@ -1302,6 +1326,7 @@ pub struct Humanoid {
     pub hip_height: f32,
     pub internal_head_scale: f32,
     pub internal_body_scale: Vector3,
+    pub evaluate_state_machine: bool,
 
     pub display_name: String,
 }
@@ -1322,6 +1347,7 @@ pub struct HumanoidDescription {
     pub proportion_scale: f32,
     pub width_scale: f32,
 
+    pub mood_animation: i64,
     pub climb_animation: i64,
     pub fall_animation: i64,
     pub idle_animation: i64,
@@ -1334,6 +1360,7 @@ pub struct HumanoidDescription {
     pub graphic_t_shirt: i64,
     pub pants: i64,
     pub shirt: i64,
+    pub accessory_blob: String,
     pub front_accessory: String,
     pub back_accessory: String,
     pub face_accessory: String,
@@ -1537,15 +1564,11 @@ pub struct LuaSourceContainer {
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
 pub struct ManualGlue {
     pub joint_instance: JointInstance,
-    pub surface_0: i32,
-    pub surface_1: i32,
 }
 
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
 pub struct ManualWeld {
     pub joint_instance: JointInstance,
-    pub surface_0: i32,
-    pub surface_1: i32,
 }
 
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
@@ -1556,13 +1579,11 @@ pub struct MeshPart {
     pub has_skinned_mesh: bool,
     pub joint_offset: Vector3,
     pub mesh_id: String,
-    // Deprecated mesh ID
-    #[propname = "MeshID"]
-    pub mesh_id2: String,
     pub render_fidelity: RenderFidelity,
     #[propname = "TextureID"]
     pub texture_id: String,
     pub pivot_offset: Option<CFrame>,
+    pub vertex_count: i32,
 }
 
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
@@ -1579,6 +1600,7 @@ pub struct Message {
 #[non_exhaustive]
 pub struct Model {
     pub base: Base,
+    pub model_streaming_mode: ModelStreamingMode,
     pub level_of_detail: ModelLevelOfDetail,
     pub model_in_primary: Option<CFrame>,
     #[cfg(feature = "mesh-format")]
@@ -1607,6 +1629,7 @@ impl Model {
     pub fn new_named(name: String) -> Model {
         Model {
             base: Base::new_named(name),
+            model_streaming_mode: ModelStreamingMode::default(),
             level_of_detail: ModelLevelOfDetail::default(),
             model_in_primary: None,
             model_mesh_data: Default::default(),
@@ -1729,6 +1752,7 @@ pub struct PartAdornment {
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
 pub struct ParticleEmitter {
     pub base: Base,
+    pub brightness: f32,
     pub enabled: bool,
     pub locked_to_part: bool,
     pub acceleration: Vector3,
@@ -1750,6 +1774,19 @@ pub struct ParticleEmitter {
     pub transparency: NumberSequence,
     pub velocity_inheritance: f32,
     pub z_offset: f32,
+
+    pub flipbook_framerate: NumberRange,
+    pub flipbook_incompatible: String,
+    pub flipbook_layout: ParticleFlipbookLayout,
+    pub flipbook_mode: ParticleFlipbookMode,
+    pub flipbook_start_random: bool,
+
+    pub shape: ParticleEmitterShape,
+    pub shape_in_out: ParticleEmitterShapeInOut,
+    pub shape_partial: f32,
+    pub shape_style: ParticleEmitterShapeStyle,
+
+    pub squash: NumberSequence,
 }
 
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
@@ -1935,8 +1972,9 @@ pub struct ReflectionMetadataItem {
     pub class_category: String,
     pub constraint: String,
     pub script_context: String,
-    #[propname = "summary"]
-    pub summary: String,
+    pub editor_type: String,
+    pub f_flag: String,
+    pub slider_scaling: String,
     pub property_order: i32,
     #[propname = "UIMaximum"]
     pub ui_maximum: f64,
@@ -2028,6 +2066,11 @@ pub struct RopeConstraint {
     pub length: f32,
     pub restitution: f32,
     pub thickness: f32,
+    pub winch_enabled: bool,
+    pub winch_force: f32,
+    pub winch_responsiveness: f32,
+    pub winch_speed: f32,
+    pub winch_target: f32,
 }
 
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
@@ -2048,7 +2091,10 @@ pub struct RotateV {
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
 pub struct ScreenGui {
     pub layer_collector: LayerCollector,
-    pub ignore_gui_inset: bool,
+    pub ignore_gui_inset: Option<bool>,
+    pub clip_to_device_safe_area: bool,
+    pub safe_area_compatibility: SafeAreaCompatibility,
+    pub screen_insets: ScreenInsets,
     pub display_order: i32,
 }
 
@@ -2176,6 +2222,7 @@ pub struct Sky {
 pub struct SlidingBallConstraint {
     pub constraint: Constraint,
     pub limits_enabled: bool,
+    pub linear_responsiveness: f32,
     pub actuator_type: ActuatorType,
     pub lower_limit: f32,
     pub motor_max_acceleration: f32,
@@ -2200,6 +2247,7 @@ pub struct Smoke {
     pub rise_velocity: f32,
     #[propname = "size_xml"]
     pub size: f32,
+    pub time_scale: f32,
 }
 
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
@@ -2211,9 +2259,12 @@ pub struct Snap {
 pub struct Sound {
     pub base: Base,
     pub looped: bool,
+    pub loop_region: NumberRange,
     pub playing: bool,
     pub play_on_remove: bool,
     pub playback_speed: f32,
+    pub playback_region: NumberRange,
+    pub playback_regions_enabled: bool,
     pub roll_off_mode: RollOffMode,
     pub sound_group: InstanceRef,
     #[propname = "xmlRead_MaxDistance_3"]
@@ -2252,6 +2303,7 @@ pub struct Sparkles {
     pub base: Base,
     pub enabled: bool,
     pub sparkle_color: Color3,
+    pub time_scale: f32,
 }
 
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
@@ -2512,6 +2564,7 @@ pub struct TextBox {
     pub text_wrapped: bool,
     pub multi_line: bool,
     pub font: Font,
+    pub font_face: FontFace,
     pub line_height: f32,
     pub max_visible_graphemes: i32,
     pub placeholder_color3: Color3,
@@ -2534,6 +2587,7 @@ pub struct TextButton {
     pub text_scaled: bool,
     pub text_wrapped: bool,
     pub font: Font,
+    pub font_face: FontFace,
     pub line_height: f32,
     pub max_visible_graphemes: i32,
     pub text: String,
@@ -2554,6 +2608,7 @@ pub struct TextLabel {
     pub text_scaled: bool,
     pub text_wrapped: bool,
     pub font: Font,
+    pub font_face: FontFace,
     pub line_height: f32,
     pub max_visible_graphemes: i32,
     pub text: String,
@@ -2602,6 +2657,7 @@ pub struct Torque {
 #[derive(Debug, Clone, Inherits, PropertyConvert)]
 pub struct Trail {
     pub base: Base,
+    pub brightness: f32,
     pub enabled: bool,
     pub face_camera: bool,
     pub attachment_0: InstanceRef,

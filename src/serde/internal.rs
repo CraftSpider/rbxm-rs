@@ -407,4 +407,5 @@ prop_ty_impl! {
     Color3Uint8 : Color3Uint8,
     Pivot : Pivot,
     Uuid : Uuid,
+    FontFace : Font,
 }
