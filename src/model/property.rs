@@ -185,7 +185,7 @@ pub enum Property {
     /// A Universal Unique Identifier, or UUID
     Uuid(Uuid),
     /// See [`FontFace`]
-    Font(FontFace)
+    Font(FontFace),
 }
 
 impl Property {

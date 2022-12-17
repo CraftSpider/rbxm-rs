@@ -275,11 +275,7 @@ impl<T: ?Sized> Tree<T> {
     ///
     /// A root is any node that has no parent
     pub fn root_keys(&self) -> impl Iterator<Item = TreeKey> {
-        self.inner
-            .borrow()
-            .roots
-            .clone()
-            .into_iter()
+        self.inner.borrow().roots.clone().into_iter()
     }
 
     /// Get the parent key of a node identified by the provided key
@@ -511,7 +507,8 @@ impl<'a, 'b, T: ?Sized> NodeRefMut<'a, 'b, T> {
     /// Demote this mutable ref to an immutable ref
     pub fn demote(self) -> NodeRef<'a, 'b, T> {
         std::mem::drop(self.node);
-        self.tree.try_get(self.mykey)
+        self.tree
+            .try_get(self.mykey)
             .expect("This should always work, as we have unique access")
     }
 
@@ -621,22 +618,19 @@ mod tests {
         let id = tree.add_root(true);
 
         {
-            let root = tree.try_get(id)
-                .unwrap();
+            let root = tree.try_get(id).unwrap();
 
-            let mut root = root.try_promote()
-                .expect("Could promote unique reference");
+            let mut root = root.try_promote().expect("Could promote unique reference");
 
             root.new_child(false);
         }
 
         {
-            let root1 = tree.try_get(id)
-                .unwrap();
-            let _root2 = tree.try_get(id)
-                .unwrap();
+            let root1 = tree.try_get(id).unwrap();
+            let _root2 = tree.try_get(id).unwrap();
 
-            root1.try_promote()
+            root1
+                .try_promote()
                 .expect_err("Couldn't promote non-unique reference");
         }
     }
@@ -647,8 +641,7 @@ mod tests {
         let id = tree.add_root(true);
 
         {
-            let mut root = tree.try_get_mut(id)
-                .unwrap();
+            let mut root = tree.try_get_mut(id).unwrap();
 
             root.new_child(false);
 

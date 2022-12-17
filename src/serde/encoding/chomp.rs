@@ -54,7 +54,7 @@ impl<R: Read> Chomp<R> for u8 {
 
 impl<R: Read> Chomp<R> for u16 {
     fn chomp(reader: &mut R) -> Result<Self> {
-        let mut data =[0; 2];
+        let mut data = [0; 2];
         reader.read_exact(&mut data)?;
         Ok(u16::from_le_bytes(data))
     }
@@ -737,10 +737,8 @@ impl<R: Read> Chomp<R> for FontFace {
         let style = u8::chomp(reader)? as i32;
         let cached_face_id = String::chomp(reader)?;
 
-        let weight = FontWeight::try_from(weight)
-            .map_err(|_| Error::unknown_variant(weight))?;
-        let style = FontStyle::try_from(style)
-            .map_err(|_| Error::unknown_variant(style))?;
+        let weight = FontWeight::try_from(weight).map_err(|_| Error::unknown_variant(weight))?;
+        let style = FontStyle::try_from(style).map_err(|_| Error::unknown_variant(style))?;
 
         Ok(FontFace {
             family,
