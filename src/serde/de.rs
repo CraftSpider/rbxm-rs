@@ -123,6 +123,7 @@ fn chomp_properties<R: Read>(
                 break;
             }
             31 => RawProperty::Uuid(Uuid::chomp(reader)?),
+            32 => RawProperty::Font(FontFace::chomp(reader)?),
             _ => {
                 return Err(Error::unknown_property(prop_ty));
             }

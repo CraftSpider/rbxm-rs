@@ -52,6 +52,14 @@ impl<R: Read> Chomp<R> for u8 {
     }
 }
 
+impl<R: Read> Chomp<R> for u16 {
+    fn chomp(reader: &mut R) -> Result<Self> {
+        let mut data =[0; 2];
+        reader.read_exact(&mut data)?;
+        Ok(u16::from_le_bytes(data))
+    }
+}
+
 impl<R: Read> Chomp<R> for i16 {
     fn chomp(reader: &mut R) -> Result<Self> {
         let mut data = [0; 2];
@@ -719,6 +727,27 @@ impl<R: Read> Chomp<R> for TriMesh {
 impl<R: Read> Chomp<R> for Uuid {
     fn chomp(reader: &mut R) -> Result<Self> {
         Ok(Uuid::from_bytes(<[u8; 16]>::chomp(reader)?))
+    }
+}
+
+impl<R: Read> Chomp<R> for FontFace {
+    fn chomp(reader: &mut R) -> Result<Self> {
+        let family = String::chomp(reader)?;
+        let weight = u16::chomp(reader)? as i32;
+        let style = u8::chomp(reader)? as i32;
+        let cached_face_id = String::chomp(reader)?;
+
+        let weight = FontWeight::try_from(weight)
+            .map_err(|_| Error::unknown_variant(weight))?;
+        let style = FontStyle::try_from(style)
+            .map_err(|_| Error::unknown_variant(style))?;
+
+        Ok(FontFace {
+            family,
+            weight,
+            style,
+            cached_face_id,
+        })
     }
 }
 
