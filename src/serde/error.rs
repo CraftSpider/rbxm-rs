@@ -169,15 +169,15 @@ impl fmt::Display for ErrorKind {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         let msg = match self {
             ErrorKind::BadMagic => "Invalid File Magic".to_string(),
-            ErrorKind::UnknownBlock(block) => format!("Unrecognized data-block type `{}`", block),
-            ErrorKind::UnknownClass(id) => format!("Reference to unknown class with ID `{}`", id),
+            ErrorKind::UnknownBlock(block) => format!("Unrecognized data-block type `{block}`"),
+            ErrorKind::UnknownClass(id) => format!("Reference to unknown class with ID `{id}`"),
             ErrorKind::UnknownInstance(id) => {
-                format!("Reference to unknown instance with ID `{}`", id)
+                format!("Reference to unknown instance with ID `{id}`")
             }
-            ErrorKind::UnknownCFrame(id) => format!("Unknown CFrame type `{}`", id),
-            ErrorKind::UnknownProperty(id) => format!("Unknown property type `{}`", id),
-            ErrorKind::UnknownVariant(id) => format!("Unknown enum variant with ID `{}`", id),
-            ErrorKind::UnknownMesh(id) => format!("Unknown physics mesh kind with ID `{}`", id),
+            ErrorKind::UnknownCFrame(id) => format!("Unknown CFrame type `{id}`"),
+            ErrorKind::UnknownProperty(id) => format!("Unknown property type `{id}`"),
+            ErrorKind::UnknownVariant(id) => format!("Unknown enum variant with ID `{id}`"),
+            ErrorKind::UnknownMesh(id) => format!("Unknown physics mesh kind with ID `{id}`"),
 
             ErrorKind::WrongPropertyType(prop_name, tys) => match tys {
                 Some((expected, actual)) => {
@@ -188,21 +188,20 @@ impl fmt::Display for ErrorKind {
                         actual.name()
                     )
                 }
-                None => format!("Property {} was of a wrong type", prop_name),
+                None => format!("Property {prop_name} was of a wrong type"),
             },
-            ErrorKind::MissingProperty(prop_name) => format!("Property {} was missing", prop_name),
+            ErrorKind::MissingProperty(prop_name) => format!("Property {prop_name} was missing"),
             ErrorKind::UnconsumedProperties(class_name, prop_names) => format!(
-                "Instance type {} had unexpected properties with names {:?}",
-                class_name, prop_names
+                "Instance type {class_name} had unexpected properties with names {prop_names:?}"
             ),
             ErrorKind::InconsistentTree => {
                 String::from("RBXM parent->child relationships were inconsistent")
             }
 
-            ErrorKind::IoError(err) => format!("Error in IO: {}", err),
+            ErrorKind::IoError(err) => format!("Error in IO: {err}"),
             ErrorKind::InvalidString => "String contained invalid UTF data".to_string(),
             ErrorKind::InvalidLz4 => "LZ4 block couldn't be deserialized".to_string(),
         };
-        write!(fmt, "{}", msg)
+        write!(fmt, "{msg}")
     }
 }

@@ -192,14 +192,14 @@ impl<T: ?Sized> Tree<T> {
     }
 
     /// Try to get an immutable reference to a node identified by the provided key
-    pub fn try_get<'a, 'b>(&'a self, key: TreeKey) -> Result<NodeRef<'a, 'b, T>> {
+    pub fn try_get<'b>(&self, key: TreeKey) -> Result<NodeRef<'_, 'b, T>> {
         let inner = self.inner.borrow();
         let rc = inner.nodes.get(key).ok_or(Error::Missing)?;
         NodeRef::try_borrow(self, key, rc)
     }
 
     /// Try to get a mutable reference to a node identified by the provided key
-    pub fn try_get_mut<'a, 'b>(&'a self, key: TreeKey) -> Result<NodeRefMut<'a, 'b, T>> {
+    pub fn try_get_mut<'b>(&self, key: TreeKey) -> Result<NodeRefMut<'_, 'b, T>> {
         let inner = self.inner.borrow();
         let rc = inner.nodes.get(key).ok_or(Error::Missing)?;
         NodeRefMut::try_borrow(self, key, rc)
@@ -240,7 +240,7 @@ impl<T: ?Sized> Tree<T> {
     /// Iterate over the roots of this tree.
     ///
     /// A root is any node that has no parent
-    pub fn roots<'a>(&'a self) -> impl Iterator<Item = Result<NodeRef<'a, '_, T>>> {
+    pub fn roots(&self) -> impl Iterator<Item = Result<NodeRef<'_, '_, T>>> {
         let inner = self.inner.borrow();
 
         inner
@@ -257,7 +257,7 @@ impl<T: ?Sized> Tree<T> {
     /// Iterator over the roots of this tree mutable
     ///
     /// A root is any node that has no parent
-    pub fn roots_mut<'a>(&'a self) -> impl Iterator<Item = Result<NodeRefMut<'a, '_, T>>> {
+    pub fn roots_mut(&self) -> impl Iterator<Item = Result<NodeRefMut<'_, '_, T>>> {
         let inner = self.inner.borrow();
 
         inner
@@ -311,6 +311,7 @@ impl<T> Tree<T> {
 
         let new_node = RefCell::new(item);
 
+        // SAFETY: Box::into_raw always returns a valid pointer
         let new_node = unsafe { NonNull::new_unchecked(Box::into_raw(Box::new(new_node))) };
 
         let new_key = rc.nodes.insert(new_node);
@@ -436,9 +437,8 @@ impl<T> InnerTree<T> {
 impl<T: ?Sized> Drop for InnerTree<T> {
     fn drop(&mut self) {
         for i in self.nodes.values() {
-            unsafe {
-                Box::from_raw(i.as_ptr());
-            }
+            // SAFETY: Type guarantees inner nodes are valid
+            drop(unsafe { Box::from_raw(i.as_ptr()) })
         }
     }
 }
@@ -458,11 +458,11 @@ impl<'a, 'b, T: ?Sized> NodeRef<'a, 'b, T> {
         key: TreeKey,
         ptr: &'_ NonNull<RefCell<T>>,
     ) -> Result<NodeRef<'a, 'b, T>> {
-        // SAFETY: We only take immutable references to this data except when dropping
-        //         Where we ensure no references live to any nodes
         Ok(NodeRef {
             tree,
             mykey: key,
+            // SAFETY: We only take immutable references to this data except when dropping
+            //         Where we ensure no references live to any nodes
             node: unsafe { ptr.as_ref() }.try_borrow()?,
         })
     }
@@ -499,11 +499,11 @@ impl<'a, 'b, T: ?Sized> NodeRefMut<'a, 'b, T> {
         key: TreeKey,
         ptr: &'_ NonNull<RefCell<T>>,
     ) -> Result<NodeRefMut<'a, 'b, T>> {
-        // SAFETY: We only take immutable references to this data except when dropping
-        //         Where we ensure no references live to any nodes
         Ok(NodeRefMut {
             tree,
             mykey: key,
+            // SAFETY: We only take immutable references to this data except when dropping
+            //         Where we ensure no references live to any nodes
             node: unsafe { ptr.as_ref() }.try_borrow_mut()?,
         })
     }
@@ -555,19 +555,19 @@ impl<T: ?Sized + fmt::Debug> fmt::Debug for NodeRefMut<'_, '_, T> {
 
 impl<T> DerefMut for NodeRefMut<'_, '_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut *self.node
+        &mut self.node
     }
 }
 
 impl<T> AsMut<T> for NodeRefMut<'_, '_, T> {
     fn as_mut(&mut self) -> &mut T {
-        &mut *self.node
+        &mut self.node
     }
 }
 
 impl<T> BorrowMut<T> for NodeRefMut<'_, '_, T> {
     fn borrow_mut(&mut self) -> &mut T {
-        &mut *self.node
+        &mut self.node
     }
 }
 

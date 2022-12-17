@@ -581,6 +581,31 @@ pub enum Font {
     Ubuntu = 45,
 }
 
+/// Describe the style of a font, regular or italic
+///
+#[doc = doc_link!("enum/FontStyle")]
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum FontStyle {
+    Normal = 0,
+    Italic = 1,
+}
+
+/// Describe how thick a font is
+///
+#[doc = doc_link!("enum/FontWeight")]
+#[derive(Debug, Copy, Clone, EnumConvert)]
+pub enum FontWeight {
+    Thin = 100,
+    ExtraLight = 200,
+    Light = 300,
+    Regular = 400,
+    Medium = 500,
+    SemiBold = 600,
+    Bold = 700,
+    ExtraBold = 800,
+    Heavy = 900,
+}
+
 /// Set the form-factor of a [`Part`](super::instance::Part). This controls
 /// how the part scales along different axis
 ///

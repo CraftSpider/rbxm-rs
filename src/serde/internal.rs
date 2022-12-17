@@ -65,9 +65,45 @@ pub enum RawProperty {
     // TODO: This is called 'OptionalCoordinateFrame' in XML
     Pivot(Pivot),
     Uuid(Uuid),
+    Font(FontFace),
 }
 
 impl RawProperty {
+    pub(crate) fn encode_ty(&self) -> u8 {
+        match self {
+            RawProperty::RawString(..) => 1,
+            RawProperty::Bool(..) => 2,
+            RawProperty::Int32(..) => 3,
+            RawProperty::Float(..) => 4,
+            RawProperty::Double(..) => 5,
+            RawProperty::UDim(..) => 6,
+            RawProperty::UDim2(..) => 7,
+            RawProperty::Ray(..) => 8,
+            RawProperty::Face(..) => 9,
+            RawProperty::Axis(..) => 10,
+            RawProperty::BrickColor(..) => 11,
+            RawProperty::Color3(..) => 12,
+            RawProperty::Vector2(..) => 13,
+            RawProperty::Vector3(..) => 14,
+            RawProperty::CFrame(..) => 16,
+            // RawProperty::Quaternion => 17,
+            RawProperty::Enum(..) => 18,
+            RawProperty::InstanceRef(..) => 19,
+            RawProperty::Vector3Int16(..) => 20,
+            RawProperty::NumberSequence(..) => 21,
+            RawProperty::ColorSequence(..) => 22,
+            RawProperty::NumberRange(..) => 23,
+            RawProperty::Rect(..) => 24,
+            RawProperty::PhysicalProperties(..) => 25,
+            RawProperty::Color3Uint8(..) => 26,
+            RawProperty::Int64(..) => 27,
+            RawProperty::RawSharedString(..) => 28,
+            RawProperty::Pivot(..) => 30,
+            RawProperty::Uuid(..) => 31,
+            RawProperty::Font(..) => 32,
+        }
+    }
+
     pub(crate) fn into_real(self) -> Property {
         match self {
             RawProperty::RawString(..) => unreachable!(),
@@ -99,6 +135,7 @@ impl RawProperty {
             RawProperty::RawSharedString(..) => unreachable!(),
             RawProperty::Pivot(val) => Property::Pivot(val),
             RawProperty::Uuid(val) => Property::Uuid(val),
+            RawProperty::Font(val) => Property::Font(val),
         }
     }
 
@@ -135,6 +172,7 @@ impl RawProperty {
             Property::Int64(val) => RawProperty::Int64(val),
             Property::Pivot(val) => RawProperty::Pivot(val),
             Property::Uuid(val) => RawProperty::Uuid(val),
+            Property::Font(val) => RawProperty::Font(val),
         }
     }
 }

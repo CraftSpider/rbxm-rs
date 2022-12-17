@@ -1,6 +1,6 @@
 //! Base data types used primarily by Instance properties.
 
-use crate::model::Property;
+use crate::model::{FontStyle, FontWeight, Property};
 use crate::tree::TreeKey;
 
 use alloc::collections::BTreeMap;
@@ -649,6 +649,19 @@ impl Default for PhysicalProperties {
     fn default() -> Self {
         PhysicalProperties::Default
     }
+}
+
+/// A font property
+#[derive(Debug, Clone)]
+pub struct FontFace {
+    /// The font family, such as Calibri or Times
+    pub family: String,
+    /// The font weight - from thin to heavy
+    pub weight: FontWeight,
+    /// The font style, regular or italic
+    pub style: FontStyle,
+    /// The cached font-face ID
+    pub cached_face_id: String,
 }
 
 /// A full triangle mesh, used for collision or display

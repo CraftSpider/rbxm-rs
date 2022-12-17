@@ -135,7 +135,7 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
         let parent_index = match node.parent() {
             Ok(Some(parent)) => key_to_id[&parent.key()] as i32,
             Ok(None) => -1,
-            Err(e) => panic!("Failed to get expected node parent: {}", e),
+            Err(e) => panic!("Failed to get expected node parent: {e}"),
         };
 
         parents.insert(index as i32, parent_index);
@@ -151,8 +151,8 @@ fn break_model(model: &RbxModel) -> (i32, i32, Vec<Block>) {
     if !shared_strs.is_empty() {
         out.push(Block::SharedStr(shared_strs));
     }
-    out.extend(inst_blocks.into_iter().map(|(_, block)| block));
-    out.extend(prop_blocks.into_iter().map(|(_, block)| block));
+    out.extend(inst_blocks.into_values());
+    out.extend(prop_blocks.into_values());
     out.push(Block::Parent {
         instance_referents: child_ref,
         parent_referents: parent_ref,
@@ -246,37 +246,7 @@ impl<W: Write> Serializer<W> {
                 i32::print(writer, class_index)?;
                 String::print(writer, property_name)?;
 
-                let prop_ty = match &properties[0] {
-                    RawProperty::RawString(..) => 1,
-                    RawProperty::Bool(..) => 2,
-                    RawProperty::Int32(..) => 3,
-                    RawProperty::Float(..) => 4,
-                    RawProperty::Double(..) => 5,
-                    RawProperty::UDim(..) => 6,
-                    RawProperty::UDim2(..) => 7,
-                    RawProperty::Ray(..) => 8,
-                    RawProperty::Face(..) => 9,
-                    RawProperty::Axis(..) => 10,
-                    RawProperty::BrickColor(..) => 11,
-                    RawProperty::Color3(..) => 12,
-                    RawProperty::Vector2(..) => 13,
-                    RawProperty::Vector3(..) => 14,
-                    RawProperty::CFrame(..) => 16,
-                    // RawProperty::Quaternion => 17,
-                    RawProperty::Enum(..) => 18,
-                    RawProperty::InstanceRef(..) => 19,
-                    RawProperty::Vector3Int16(..) => 20,
-                    RawProperty::NumberSequence(..) => 21,
-                    RawProperty::ColorSequence(..) => 22,
-                    RawProperty::NumberRange(..) => 23,
-                    RawProperty::Rect(..) => 24,
-                    RawProperty::PhysicalProperties(..) => 25,
-                    RawProperty::Color3Uint8(..) => 26,
-                    RawProperty::Int64(..) => 27,
-                    RawProperty::RawSharedString(..) => 28,
-                    RawProperty::Pivot(..) => 30,
-                    RawProperty::Uuid(..) => 31,
-                };
+                let prop_ty = properties[0].encode_ty();
 
                 u8::print(writer, prop_ty)?;
 
@@ -477,6 +447,7 @@ impl<W: Write> Serializer<W> {
                             break;
                         }
                         RawProperty::Uuid(uuid) => Uuid::print(writer, *uuid)?,
+                        RawProperty::Font(font) => FontFace::print(writer, font.clone())?,
                     }
                 }
 

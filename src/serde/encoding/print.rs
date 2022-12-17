@@ -58,6 +58,13 @@ impl<W: Write> Print<W> for u8 {
     }
 }
 
+impl<W: Write> Print<W> for u16 {
+    fn print(writer: &mut W, val: Self) -> Result<()> {
+        writer.write_all(&val.to_le_bytes())?;
+        Ok(())
+    }
+}
+
 impl<W: Write> Print<W> for i16 {
     fn print(writer: &mut W, val: Self) -> Result<()> {
         writer.write_all(&val.to_le_bytes())?;
@@ -516,6 +523,16 @@ impl<W: Write> PrintInterleaved<W> for Rect {
 impl<W: Write> Print<W> for Uuid {
     fn print(writer: &mut W, val: Self) -> Result<()> {
         writer.write_all(val.as_bytes())
+    }
+}
+
+impl<W: Write> Print<W> for FontFace {
+    fn print(writer: &mut W, val: Self) -> Result<()> {
+        String::print(writer, val.family)?;
+        u16::print(writer, val.weight as u16)?;
+        u8::print(writer, val.style as u8)?;
+        String::print(writer, val.cached_face_id)?;
+        Ok(())
     }
 }
 

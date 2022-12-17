@@ -199,8 +199,6 @@ impl<R: Read> Deserializer<R> {
     }
 
     fn make_model(self) -> Result<RbxModel> {
-        // println!("{:?}", self.raw_info);
-
         let RawInfo {
             meta,
             shared_strs,
@@ -389,8 +387,7 @@ impl<R: Read> Deserializer<R> {
                 debug_assert_eq!(
                     *block_reader,
                     [],
-                    "Property {} didn't consume whole buffer",
-                    prop_ty
+                    "Property {prop_ty} didn't consume whole buffer"
                 );
 
                 for (inst_id, property) in class_ids.iter().zip(properties.into_iter()) {
@@ -433,7 +430,7 @@ impl<R: Read> Deserializer<R> {
     fn chomp_blockname(&mut self) -> Result<String> {
         let data = <[u8; 4]>::chomp(&mut self.reader)?;
 
-        let first_zero = data.iter().copied().position(|b| b == 0).unwrap_or(4) as usize;
+        let first_zero = data.iter().copied().position(|b| b == 0).unwrap_or(4);
 
         Ok(core::str::from_utf8(&data[..first_zero])
             .map_err(|_| Error::invalid_string())?

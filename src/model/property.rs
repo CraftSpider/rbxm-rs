@@ -72,6 +72,8 @@ pub enum PropertyType {
     Pivot,
     /// A [`Uuid`]
     Uuid,
+    /// A [`FontFace`]
+    Font,
 }
 
 impl PropertyType {
@@ -109,6 +111,7 @@ impl PropertyType {
             PropertyType::Color3Uint8 => "Color3Uint8",
             PropertyType::Pivot => "Pivot",
             PropertyType::Uuid => "Uuid",
+            PropertyType::Font => "Font",
         }
     }
 }
@@ -181,6 +184,8 @@ pub enum Property {
     Pivot(Pivot),
     /// A Universal Unique Identifier, or UUID
     Uuid(Uuid),
+    /// See [`FontFace`]
+    Font(FontFace)
 }
 
 impl Property {
@@ -217,6 +222,7 @@ impl Property {
             Property::Color3Uint8(..) => PropertyType::Color3Uint8,
             Property::Pivot(..) => PropertyType::Pivot,
             Property::Uuid(..) => PropertyType::Uuid,
+            Property::Font(..) => PropertyType::Font,
         }
     }
 }
