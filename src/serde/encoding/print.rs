@@ -526,7 +526,7 @@ impl<W: Write> Print<W> for Uuid {
     }
 }
 
-impl<W: Write> Print<W> for FontFace {
+impl<W: Write> Print<W> for Font {
     fn print(writer: &mut W, val: Self) -> Result<()> {
         String::print(writer, val.family)?;
         u16::print(writer, val.weight as u16)?;

@@ -72,7 +72,7 @@ pub enum PropertyType {
     Pivot,
     /// A [`Uuid`]
     Uuid,
-    /// A [`FontFace`]
+    /// A [`Font`]
     Font,
 }
 
@@ -184,8 +184,8 @@ pub enum Property {
     Pivot(Pivot),
     /// A Universal Unique Identifier, or UUID
     Uuid(Uuid),
-    /// See [`FontFace`]
-    Font(FontFace),
+    /// See [`Font`]
+    Font(Font),
 }
 
 impl Property {

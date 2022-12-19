@@ -77,6 +77,13 @@ macro_rules! doc_link {
 
 extern crate alloc;
 
+mod __gen {
+    #![allow(missing_docs)]
+    pub mod classes;
+    pub mod enums;
+    pub mod instance;
+}
+
 pub mod model;
 pub mod serde;
 pub mod tree;

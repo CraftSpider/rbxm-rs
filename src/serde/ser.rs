@@ -447,7 +447,7 @@ impl<W: Write> Serializer<W> {
                             break;
                         }
                         RawProperty::Uuid(uuid) => Uuid::print(writer, *uuid)?,
-                        RawProperty::Font(font) => FontFace::print(writer, font.clone())?,
+                        RawProperty::Font(font) => Font::print(writer, font.clone())?,
                     }
                 }
 

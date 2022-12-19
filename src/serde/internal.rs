@@ -65,7 +65,7 @@ pub enum RawProperty {
     // TODO: This is called 'OptionalCoordinateFrame' in XML
     Pivot(Pivot),
     Uuid(Uuid),
-    Font(FontFace),
+    Font(Font),
 }
 
 impl RawProperty {
@@ -260,6 +260,12 @@ impl FieldFromProperties for Vec<u8> {
     }
 }
 
+impl FieldFromProperties for Content {
+    fn from_properties(attrs: FieldAttrs, properties: &mut BTreeMap<String, Property>) -> Result<Self> {
+        String::from_properties(attrs, properties).map(Content)
+    }
+}
+
 impl FieldFromProperties for Attributes {
     fn from_properties(
         attrs: FieldAttrs,
@@ -356,6 +362,12 @@ impl FieldToProperties for Vec<u8> {
     }
 }
 
+impl FieldToProperties for Content {
+    fn to_properties(self, attrs: FieldAttrs, properties: &mut BTreeMap<String, Property>) {
+        self.0.to_properties(attrs, properties)
+    }
+}
+
 impl FieldToProperties for Attributes {
     fn to_properties(self, attrs: FieldAttrs, properties: &mut BTreeMap<String, Property>) {
         let mut out = Vec::new();
@@ -407,5 +419,5 @@ prop_ty_impl! {
     Color3Uint8 : Color3Uint8,
     Pivot : Pivot,
     Uuid : Uuid,
-    FontFace : Font,
+    Font : Font,
 }

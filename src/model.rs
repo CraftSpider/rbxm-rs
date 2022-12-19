@@ -9,6 +9,7 @@ pub mod enums;
 pub mod error;
 pub mod instance;
 pub mod property;
+pub mod classes;
 mod rbx_model;
 
 pub use data::*;

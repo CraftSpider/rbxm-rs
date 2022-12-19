@@ -9,6 +9,10 @@ use alloc::vec::Vec;
 use core::fmt;
 use core::ops::{Add, Deref, DerefMut, Div, Mul, Sub};
 
+/// A content string, of the form `[Protocol]://[String]`
+#[derive(Debug, Clone, Default)]
+pub struct Content(pub(crate) String);
+
 /// A set of named attributes for an instance. Wrapper type for a mapping of
 /// string to property,
 #[derive(Clone, Default)]
@@ -653,7 +657,7 @@ impl Default for PhysicalProperties {
 
 /// A font property
 #[derive(Debug, Clone)]
-pub struct FontFace {
+pub struct Font {
     /// The font family, such as Calibri or Times
     pub family: String,
     /// The font weight - from thin to heavy

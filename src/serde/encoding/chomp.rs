@@ -730,7 +730,7 @@ impl<R: Read> Chomp<R> for Uuid {
     }
 }
 
-impl<R: Read> Chomp<R> for FontFace {
+impl<R: Read> Chomp<R> for Font {
     fn chomp(reader: &mut R) -> Result<Self> {
         let family = String::chomp(reader)?;
         let weight = u16::chomp(reader)? as i32;
@@ -740,7 +740,7 @@ impl<R: Read> Chomp<R> for FontFace {
         let weight = FontWeight::try_from(weight).map_err(|_| Error::unknown_variant(weight))?;
         let style = FontStyle::try_from(style).map_err(|_| Error::unknown_variant(style))?;
 
-        Ok(FontFace {
+        Ok(Font {
             family,
             weight,
             style,

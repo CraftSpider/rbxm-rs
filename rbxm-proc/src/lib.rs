@@ -12,6 +12,9 @@ fn to_pascal_case(ident: &Ident) -> LitStr {
         .split('_')
         .into_iter()
         .map(|segment| {
+            if segment.len() == 0 {
+                return String::new();
+            }
             let mut v = segment.chars().collect::<Vec<_>>();
             v[0] = v[0].to_uppercase().nth(0).unwrap();
             v.into_iter().collect::<String>()
@@ -115,16 +118,16 @@ pub fn property_convert(item: TokenStream) -> TokenStream {
         .unzip();
 
     let expanded = quote! {
-        impl FromProperties for #item_name {
-            fn from_properties(properties: &mut alloc::collections::BTreeMap<String, Property>) -> core::result::Result<Self, crate::SerdeError> {
+        impl crate::serde::internal::FromProperties for #item_name {
+            fn from_properties(properties: &mut alloc::collections::BTreeMap<alloc::string::String, crate::model::Property>) -> core::result::Result<Self, crate::SerdeError> {
                 Ok(Self {
                     #(#constructor),*
                 })
             }
         }
 
-        impl ToProperties for #item_name {
-            fn to_properties(&self, properties: &mut alloc::collections::BTreeMap<String, Property>) {
+        impl crate::serde::internal::ToProperties for #item_name {
+            fn to_properties(&self, properties: &mut alloc::collections::BTreeMap<alloc::string::String, crate::model::Property>) {
                 #(#destructor;)*
             }
         }
@@ -346,6 +349,7 @@ pub fn instance_extra(item: TokenStream) -> TokenStream {
             }
 
             pub(crate) fn make_instance(kind: &str, mut properties: BTreeMap<String, Property>) -> Result<Instance, crate::SerdeError> {
+                use crate::serde::internal::FromProperties;
                 let out = match kind {
                     #(#from_props),*
                 };
@@ -361,6 +365,7 @@ pub fn instance_extra(item: TokenStream) -> TokenStream {
             }
 
             pub(crate) fn break_instance(&self) -> BTreeMap<String, Property> {
+                use crate::serde::internal::ToProperties;
                 let mut properties = BTreeMap::new();
                 match self {
                     #(#to_props),*

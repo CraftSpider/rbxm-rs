@@ -36,3 +36,8 @@ lz4_flex = { version = "0.9", default-features = false, features = ["safe-decode
 uuid = { version = "1.1", default-features = false }
 # Needed for no_std float math
 num = { version = "0.4", default-features = false, features = ["libm"] }
+
+[build-dependencies]
+convert_case = "0.6"
+reqwest = { version = "0.11", default-features = false, features = ["blocking", "json"] }
+serde = { version = "1.0", features = ["derive"] }
